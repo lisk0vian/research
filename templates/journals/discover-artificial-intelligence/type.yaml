@@ -1,0 +1,10 @@
+journal: "Discover Artificial Intelligence"
+publisher: springer nature
+format: latex
+extension: "christopherkenny/nature"
+quarto_format: nature-pdf
+cite_style: number
+issn: "2731-0809"
+url: "https://link.springer.com/journal/44163"
+notes: >
+  Open access (APC applies). Numbered citations in square brackets [1-3,7], NLM/Vancouver style (use journal cite-style sn-vancouver + classoption Numbered). Accepts LaTeX (Springer Nature sn-jnl template, ZIP with figures/tables) or Word with figures/tables in-text. Quarto via christopherkenny/nature (format nature-pdf).
