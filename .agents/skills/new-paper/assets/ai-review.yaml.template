@@ -1,0 +1,18 @@
+# reviews/round-{{ROUND}}/ai-review.yaml
+# Output of the reviewer AGENTS (read-only), saved here via the log-review flow.
+# The agents do NOT write this file directly: they produce their critique in the
+# conversation and you approve what gets recorded. This keeps it auditable
+# without giving the agent write access to the repo.
+
+reviews: []
+# Example:
+# reviews:
+#   - id: ai-r{{ROUND}}-1
+#     agent: reviewer-methodology
+#     date: "2026-01-15"
+#     category: methodology
+#     severity: major            # minor | major | blocker
+#     finding: "The decision threshold (0.66) is calibrated on validation but the
+#               text does not report the test-set F1 confidence interval."
+#     suggestion: "Add the bootstrap CI of test F1 next to the point estimate."
+#     addressed: false

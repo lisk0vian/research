@@ -1,0 +1,25 @@
+# .gitignore del repo research-hub
+
+# Extensiones Quarto: se regeneran con `quarto add`, no se versionan
+papers/*/paper/_extensions/
+
+# Artefactos de build: solo se versiona el PDF final, no los intermedios
+papers/*/build/*
+!papers/*/build/*.pdf
+papers/*/paper/*.tex
+papers/*/paper/*.aux
+papers/*/paper/*.log
+papers/*/paper/*.bbl
+papers/*/paper/*.blg
+papers/*/paper/.quarto/
+papers/*/paper/main_files/
+
+# Datos crudos pesados (ajustar según política del repo)
+papers/*/data/raw/*
+!papers/*/data/raw/.gitkeep
+
+# Python / notebooks
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+.venv/
