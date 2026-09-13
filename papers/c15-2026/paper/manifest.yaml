@@ -1,0 +1,14 @@
+paper: c15-2026
+slug: prosecutorial-congestion-framework
+journal: machine-learning-with-applications
+internal_code: "C15-2026"
+funding:
+  institution: "SENATI"
+  note: "Publicación financiada por SENATI; asesor designado por la institución."
+authors:
+  - id: moises
+    role: mani-author
+    order: 1
+  - id: jeremi
+    role: co-author
+    order: 2
