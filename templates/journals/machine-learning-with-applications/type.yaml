@@ -1,0 +1,11 @@
+journal: "Machine Learning with Applications"
+publisher: Elsevier
+issn: "2666-8270"
+format: latex
+quarto_extension: quarto-journals/elsevier
+quarto_format: elsevier-pdf
+model: 1p                 # revisar en el Guide for Authors: 1p (una columna) / 3p / 5p (dos columnas)
+cite_style: authoryear     # confirmado por el estilo EndNote de la revista (APA6 autor-año)
+notes: |
+  Verificar en elsevier.com/journals/machine-learning-with-applications/2666-8270/guide-for-authors
+  si piden elsarticle.cls estándar o el flujo CAS (cas-sc.cls).

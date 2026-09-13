@@ -1,0 +1,10 @@
+# authors/arnold.yaml
+# SINGLE record for one coauthor, reused by every paper they appear on.
+# If email or affiliation changes, fix it here once and it applies everywhere.
+# Role and order do NOT go here (they are per-paper) — those live in manifest.yaml.
+
+id: arnold
+name: "Arnold Albert Huaman Zamora"
+affiliation: "SENATI, Perú"
+email: "1634031@senati.pe"
+orcid: "TODO"
