@@ -72,12 +72,8 @@ papers/*/data/processed/*
 *.onnx
 *.pb
 *.h5
-papers/*/experiments/**/checkpoints/
-papers/*/experiments/**/mlruns/
 wandb/
 mlruns/
-# Keep metrics/results that the paper cites (small JSON/CSV under results/)
-!papers/*/experiments/**/results/metrics.json
 
 # ---- Python ----
 __pycache__/
@@ -136,3 +132,6 @@ Desktop.ini
 *.orig
 tmp/
 scratch/
+
+# ---- Experiments in papers ----
+papers/*/experiments/
