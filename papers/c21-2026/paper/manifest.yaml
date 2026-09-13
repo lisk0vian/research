@@ -6,7 +6,7 @@ paper: c21-2026
 title: "Temporal Validation of Low Birth Weight Classification in a National Peruvian Birth Registry (2015–2025)"
 
 # --- Editorial target ---
-journal:           # must exist under templates/journals/<journal>/
+journal: discover-artificial-intelligence # must exist under templates/journals/<journal>/
 internal_code: "C21-2026" # institutional code (empty "" if none)
 
 # --- Funding / institution ---
