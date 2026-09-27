@@ -34,7 +34,7 @@ A full run takes about 30 minutes on a free Colab CPU. No GPU is needed. About 2
 ### Option B: local run (Python 3.11–3.13)
 
 ```bash
-git clone https://github.com/YOUR-GITHUB-USER/GeoAI-MissingPersons-Peru.git
+git clone https://github.com/pamelafiguer/research
 cd GeoAI-MissingPersons-Peru
 python -m venv .venv && source .venv/bin/activate      # Windows: .venv\Scripts\activate
 pip install -r requirements.txt pytest

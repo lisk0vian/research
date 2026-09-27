@@ -4,7 +4,7 @@ title: "GeoAI-MissingPersons-Peru: data and code for 'A reproducible GeoAI frame
 type: software
 version: "3.3.2"
 license: MIT
-repository-code: "https://github.com/YOUR-GITHUB-USER/GeoAI-MissingPersons-Peru"
+repository-code: "https://github.com/pamelafiguer/research/tree/main/C26-202609-missingpersons"
 keywords:
   - missing persons
   - GeoAI
