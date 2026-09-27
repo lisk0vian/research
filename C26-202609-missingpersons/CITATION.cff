@@ -1,0 +1,28 @@
+cff-version: 1.2.0
+message: "If you use this software or data, please cite both the article and this archive."
+title: "GeoAI-MissingPersons-Peru: data and code for 'A reproducible GeoAI framework for explainable spatiotemporal analysis of national missing-person registers (Peru, 2019–2025)'"
+type: software
+version: "3.3.2"
+license: MIT
+repository-code: "https://github.com/YOUR-GITHUB-USER/GeoAI-MissingPersons-Peru"
+keywords:
+  - missing persons
+  - GeoAI
+  - spatiotemporal clustering
+  - spatial autocorrelation
+  - multilevel validation
+  - Peru
+authors:
+  - family-names: "Evangelista Gamarra"
+    given-names: "Moisés"
+    orcid: "https://orcid.org/0009-0002-5382-1390"
+    affiliation: "Servicio Nacional de Adiestramiento en Trabajo Industrial (SENATI)"
+    email: "mevangelistag@senati.pe"
+  - family-names: "Alama Carreño"
+    given-names: "Edwar Abrahan"
+    orcid: "https://orcid.org/0009-0006-8029-4302"
+    affiliation: "Servicio Nacional de Adiestramiento en Trabajo Industrial (SENATI)"
+  - family-names: "Figueroa Rosas"
+    given-names: "Pamela Estefani"
+    orcid: "https://orcid.org/0009-0007-6100-9382"
+    affiliation: "Servicio Nacional de Adiestramiento en Trabajo Industrial (SENATI)"

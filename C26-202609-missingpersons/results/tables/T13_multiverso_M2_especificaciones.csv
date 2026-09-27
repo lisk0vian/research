@@ -1,0 +1,241 @@
+﻿winsor,periodo,variable,pesos,tipo_p,correccion_local,moran_I,p_global,moran_significativo,n_hotspots,n_coldspots,hotspots,sur_andino_hotspots,lima_hotspot,es_manuscrito_original
+False,2019_2025,tasa_exposicion_observada,queen,original,ninguna,0.12220392134425269,0.122,False,4,3,APURIMAC;AYACUCHO;CUSCO;PUNO,2,False,False
+False,2019_2025,tasa_exposicion_observada,queen,original,fdr_bh,0.12220392134425269,0.122,False,0,2,,0,False,False
+False,2019_2025,tasa_exposicion_observada,queen,bilateral,ninguna,0.12220392134425269,0.244,False,0,3,,0,False,False
+False,2019_2025,tasa_exposicion_observada,queen,bilateral,fdr_bh,0.12220392134425269,0.244,False,0,2,,0,False,False
+False,2019_2025,tasa_exposicion_observada,knn4_geodesico,original,ninguna,0.28810907065029995,0.0091,True,2,5,MOQUEGUA;PUNO,1,False,False
+False,2019_2025,tasa_exposicion_observada,knn4_geodesico,original,fdr_bh,0.28810907065029995,0.0091,True,0,2,,0,False,False
+False,2019_2025,tasa_exposicion_observada,knn4_geodesico,bilateral,ninguna,0.28810907065029995,0.0182,True,0,3,,0,False,False
+False,2019_2025,tasa_exposicion_observada,knn4_geodesico,bilateral,fdr_bh,0.28810907065029995,0.0182,True,0,2,,0,False,False
+False,2019_2025,tasa_exposicion_observada,knn5_geodesico,original,ninguna,0.2319942359788489,0.013,True,6,5,AREQUIPA;AYACUCHO;MADRE DE DIOS;MOQUEGUA;PUNO;TACNA,4,False,False
+False,2019_2025,tasa_exposicion_observada,knn5_geodesico,original,fdr_bh,0.2319942359788489,0.013,True,0,0,,0,False,False
+False,2019_2025,tasa_exposicion_observada,knn5_geodesico,bilateral,ninguna,0.2319942359788489,0.026,True,2,3,MOQUEGUA;PUNO,1,False,False
+False,2019_2025,tasa_exposicion_observada,knn5_geodesico,bilateral,fdr_bh,0.2319942359788489,0.026,True,0,0,,0,False,False
+False,2019_2025,tasa_exposicion_observada,knn5_grados_manuscrito,original,ninguna,0.327099718799546,0.0039,True,6,7,AREQUIPA;AYACUCHO;CUSCO;MOQUEGUA;PUNO;TACNA,5,False,False
+False,2019_2025,tasa_exposicion_observada,knn5_grados_manuscrito,original,fdr_bh,0.327099718799546,0.0039,True,1,4,MOQUEGUA,1,False,False
+False,2019_2025,tasa_exposicion_observada,knn5_grados_manuscrito,bilateral,ninguna,0.327099718799546,0.0078,True,2,7,AREQUIPA;MOQUEGUA,2,False,False
+False,2019_2025,tasa_exposicion_observada,knn5_grados_manuscrito,bilateral,fdr_bh,0.327099718799546,0.0078,True,0,1,,0,False,False
+False,2019_2025,tasa_exposicion_observada,invdist_grados_manuscrito,original,ninguna,0.191020100801304,0.0148,True,10,8,APURIMAC;AREQUIPA;AYACUCHO;CUSCO;HUANCAVELICA;ICA;MADRE DE DIOS;MOQUEGUA;PUNO;TACNA,5,False,False
+False,2019_2025,tasa_exposicion_observada,invdist_grados_manuscrito,original,fdr_bh,0.191020100801304,0.0148,True,7,6,APURIMAC;CUSCO;HUANCAVELICA;ICA;MADRE DE DIOS;MOQUEGUA;PUNO,2,False,False
+False,2019_2025,tasa_exposicion_observada,invdist_grados_manuscrito,bilateral,ninguna,0.191020100801304,0.0296,True,7,6,APURIMAC;CUSCO;HUANCAVELICA;ICA;MADRE DE DIOS;MOQUEGUA;PUNO,2,False,False
+False,2019_2025,tasa_exposicion_observada,invdist_grados_manuscrito,bilateral,fdr_bh,0.191020100801304,0.0296,True,3,4,APURIMAC;MADRE DE DIOS;PUNO,0,False,False
+False,2019_2025,tasa_exposicion_total,queen,original,ninguna,0.11556281664915075,0.1298,False,4,3,APURIMAC;AYACUCHO;CUSCO;PUNO,2,False,False
+False,2019_2025,tasa_exposicion_total,queen,original,fdr_bh,0.11556281664915075,0.1298,False,0,2,,0,False,False
+False,2019_2025,tasa_exposicion_total,queen,bilateral,ninguna,0.11556281664915075,0.2596,False,0,3,,0,False,False
+False,2019_2025,tasa_exposicion_total,queen,bilateral,fdr_bh,0.11556281664915075,0.2596,False,0,2,,0,False,False
+False,2019_2025,tasa_exposicion_total,knn4_geodesico,original,ninguna,0.2817042436421713,0.01,True,3,5,APURIMAC;MOQUEGUA;PUNO,1,False,False
+False,2019_2025,tasa_exposicion_total,knn4_geodesico,original,fdr_bh,0.2817042436421713,0.01,True,0,2,,0,False,False
+False,2019_2025,tasa_exposicion_total,knn4_geodesico,bilateral,ninguna,0.2817042436421713,0.02,True,0,3,,0,False,False
+False,2019_2025,tasa_exposicion_total,knn4_geodesico,bilateral,fdr_bh,0.2817042436421713,0.02,True,0,2,,0,False,False
+False,2019_2025,tasa_exposicion_total,knn5_geodesico,original,ninguna,0.2247843365490603,0.0154,True,5,5,AREQUIPA;AYACUCHO;MADRE DE DIOS;MOQUEGUA;PUNO,3,False,False
+False,2019_2025,tasa_exposicion_total,knn5_geodesico,original,fdr_bh,0.2247843365490603,0.0154,True,0,0,,0,False,False
+False,2019_2025,tasa_exposicion_total,knn5_geodesico,bilateral,ninguna,0.2247843365490603,0.0308,True,2,3,MOQUEGUA;PUNO,1,False,False
+False,2019_2025,tasa_exposicion_total,knn5_geodesico,bilateral,fdr_bh,0.2247843365490603,0.0308,True,0,0,,0,False,False
+False,2019_2025,tasa_exposicion_total,knn5_grados_manuscrito,original,ninguna,0.32045390614686103,0.0042,True,4,7,AREQUIPA;AYACUCHO;MOQUEGUA;PUNO,3,False,False
+False,2019_2025,tasa_exposicion_total,knn5_grados_manuscrito,original,fdr_bh,0.32045390614686103,0.0042,True,1,4,MOQUEGUA,1,False,False
+False,2019_2025,tasa_exposicion_total,knn5_grados_manuscrito,bilateral,ninguna,0.32045390614686103,0.0084,True,2,7,AREQUIPA;MOQUEGUA,2,False,False
+False,2019_2025,tasa_exposicion_total,knn5_grados_manuscrito,bilateral,fdr_bh,0.32045390614686103,0.0084,True,0,1,,0,False,False
+False,2019_2025,tasa_exposicion_total,invdist_grados_manuscrito,original,ninguna,0.1832462584772286,0.0162,True,10,8,APURIMAC;AREQUIPA;AYACUCHO;CUSCO;HUANCAVELICA;ICA;MADRE DE DIOS;MOQUEGUA;PUNO;TACNA,5,False,False
+False,2019_2025,tasa_exposicion_total,invdist_grados_manuscrito,original,fdr_bh,0.1832462584772286,0.0162,True,7,6,APURIMAC;CUSCO;HUANCAVELICA;ICA;MADRE DE DIOS;MOQUEGUA;PUNO,2,False,False
+False,2019_2025,tasa_exposicion_total,invdist_grados_manuscrito,bilateral,ninguna,0.1832462584772286,0.0324,True,7,6,APURIMAC;CUSCO;HUANCAVELICA;ICA;MADRE DE DIOS;MOQUEGUA;PUNO,2,False,False
+False,2019_2025,tasa_exposicion_total,invdist_grados_manuscrito,bilateral,fdr_bh,0.1832462584772286,0.0324,True,3,4,APURIMAC;MADRE DE DIOS;PUNO,0,False,False
+False,2019_2025,conteo,queen,original,ninguna,-0.00835458588440377,0.2686,False,1,0,CALLAO,0,False,False
+False,2019_2025,conteo,queen,original,fdr_bh,-0.00835458588440377,0.2686,False,0,0,,0,False,False
+False,2019_2025,conteo,queen,bilateral,ninguna,-0.00835458588440377,0.5372,False,0,0,,0,False,False
+False,2019_2025,conteo,queen,bilateral,fdr_bh,-0.00835458588440377,0.5372,False,0,0,,0,False,False
+False,2019_2025,conteo,knn4_geodesico,original,ninguna,-0.003977422703848041,0.2257,False,2,0,CALLAO;REGION LIMA,0,False,False
+False,2019_2025,conteo,knn4_geodesico,original,fdr_bh,-0.003977422703848041,0.2257,False,0,0,,0,False,False
+False,2019_2025,conteo,knn4_geodesico,bilateral,ninguna,-0.003977422703848041,0.4514,False,0,0,,0,False,False
+False,2019_2025,conteo,knn4_geodesico,bilateral,fdr_bh,-0.003977422703848041,0.4514,False,0,0,,0,False,False
+False,2019_2025,conteo,knn5_geodesico,original,ninguna,-0.048235990238255644,0.5715,False,2,0,HUANCAVELICA;PASCO,0,False,False
+False,2019_2025,conteo,knn5_geodesico,original,fdr_bh,-0.048235990238255644,0.5715,False,0,0,,0,False,False
+False,2019_2025,conteo,knn5_geodesico,bilateral,ninguna,-0.048235990238255644,0.8572,False,0,0,,0,False,False
+False,2019_2025,conteo,knn5_geodesico,bilateral,fdr_bh,-0.048235990238255644,0.8572,False,0,0,,0,False,False
+False,2019_2025,conteo,knn5_grados_manuscrito,original,ninguna,-0.09197678290645644,0.8975,False,2,0,PASCO;REGION LIMA,0,False,False
+False,2019_2025,conteo,knn5_grados_manuscrito,original,fdr_bh,-0.09197678290645644,0.8975,False,0,0,,0,False,False
+False,2019_2025,conteo,knn5_grados_manuscrito,bilateral,ninguna,-0.09197678290645644,0.2052,False,0,0,,0,False,False
+False,2019_2025,conteo,knn5_grados_manuscrito,bilateral,fdr_bh,-0.09197678290645644,0.2052,False,0,0,,0,False,False
+False,2019_2025,conteo,invdist_grados_manuscrito,original,ninguna,-0.023673392916893805,0.2758,False,0,0,,0,False,False
+False,2019_2025,conteo,invdist_grados_manuscrito,original,fdr_bh,-0.023673392916893805,0.2758,False,0,0,,0,False,False
+False,2019_2025,conteo,invdist_grados_manuscrito,bilateral,ninguna,-0.023673392916893805,0.5516,False,0,0,,0,False,False
+False,2019_2025,conteo,invdist_grados_manuscrito,bilateral,fdr_bh,-0.023673392916893805,0.5516,False,0,0,,0,False,False
+False,2019_2024,tasa_exposicion_observada,queen,original,ninguna,0.09376096755543922,0.1625,False,3,3,APURIMAC;AYACUCHO;CUSCO,2,False,False
+False,2019_2024,tasa_exposicion_observada,queen,original,fdr_bh,0.09376096755543922,0.1625,False,0,2,,0,False,False
+False,2019_2024,tasa_exposicion_observada,queen,bilateral,ninguna,0.09376096755543922,0.325,False,0,3,,0,False,False
+False,2019_2024,tasa_exposicion_observada,queen,bilateral,fdr_bh,0.09376096755543922,0.325,False,0,2,,0,False,False
+False,2019_2024,tasa_exposicion_observada,knn4_geodesico,original,ninguna,0.24529819653123436,0.0161,True,2,5,MOQUEGUA;PUNO,1,False,False
+False,2019_2024,tasa_exposicion_observada,knn4_geodesico,original,fdr_bh,0.24529819653123436,0.0161,True,0,2,,0,False,False
+False,2019_2024,tasa_exposicion_observada,knn4_geodesico,bilateral,ninguna,0.24529819653123436,0.0322,True,0,3,,0,False,False
+False,2019_2024,tasa_exposicion_observada,knn4_geodesico,bilateral,fdr_bh,0.24529819653123436,0.0322,True,0,2,,0,False,False
+False,2019_2024,tasa_exposicion_observada,knn5_geodesico,original,ninguna,0.19043597380625263,0.0255,True,4,4,AREQUIPA;AYACUCHO;MOQUEGUA;PUNO,3,False,False
+False,2019_2024,tasa_exposicion_observada,knn5_geodesico,original,fdr_bh,0.19043597380625263,0.0255,True,0,0,,0,False,False
+False,2019_2024,tasa_exposicion_observada,knn5_geodesico,bilateral,ninguna,0.19043597380625263,0.051,False,2,3,MOQUEGUA;PUNO,1,False,False
+False,2019_2024,tasa_exposicion_observada,knn5_geodesico,bilateral,fdr_bh,0.19043597380625263,0.051,False,0,0,,0,False,False
+False,2019_2024,tasa_exposicion_observada,knn5_grados_manuscrito,original,ninguna,0.2857442291855078,0.0067,True,4,7,AREQUIPA;AYACUCHO;HUANCAVELICA;MOQUEGUA,3,False,False
+False,2019_2024,tasa_exposicion_observada,knn5_grados_manuscrito,original,fdr_bh,0.2857442291855078,0.0067,True,0,1,,0,False,False
+False,2019_2024,tasa_exposicion_observada,knn5_grados_manuscrito,bilateral,ninguna,0.2857442291855078,0.0134,True,2,7,AREQUIPA;MOQUEGUA,2,False,False
+False,2019_2024,tasa_exposicion_observada,knn5_grados_manuscrito,bilateral,fdr_bh,0.2857442291855078,0.0134,True,0,1,,0,False,False
+False,2019_2024,tasa_exposicion_observada,invdist_grados_manuscrito,original,ninguna,0.14660076652778772,0.0294,True,8,8,APURIMAC;AREQUIPA;CUSCO;HUANCAVELICA;ICA;MADRE DE DIOS;MOQUEGUA;PUNO,3,False,False
+False,2019_2024,tasa_exposicion_observada,invdist_grados_manuscrito,original,fdr_bh,0.14660076652778772,0.0294,True,5,6,APURIMAC;CUSCO;ICA;MADRE DE DIOS;PUNO,1,False,False
+False,2019_2024,tasa_exposicion_observada,invdist_grados_manuscrito,bilateral,ninguna,0.14660076652778772,0.0588,False,5,6,APURIMAC;CUSCO;ICA;MADRE DE DIOS;PUNO,1,False,False
+False,2019_2024,tasa_exposicion_observada,invdist_grados_manuscrito,bilateral,fdr_bh,0.14660076652778772,0.0588,False,3,3,APURIMAC;MADRE DE DIOS;PUNO,0,False,False
+False,2019_2024,tasa_exposicion_total,queen,original,ninguna,0.0871544974964055,0.1749,False,3,3,APURIMAC;AYACUCHO;CUSCO,2,False,False
+False,2019_2024,tasa_exposicion_total,queen,original,fdr_bh,0.0871544974964055,0.1749,False,0,2,,0,False,False
+False,2019_2024,tasa_exposicion_total,queen,bilateral,ninguna,0.0871544974964055,0.3498,False,0,3,,0,False,False
+False,2019_2024,tasa_exposicion_total,queen,bilateral,fdr_bh,0.0871544974964055,0.3498,False,0,2,,0,False,False
+False,2019_2024,tasa_exposicion_total,knn4_geodesico,original,ninguna,0.23903984377397158,0.0169,True,3,5,APURIMAC;MOQUEGUA;PUNO,1,False,False
+False,2019_2024,tasa_exposicion_total,knn4_geodesico,original,fdr_bh,0.23903984377397158,0.0169,True,0,2,,0,False,False
+False,2019_2024,tasa_exposicion_total,knn4_geodesico,bilateral,ninguna,0.23903984377397158,0.0338,True,0,3,,0,False,False
+False,2019_2024,tasa_exposicion_total,knn4_geodesico,bilateral,fdr_bh,0.23903984377397158,0.0338,True,0,2,,0,False,False
+False,2019_2024,tasa_exposicion_total,knn5_geodesico,original,ninguna,0.18330439320800185,0.0294,True,4,3,AREQUIPA;AYACUCHO;MOQUEGUA;PUNO,3,False,False
+False,2019_2024,tasa_exposicion_total,knn5_geodesico,original,fdr_bh,0.18330439320800185,0.0294,True,0,0,,0,False,False
+False,2019_2024,tasa_exposicion_total,knn5_geodesico,bilateral,ninguna,0.18330439320800185,0.0588,False,2,3,MOQUEGUA;PUNO,1,False,False
+False,2019_2024,tasa_exposicion_total,knn5_geodesico,bilateral,fdr_bh,0.18330439320800185,0.0588,False,0,0,,0,False,False
+False,2019_2024,tasa_exposicion_total,knn5_grados_manuscrito,original,ninguna,0.2796860246307559,0.0074,True,4,7,AREQUIPA;AYACUCHO;HUANCAVELICA;MOQUEGUA,3,False,False
+False,2019_2024,tasa_exposicion_total,knn5_grados_manuscrito,original,fdr_bh,0.2796860246307559,0.0074,True,0,1,,0,False,False
+False,2019_2024,tasa_exposicion_total,knn5_grados_manuscrito,bilateral,ninguna,0.2796860246307559,0.0148,True,1,6,MOQUEGUA,1,False,False
+False,2019_2024,tasa_exposicion_total,knn5_grados_manuscrito,bilateral,fdr_bh,0.2796860246307559,0.0148,True,0,1,,0,False,False
+False,2019_2024,tasa_exposicion_total,invdist_grados_manuscrito,original,ninguna,0.13904700398980352,0.0339,True,8,7,APURIMAC;AREQUIPA;CUSCO;HUANCAVELICA;ICA;MADRE DE DIOS;MOQUEGUA;PUNO,3,False,False
+False,2019_2024,tasa_exposicion_total,invdist_grados_manuscrito,original,fdr_bh,0.13904700398980352,0.0339,True,5,6,APURIMAC;CUSCO;ICA;MADRE DE DIOS;PUNO,1,False,False
+False,2019_2024,tasa_exposicion_total,invdist_grados_manuscrito,bilateral,ninguna,0.13904700398980352,0.0678,False,5,6,APURIMAC;CUSCO;ICA;MADRE DE DIOS;PUNO,1,False,False
+False,2019_2024,tasa_exposicion_total,invdist_grados_manuscrito,bilateral,fdr_bh,0.13904700398980352,0.0678,False,3,3,APURIMAC;MADRE DE DIOS;PUNO,0,False,False
+False,2019_2024,conteo,queen,original,ninguna,-0.007587434206459531,0.2669,False,1,0,CALLAO,0,False,False
+False,2019_2024,conteo,queen,original,fdr_bh,-0.007587434206459531,0.2669,False,0,0,,0,False,False
+False,2019_2024,conteo,queen,bilateral,ninguna,-0.007587434206459531,0.5338,False,0,0,,0,False,False
+False,2019_2024,conteo,queen,bilateral,fdr_bh,-0.007587434206459531,0.5338,False,0,0,,0,False,False
+False,2019_2024,conteo,knn4_geodesico,original,ninguna,-0.0026107765954999397,0.2199,False,2,0,CALLAO;REGION LIMA,0,False,False
+False,2019_2024,conteo,knn4_geodesico,original,fdr_bh,-0.0026107765954999397,0.2199,False,0,0,,0,False,False
+False,2019_2024,conteo,knn4_geodesico,bilateral,ninguna,-0.0026107765954999397,0.4398,False,0,0,,0,False,False
+False,2019_2024,conteo,knn4_geodesico,bilateral,fdr_bh,-0.0026107765954999397,0.4398,False,0,0,,0,False,False
+False,2019_2024,conteo,knn5_geodesico,original,ninguna,-0.04781730023975885,0.5643,False,2,0,HUANCAVELICA;PASCO,0,False,False
+False,2019_2024,conteo,knn5_geodesico,original,fdr_bh,-0.04781730023975885,0.5643,False,0,0,,0,False,False
+False,2019_2024,conteo,knn5_geodesico,bilateral,ninguna,-0.04781730023975885,0.8716,False,0,0,,0,False,False
+False,2019_2024,conteo,knn5_geodesico,bilateral,fdr_bh,-0.04781730023975885,0.8716,False,0,0,,0,False,False
+False,2019_2024,conteo,knn5_grados_manuscrito,original,ninguna,-0.09298929700609418,0.8986,False,3,0,HUANCAVELICA;PASCO;REGION LIMA,0,False,False
+False,2019_2024,conteo,knn5_grados_manuscrito,original,fdr_bh,-0.09298929700609418,0.8986,False,0,0,,0,False,False
+False,2019_2024,conteo,knn5_grados_manuscrito,bilateral,ninguna,-0.09298929700609418,0.203,False,0,0,,0,False,False
+False,2019_2024,conteo,knn5_grados_manuscrito,bilateral,fdr_bh,-0.09298929700609418,0.203,False,0,0,,0,False,False
+False,2019_2024,conteo,invdist_grados_manuscrito,original,ninguna,-0.022613882886567967,0.2661,False,0,0,,0,False,False
+False,2019_2024,conteo,invdist_grados_manuscrito,original,fdr_bh,-0.022613882886567967,0.2661,False,0,0,,0,False,False
+False,2019_2024,conteo,invdist_grados_manuscrito,bilateral,ninguna,-0.022613882886567967,0.5322,False,0,0,,0,False,False
+False,2019_2024,conteo,invdist_grados_manuscrito,bilateral,fdr_bh,-0.022613882886567967,0.5322,False,0,0,,0,False,False
+True,2019_2025,tasa_exposicion_observada,queen,original,ninguna,0.12988664928473942,0.1122,False,4,4,APURIMAC;AYACUCHO;CUSCO;PUNO,2,False,False
+True,2019_2025,tasa_exposicion_observada,queen,original,fdr_bh,0.12988664928473942,0.1122,False,0,2,,0,False,False
+True,2019_2025,tasa_exposicion_observada,queen,bilateral,ninguna,0.12988664928473942,0.2244,False,1,3,AYACUCHO,1,False,False
+True,2019_2025,tasa_exposicion_observada,queen,bilateral,fdr_bh,0.12988664928473942,0.2244,False,0,2,,0,False,False
+True,2019_2025,tasa_exposicion_observada,knn4_geodesico,original,ninguna,0.2983733518460607,0.0079,True,3,6,APURIMAC;MOQUEGUA;PUNO,1,False,False
+True,2019_2025,tasa_exposicion_observada,knn4_geodesico,original,fdr_bh,0.2983733518460607,0.0079,True,0,2,,0,False,False
+True,2019_2025,tasa_exposicion_observada,knn4_geodesico,bilateral,ninguna,0.2983733518460607,0.0158,True,0,4,,0,False,False
+True,2019_2025,tasa_exposicion_observada,knn4_geodesico,bilateral,fdr_bh,0.2983733518460607,0.0158,True,0,2,,0,False,False
+True,2019_2025,tasa_exposicion_observada,knn5_geodesico,original,ninguna,0.2421633006063902,0.0121,True,6,5,AREQUIPA;AYACUCHO;MADRE DE DIOS;MOQUEGUA;PUNO;TACNA,4,False,False
+True,2019_2025,tasa_exposicion_observada,knn5_geodesico,original,fdr_bh,0.2421633006063902,0.0121,True,0,0,,0,False,False
+True,2019_2025,tasa_exposicion_observada,knn5_geodesico,bilateral,ninguna,0.2421633006063902,0.0242,True,2,3,MOQUEGUA;PUNO,1,False,False
+True,2019_2025,tasa_exposicion_observada,knn5_geodesico,bilateral,fdr_bh,0.2421633006063902,0.0242,True,0,0,,0,False,False
+True,2019_2025,tasa_exposicion_observada,knn5_grados_manuscrito,original,ninguna,0.33721102290675425,0.0034,True,6,7,AREQUIPA;AYACUCHO;CUSCO;MOQUEGUA;PUNO;TACNA,5,False,False
+True,2019_2025,tasa_exposicion_observada,knn5_grados_manuscrito,original,fdr_bh,0.33721102290675425,0.0034,True,1,4,MOQUEGUA,1,False,False
+True,2019_2025,tasa_exposicion_observada,knn5_grados_manuscrito,bilateral,ninguna,0.33721102290675425,0.0068,True,2,7,AREQUIPA;MOQUEGUA,2,False,False
+True,2019_2025,tasa_exposicion_observada,knn5_grados_manuscrito,bilateral,fdr_bh,0.33721102290675425,0.0068,True,0,1,,0,False,False
+True,2019_2025,tasa_exposicion_observada,invdist_grados_manuscrito,original,ninguna,0.19869526422901806,0.0122,True,10,8,APURIMAC;AREQUIPA;AYACUCHO;CUSCO;HUANCAVELICA;ICA;MADRE DE DIOS;MOQUEGUA;PUNO;TACNA,5,False,False
+True,2019_2025,tasa_exposicion_observada,invdist_grados_manuscrito,original,fdr_bh,0.19869526422901806,0.0122,True,8,8,APURIMAC;AREQUIPA;CUSCO;HUANCAVELICA;ICA;MADRE DE DIOS;MOQUEGUA;PUNO,3,False,False
+True,2019_2025,tasa_exposicion_observada,invdist_grados_manuscrito,bilateral,ninguna,0.19869526422901806,0.0244,True,8,7,APURIMAC;AREQUIPA;CUSCO;HUANCAVELICA;ICA;MADRE DE DIOS;MOQUEGUA;PUNO,3,False,False
+True,2019_2025,tasa_exposicion_observada,invdist_grados_manuscrito,bilateral,fdr_bh,0.19869526422901806,0.0244,True,3,4,APURIMAC;MADRE DE DIOS;PUNO,0,False,False
+True,2019_2025,tasa_exposicion_total,queen,original,ninguna,0.1229200093188522,0.1201,False,4,3,APURIMAC;AYACUCHO;CUSCO;PUNO,2,False,False
+True,2019_2025,tasa_exposicion_total,queen,original,fdr_bh,0.1229200093188522,0.1201,False,0,2,,0,False,False
+True,2019_2025,tasa_exposicion_total,queen,bilateral,ninguna,0.1229200093188522,0.2402,False,1,3,AYACUCHO,1,False,False
+True,2019_2025,tasa_exposicion_total,queen,bilateral,fdr_bh,0.1229200093188522,0.2402,False,0,2,,0,False,False
+True,2019_2025,tasa_exposicion_total,knn4_geodesico,original,ninguna,0.29165777356209227,0.0086,True,3,5,APURIMAC;MOQUEGUA;PUNO,1,False,False
+True,2019_2025,tasa_exposicion_total,knn4_geodesico,original,fdr_bh,0.29165777356209227,0.0086,True,0,2,,0,False,False
+True,2019_2025,tasa_exposicion_total,knn4_geodesico,bilateral,ninguna,0.29165777356209227,0.0172,True,0,4,,0,False,False
+True,2019_2025,tasa_exposicion_total,knn4_geodesico,bilateral,fdr_bh,0.29165777356209227,0.0172,True,0,2,,0,False,False
+True,2019_2025,tasa_exposicion_total,knn5_geodesico,original,ninguna,0.23461756242333354,0.0137,True,6,5,AREQUIPA;AYACUCHO;MADRE DE DIOS;MOQUEGUA;PUNO;TACNA,4,False,False
+True,2019_2025,tasa_exposicion_total,knn5_geodesico,original,fdr_bh,0.23461756242333354,0.0137,True,0,0,,0,False,False
+True,2019_2025,tasa_exposicion_total,knn5_geodesico,bilateral,ninguna,0.23461756242333354,0.0274,True,2,3,MOQUEGUA;PUNO,1,False,False
+True,2019_2025,tasa_exposicion_total,knn5_geodesico,bilateral,fdr_bh,0.23461756242333354,0.0274,True,0,0,,0,False,False
+True,2019_2025,tasa_exposicion_total,knn5_grados_manuscrito,original,ninguna,0.3302592059919368,0.0039,True,6,7,AREQUIPA;AYACUCHO;CUSCO;MOQUEGUA;PUNO;TACNA,5,False,True
+True,2019_2025,tasa_exposicion_total,knn5_grados_manuscrito,original,fdr_bh,0.3302592059919368,0.0039,True,1,4,MOQUEGUA,1,False,False
+True,2019_2025,tasa_exposicion_total,knn5_grados_manuscrito,bilateral,ninguna,0.3302592059919368,0.0078,True,2,7,AREQUIPA;MOQUEGUA,2,False,False
+True,2019_2025,tasa_exposicion_total,knn5_grados_manuscrito,bilateral,fdr_bh,0.3302592059919368,0.0078,True,0,1,,0,False,False
+True,2019_2025,tasa_exposicion_total,invdist_grados_manuscrito,original,ninguna,0.1904472185482915,0.0145,True,10,8,APURIMAC;AREQUIPA;AYACUCHO;CUSCO;HUANCAVELICA;ICA;MADRE DE DIOS;MOQUEGUA;PUNO;TACNA,5,False,False
+True,2019_2025,tasa_exposicion_total,invdist_grados_manuscrito,original,fdr_bh,0.1904472185482915,0.0145,True,8,8,APURIMAC;AREQUIPA;CUSCO;HUANCAVELICA;ICA;MADRE DE DIOS;MOQUEGUA;PUNO,3,False,False
+True,2019_2025,tasa_exposicion_total,invdist_grados_manuscrito,bilateral,ninguna,0.1904472185482915,0.029,True,7,6,APURIMAC;CUSCO;HUANCAVELICA;ICA;MADRE DE DIOS;MOQUEGUA;PUNO,2,False,False
+True,2019_2025,tasa_exposicion_total,invdist_grados_manuscrito,bilateral,fdr_bh,0.1904472185482915,0.029,True,3,4,APURIMAC;MADRE DE DIOS;PUNO,0,False,False
+True,2019_2025,conteo,queen,original,ninguna,-0.01756203437945923,0.3356,False,1,0,CALLAO,0,False,False
+True,2019_2025,conteo,queen,original,fdr_bh,-0.01756203437945923,0.3356,False,0,0,,0,False,False
+True,2019_2025,conteo,queen,bilateral,ninguna,-0.01756203437945923,0.6712,False,0,0,,0,False,False
+True,2019_2025,conteo,queen,bilateral,fdr_bh,-0.01756203437945923,0.6712,False,0,0,,0,False,False
+True,2019_2025,conteo,knn4_geodesico,original,ninguna,-0.00637259474448899,0.2488,False,2,0,CALLAO;REGION LIMA,0,False,False
+True,2019_2025,conteo,knn4_geodesico,original,fdr_bh,-0.00637259474448899,0.2488,False,0,0,,0,False,False
+True,2019_2025,conteo,knn4_geodesico,bilateral,ninguna,-0.00637259474448899,0.4976,False,0,0,,0,False,False
+True,2019_2025,conteo,knn4_geodesico,bilateral,fdr_bh,-0.00637259474448899,0.4976,False,0,0,,0,False,False
+True,2019_2025,conteo,knn5_geodesico,original,ninguna,-0.05134410872214678,0.5943,False,2,0,HUANCAVELICA;PASCO,0,False,False
+True,2019_2025,conteo,knn5_geodesico,original,fdr_bh,-0.05134410872214678,0.5943,False,0,0,,0,False,False
+True,2019_2025,conteo,knn5_geodesico,bilateral,ninguna,-0.05134410872214678,0.8116,False,0,0,,0,False,False
+True,2019_2025,conteo,knn5_geodesico,bilateral,fdr_bh,-0.05134410872214678,0.8116,False,0,0,,0,False,False
+True,2019_2025,conteo,knn5_grados_manuscrito,original,ninguna,-0.09614263912422534,0.9066,False,2,0,PASCO;REGION LIMA,0,False,False
+True,2019_2025,conteo,knn5_grados_manuscrito,original,fdr_bh,-0.09614263912422534,0.9066,False,0,0,,0,False,False
+True,2019_2025,conteo,knn5_grados_manuscrito,bilateral,ninguna,-0.09614263912422534,0.187,False,0,0,,0,False,False
+True,2019_2025,conteo,knn5_grados_manuscrito,bilateral,fdr_bh,-0.09614263912422534,0.187,False,0,0,,0,False,False
+True,2019_2025,conteo,invdist_grados_manuscrito,original,ninguna,-0.03165840460705199,0.3764,False,0,0,,0,False,False
+True,2019_2025,conteo,invdist_grados_manuscrito,original,fdr_bh,-0.03165840460705199,0.3764,False,0,0,,0,False,False
+True,2019_2025,conteo,invdist_grados_manuscrito,bilateral,ninguna,-0.03165840460705199,0.7528,False,0,0,,0,False,False
+True,2019_2025,conteo,invdist_grados_manuscrito,bilateral,fdr_bh,-0.03165840460705199,0.7528,False,0,0,,0,False,False
+True,2019_2024,tasa_exposicion_observada,queen,original,ninguna,0.10181895494265358,0.1482,False,3,3,APURIMAC;AYACUCHO;CUSCO,2,False,False
+True,2019_2024,tasa_exposicion_observada,queen,original,fdr_bh,0.10181895494265358,0.1482,False,0,2,,0,False,False
+True,2019_2024,tasa_exposicion_observada,queen,bilateral,ninguna,0.10181895494265358,0.2964,False,0,3,,0,False,False
+True,2019_2024,tasa_exposicion_observada,queen,bilateral,fdr_bh,0.10181895494265358,0.2964,False,0,2,,0,False,False
+True,2019_2024,tasa_exposicion_observada,knn4_geodesico,original,ninguna,0.2556123652362016,0.0138,True,3,5,APURIMAC;MOQUEGUA;PUNO,1,False,False
+True,2019_2024,tasa_exposicion_observada,knn4_geodesico,original,fdr_bh,0.2556123652362016,0.0138,True,0,2,,0,False,False
+True,2019_2024,tasa_exposicion_observada,knn4_geodesico,bilateral,ninguna,0.2556123652362016,0.0276,True,0,3,,0,False,False
+True,2019_2024,tasa_exposicion_observada,knn4_geodesico,bilateral,fdr_bh,0.2556123652362016,0.0276,True,0,2,,0,False,False
+True,2019_2024,tasa_exposicion_observada,knn5_geodesico,original,ninguna,0.20055411699178705,0.0211,True,4,3,AREQUIPA;AYACUCHO;MOQUEGUA;PUNO,3,False,False
+True,2019_2024,tasa_exposicion_observada,knn5_geodesico,original,fdr_bh,0.20055411699178705,0.0211,True,0,0,,0,False,False
+True,2019_2024,tasa_exposicion_observada,knn5_geodesico,bilateral,ninguna,0.20055411699178705,0.0422,True,3,3,AREQUIPA;MOQUEGUA;PUNO,2,False,False
+True,2019_2024,tasa_exposicion_observada,knn5_geodesico,bilateral,fdr_bh,0.20055411699178705,0.0422,True,0,0,,0,False,False
+True,2019_2024,tasa_exposicion_observada,knn5_grados_manuscrito,original,ninguna,0.2959197055624663,0.0055,True,3,7,AREQUIPA;AYACUCHO;MOQUEGUA,3,False,False
+True,2019_2024,tasa_exposicion_observada,knn5_grados_manuscrito,original,fdr_bh,0.2959197055624663,0.0055,True,1,4,MOQUEGUA,1,False,False
+True,2019_2024,tasa_exposicion_observada,knn5_grados_manuscrito,bilateral,ninguna,0.2959197055624663,0.011,True,2,7,AREQUIPA;MOQUEGUA,2,False,False
+True,2019_2024,tasa_exposicion_observada,knn5_grados_manuscrito,bilateral,fdr_bh,0.2959197055624663,0.011,True,0,1,,0,False,False
+True,2019_2024,tasa_exposicion_observada,invdist_grados_manuscrito,original,ninguna,0.15406279939279888,0.0264,True,8,8,APURIMAC;AREQUIPA;CUSCO;HUANCAVELICA;ICA;MADRE DE DIOS;MOQUEGUA;PUNO,3,False,False
+True,2019_2024,tasa_exposicion_observada,invdist_grados_manuscrito,original,fdr_bh,0.15406279939279888,0.0264,True,6,6,APURIMAC;CUSCO;ICA;MADRE DE DIOS;MOQUEGUA;PUNO,2,False,False
+True,2019_2024,tasa_exposicion_observada,invdist_grados_manuscrito,bilateral,ninguna,0.15406279939279888,0.0528,False,6,6,APURIMAC;CUSCO;ICA;MADRE DE DIOS;MOQUEGUA;PUNO,2,False,False
+True,2019_2024,tasa_exposicion_observada,invdist_grados_manuscrito,bilateral,fdr_bh,0.15406279939279888,0.0528,False,3,3,APURIMAC;MADRE DE DIOS;PUNO,0,False,False
+True,2019_2024,tasa_exposicion_total,queen,original,ninguna,0.09482549759503979,0.1603,False,3,3,APURIMAC;AYACUCHO;CUSCO,2,False,False
+True,2019_2024,tasa_exposicion_total,queen,original,fdr_bh,0.09482549759503979,0.1603,False,0,2,,0,False,False
+True,2019_2024,tasa_exposicion_total,queen,bilateral,ninguna,0.09482549759503979,0.3206,False,0,3,,0,False,False
+True,2019_2024,tasa_exposicion_total,queen,bilateral,fdr_bh,0.09482549759503979,0.3206,False,0,2,,0,False,False
+True,2019_2024,tasa_exposicion_total,knn4_geodesico,original,ninguna,0.24897172082868096,0.0158,True,3,5,APURIMAC;MOQUEGUA;PUNO,1,False,False
+True,2019_2024,tasa_exposicion_total,knn4_geodesico,original,fdr_bh,0.24897172082868096,0.0158,True,0,2,,0,False,False
+True,2019_2024,tasa_exposicion_total,knn4_geodesico,bilateral,ninguna,0.24897172082868096,0.0316,True,0,3,,0,False,False
+True,2019_2024,tasa_exposicion_total,knn4_geodesico,bilateral,fdr_bh,0.24897172082868096,0.0316,True,0,0,,0,False,False
+True,2019_2024,tasa_exposicion_total,knn5_geodesico,original,ninguna,0.19301670101520413,0.0237,True,4,3,AREQUIPA;AYACUCHO;MOQUEGUA;PUNO,3,False,False
+True,2019_2024,tasa_exposicion_total,knn5_geodesico,original,fdr_bh,0.19301670101520413,0.0237,True,0,0,,0,False,False
+True,2019_2024,tasa_exposicion_total,knn5_geodesico,bilateral,ninguna,0.19301670101520413,0.0474,True,2,3,MOQUEGUA;PUNO,1,False,False
+True,2019_2024,tasa_exposicion_total,knn5_geodesico,bilateral,fdr_bh,0.19301670101520413,0.0474,True,0,0,,0,False,False
+True,2019_2024,tasa_exposicion_total,knn5_grados_manuscrito,original,ninguna,0.2895015665151082,0.0061,True,3,7,AREQUIPA;AYACUCHO;MOQUEGUA,3,False,False
+True,2019_2024,tasa_exposicion_total,knn5_grados_manuscrito,original,fdr_bh,0.2895015665151082,0.0061,True,0,1,,0,False,False
+True,2019_2024,tasa_exposicion_total,knn5_grados_manuscrito,bilateral,ninguna,0.2895015665151082,0.0122,True,2,6,AREQUIPA;MOQUEGUA,2,False,False
+True,2019_2024,tasa_exposicion_total,knn5_grados_manuscrito,bilateral,fdr_bh,0.2895015665151082,0.0122,True,0,1,,0,False,False
+True,2019_2024,tasa_exposicion_total,invdist_grados_manuscrito,original,ninguna,0.1459640492597118,0.0295,True,8,8,APURIMAC;AREQUIPA;CUSCO;HUANCAVELICA;ICA;MADRE DE DIOS;MOQUEGUA;PUNO,3,False,False
+True,2019_2024,tasa_exposicion_total,invdist_grados_manuscrito,original,fdr_bh,0.1459640492597118,0.0295,True,6,6,APURIMAC;CUSCO;ICA;MADRE DE DIOS;MOQUEGUA;PUNO,2,False,False
+True,2019_2024,tasa_exposicion_total,invdist_grados_manuscrito,bilateral,ninguna,0.1459640492597118,0.059,False,6,6,APURIMAC;CUSCO;ICA;MADRE DE DIOS;MOQUEGUA;PUNO,2,False,False
+True,2019_2024,tasa_exposicion_total,invdist_grados_manuscrito,bilateral,fdr_bh,0.1459640492597118,0.059,False,3,3,APURIMAC;MADRE DE DIOS;PUNO,0,False,False
+True,2019_2024,conteo,queen,original,ninguna,-0.01667508104934954,0.3296,False,1,0,CALLAO,0,False,False
+True,2019_2024,conteo,queen,original,fdr_bh,-0.01667508104934954,0.3296,False,0,0,,0,False,False
+True,2019_2024,conteo,queen,bilateral,ninguna,-0.01667508104934954,0.6592,False,0,0,,0,False,False
+True,2019_2024,conteo,queen,bilateral,fdr_bh,-0.01667508104934954,0.6592,False,0,0,,0,False,False
+True,2019_2024,conteo,knn4_geodesico,original,ninguna,-0.005012652460917546,0.2423,False,2,0,CALLAO;REGION LIMA,0,False,False
+True,2019_2024,conteo,knn4_geodesico,original,fdr_bh,-0.005012652460917546,0.2423,False,0,0,,0,False,False
+True,2019_2024,conteo,knn4_geodesico,bilateral,ninguna,-0.005012652460917546,0.4846,False,0,0,,0,False,False
+True,2019_2024,conteo,knn4_geodesico,bilateral,fdr_bh,-0.005012652460917546,0.4846,False,0,0,,0,False,False
+True,2019_2024,conteo,knn5_geodesico,original,ninguna,-0.05098925726179061,0.5901,False,2,0,HUANCAVELICA;PASCO,0,False,False
+True,2019_2024,conteo,knn5_geodesico,original,fdr_bh,-0.05098925726179061,0.5901,False,0,0,,0,False,False
+True,2019_2024,conteo,knn5_geodesico,bilateral,ninguna,-0.05098925726179061,0.82,False,0,0,,0,False,False
+True,2019_2024,conteo,knn5_geodesico,bilateral,fdr_bh,-0.05098925726179061,0.82,False,0,0,,0,False,False
+True,2019_2024,conteo,knn5_grados_manuscrito,original,ninguna,-0.09724775719211694,0.9077,False,3,0,HUANCAVELICA;PASCO;REGION LIMA,0,False,False
+True,2019_2024,conteo,knn5_grados_manuscrito,original,fdr_bh,-0.09724775719211694,0.9077,False,0,0,,0,False,False
+True,2019_2024,conteo,knn5_grados_manuscrito,bilateral,ninguna,-0.09724775719211694,0.1848,False,0,0,,0,False,False
+True,2019_2024,conteo,knn5_grados_manuscrito,bilateral,fdr_bh,-0.09724775719211694,0.1848,False,0,0,,0,False,False
+True,2019_2024,conteo,invdist_grados_manuscrito,original,ninguna,-0.030519845477135092,0.3627,False,0,0,,0,False,False
+True,2019_2024,conteo,invdist_grados_manuscrito,original,fdr_bh,-0.030519845477135092,0.3627,False,0,0,,0,False,False
+True,2019_2024,conteo,invdist_grados_manuscrito,bilateral,ninguna,-0.030519845477135092,0.7254,False,0,0,,0,False,False
+True,2019_2024,conteo,invdist_grados_manuscrito,bilateral,fdr_bh,-0.030519845477135092,0.7254,False,0,0,,0,False,False

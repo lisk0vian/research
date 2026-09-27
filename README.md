@@ -38,6 +38,7 @@ List of research works with their identifiers, titles, journals, and current sta
 | `C15-2026` | [A Reproducible Methodological Framework for Prosecutorial Congestion RiskPrediction Using Explainable Machine Learning and Temporal Validation](./C15-2026-fiscal/) | Pending Decision | `Revision` | 18-jul-2026 |
 | `C10-2026` | [Subseasonal Temperature Forecasting in Andean Stations: A Benchmark of Machine Learning and Deep Learning Models with Anomaly Decomposition](./C10-2026-temperature/) | Pending Decision | `Revision` | 18-jul-2026 |
 | `C21-2026` | [Early Prediction of Low Birth Weight: Characterizing Predictive Performance in a National Peruvian Cohort (2015–2025)](./C21-202610-birth/) | Pending Decision | `Revision` | 24-aug-2026 |
+| `C26-2026` | [A Reproducible GeoAI Framework for the Explainable Spatiotemporal Analysis of National Missing Persons Records: Multi-Algorithm Clustering and Multi-Level Validation (Peru, 2019–2025)](./C26-202609-missingpersons/) | ESWA | `In Progress` | 21-sep-2026 |
 
 ## Repository Guidelines
 
