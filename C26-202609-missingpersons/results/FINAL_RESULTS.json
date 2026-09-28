@@ -1,0 +1,2354 @@
+{
+  "generado_utc": "2026-09-26T23:20:24.758547+00:00",
+  "paquete": {
+    "version": "3.3.2"
+  },
+  "plan": {
+    "version": "3.3.2",
+    "sha256": "3b6e0f676646baed271a107db441579d58230bbcec607f85a5f45d7e7e1f2958",
+    "fijado_utc": "2026-09-26T23:20:24.758191+00:00",
+    "estado": "Plan congelado para la revisión; no es un preregistro público."
+  },
+  "datos": {
+    "reniped": {
+      "archivo": "DATASET_Personas_Desaparecidas_2019-01_2025-12.csv",
+      "sha256": "c41ebcced14fdf86bbf17db9f54bb381d73c0464a402f22ac5548a7899ef0e32",
+      "bytes": 5068176,
+      "filas": 77331,
+      "total_reportes": 142374,
+      "cobertura": "2019-01 a 2025-12",
+      "unidades_territoriales": 26,
+      "clave_observacional": [
+        "UBIGEO_HECHO",
+        "ANO",
+        "MES",
+        "RANGO_EDAD",
+        "SEXO",
+        "NACIONALIDAD"
+      ],
+      "filas_con_clave_duplicada": 0,
+      "edad_desconocida": {
+        "filas": 1197,
+        "reportes": 1357
+      },
+      "sexo_desconocido": {
+        "filas": 83,
+        "reportes": 90
+      },
+      "reportes_por_anio": {
+        "2019": 26331,
+        "2020": 18481,
+        "2021": 20141,
+        "2022": 18862,
+        "2023": 18192,
+        "2024": 19420,
+        "2025": 20947
+      }
+    },
+    "poblacion": {
+      "unidades": 26,
+      "personas_anio_total": 233303895,
+      "regla_lima": "LIMA METROPOLITANA = 150100; REGION LIMA = 150000 - 150100"
+    }
+  },
+  "panel": {
+    "filas": 2184,
+    "observadas": 2176,
+    "sin_filas_fuente": 8,
+    "total_reportes_conservado": 142374,
+    "tasa_nacional_10k_personas_anio": {
+      "exposicion_observada": 6.1144079841626295,
+      "exposicion_total": 6.102512776308343
+    },
+    "definicion_tasas": {
+      "principal": "exposicion_observada",
+      "sensibilidad": "exposicion_total",
+      "definicion": {
+        "exposicion_observada": "reportes / personas-año de los meses con cobertura",
+        "exposicion_total": "reportes / personas-año de todos los meses (incluye huecos)"
+      },
+      "nota": "La exposición observada describe la intensidad en los meses cubiertos; no recupera los reportes ausentes."
+    },
+    "meses_nacionales_incompletos": [
+      "2020-05",
+      "2020-06",
+      "2023-01"
+    ]
+  },
+  "prioridad": {
+    "meta": {
+      "principal": {
+        "tasa_nacional_10k": 6.1144079841626295,
+        "referencia_RR": "resto del país (25 territorios)",
+        "exposicion": "observada",
+        "periodo": "2019-2025",
+        "B": 9999,
+        "bloque_meses": 12,
+        "bloques_por_replica": 7,
+        "alpha": 0.05
+      },
+      "consolidado_2019_2024": {
+        "tasa_nacional_10k": 6.117236230081826,
+        "referencia_RR": "resto del país (25 territorios)",
+        "exposicion": "observada",
+        "periodo": "2019-2024",
+        "B": 9999,
+        "bloque_meses": 12,
+        "bloques_por_replica": 6,
+        "alpha": 0.05
+      },
+      "exposicion_total": {
+        "tasa_nacional_10k": 6.102512776308343,
+        "referencia_RR": "resto del país (25 territorios)",
+        "exposicion": "total",
+        "periodo": "2019-2025",
+        "B": 9999,
+        "bloque_meses": 12,
+        "bloques_por_replica": 7,
+        "alpha": 0.05
+      }
+    },
+    "resumen": {
+      "principal": {
+        "superior": [
+          "APURIMAC",
+          "AREQUIPA",
+          "AYACUCHO",
+          "CALLAO",
+          "CUSCO",
+          "HUANUCO",
+          "JUNIN",
+          "LAMBAYEQUE",
+          "LIMA METROPOLITANA",
+          "TACNA"
+        ],
+        "inferior": [
+          "AMAZONAS",
+          "ANCASH",
+          "CAJAMARCA",
+          "ICA",
+          "LA LIBERTAD",
+          "LORETO",
+          "PIURA",
+          "SAN MARTIN"
+        ],
+        "coincidencia_con_principal": 1.0
+      },
+      "consolidado_2019_2024": {
+        "superior": [
+          "APURIMAC",
+          "AREQUIPA",
+          "AYACUCHO",
+          "CALLAO",
+          "CUSCO",
+          "HUANUCO",
+          "JUNIN",
+          "LAMBAYEQUE",
+          "LIMA METROPOLITANA",
+          "TACNA"
+        ],
+        "inferior": [
+          "AMAZONAS",
+          "ANCASH",
+          "CAJAMARCA",
+          "ICA",
+          "LA LIBERTAD",
+          "LORETO",
+          "PIURA",
+          "SAN MARTIN"
+        ],
+        "coincidencia_con_principal": 1.0
+      },
+      "exposicion_total": {
+        "superior": [
+          "APURIMAC",
+          "AREQUIPA",
+          "AYACUCHO",
+          "CALLAO",
+          "CUSCO",
+          "HUANUCO",
+          "JUNIN",
+          "LAMBAYEQUE",
+          "LIMA METROPOLITANA",
+          "TACNA"
+        ],
+        "inferior": [
+          "AMAZONAS",
+          "ANCASH",
+          "CAJAMARCA",
+          "ICA",
+          "LA LIBERTAD",
+          "LORETO",
+          "PIURA",
+          "SAN MARTIN"
+        ],
+        "coincidencia_con_principal": 1.0
+      }
+    },
+    "tabla_principal": [
+      {
+        "DPTO_KEY": "TACNA",
+        "REPORTES": 2641,
+        "CUOTA_REPORTES_PCT": 1.854974,
+        "TASA_10K": 9.957517,
+        "TASA_IC95_INF": 7.330315,
+        "TASA_IC95_SUP": 12.407151,
+        "TASA_RESTO_10K": 6.070129,
+        "RAZON_VS_NACIONAL": 1.628533,
+        "RR_VS_RESTO": 1.640413,
+        "RR_IC95_INF": 1.274643,
+        "RR_IC95_SUP": 1.956848,
+        "p_bilateral": 0.0002,
+        "q_FDR": 0.000325,
+        "CLASE": "superior",
+        "ANIOS_SOBRE_RESTO": 7,
+        "ANIOS_TOTAL": 7,
+        "PUESTO_TASA": 1,
+        "PUESTO_VOLUMEN": 19
+      },
+      {
+        "DPTO_KEY": "APURIMAC",
+        "REPORTES": 2880,
+        "CUOTA_REPORTES_PCT": 2.022841,
+        "TASA_10K": 9.598416,
+        "TASA_IC95_INF": 8.690458,
+        "TASA_IC95_SUP": 10.984287,
+        "TASA_RESTO_10K": 6.068927,
+        "RAZON_VS_NACIONAL": 1.569803,
+        "RR_VS_RESTO": 1.581567,
+        "RR_IC95_INF": 1.507566,
+        "RR_IC95_SUP": 1.756675,
+        "p_bilateral": 0.0002,
+        "q_FDR": 0.000325,
+        "CLASE": "superior",
+        "ANIOS_SOBRE_RESTO": 7,
+        "ANIOS_TOTAL": 7,
+        "PUESTO_TASA": 2,
+        "PUESTO_VOLUMEN": 16
+      },
+      {
+        "DPTO_KEY": "HUANUCO",
+        "REPORTES": 4812,
+        "CUOTA_REPORTES_PCT": 3.379831,
+        "TASA_10K": 9.12532,
+        "TASA_IC95_INF": 8.238946,
+        "TASA_IC95_SUP": 9.910577,
+        "TASA_RESTO_10K": 6.044641,
+        "RAZON_VS_NACIONAL": 1.492429,
+        "RR_VS_RESTO": 1.509654,
+        "RR_IC95_INF": 1.419845,
+        "RR_IC95_SUP": 1.648293,
+        "p_bilateral": 0.0002,
+        "q_FDR": 0.000325,
+        "CLASE": "superior",
+        "ANIOS_SOBRE_RESTO": 7,
+        "ANIOS_TOTAL": 7,
+        "PUESTO_TASA": 3,
+        "PUESTO_VOLUMEN": 9
+      },
+      {
+        "DPTO_KEY": "CUSCO",
+        "REPORTES": 8604,
+        "CUOTA_REPORTES_PCT": 6.043238,
+        "TASA_10K": 8.923464,
+        "TASA_IC95_INF": 8.008383,
+        "TASA_IC95_SUP": 9.695271,
+        "TASA_RESTO_10K": 5.993064,
+        "RAZON_VS_NACIONAL": 1.459416,
+        "RR_VS_RESTO": 1.488965,
+        "RR_IC95_INF": 1.39785,
+        "RR_IC95_SUP": 1.582835,
+        "p_bilateral": 0.0002,
+        "q_FDR": 0.000325,
+        "CLASE": "superior",
+        "ANIOS_SOBRE_RESTO": 7,
+        "ANIOS_TOTAL": 7,
+        "PUESTO_TASA": 4,
+        "PUESTO_VOLUMEN": 2
+      },
+      {
+        "DPTO_KEY": "JUNIN",
+        "REPORTES": 8254,
+        "CUOTA_REPORTES_PCT": 5.797407,
+        "TASA_10K": 8.601305,
+        "TASA_IC95_INF": 7.561725,
+        "TASA_IC95_SUP": 9.484004,
+        "TASA_RESTO_10K": 6.007513,
+        "RAZON_VS_NACIONAL": 1.406727,
+        "RR_VS_RESTO": 1.431758,
+        "RR_IC95_INF": 1.309182,
+        "RR_IC95_SUP": 1.522048,
+        "p_bilateral": 0.0002,
+        "q_FDR": 0.000325,
+        "CLASE": "superior",
+        "ANIOS_SOBRE_RESTO": 7,
+        "ANIOS_TOTAL": 7,
+        "PUESTO_TASA": 5,
+        "PUESTO_VOLUMEN": 3
+      },
+      {
+        "DPTO_KEY": "AYACUCHO",
+        "REPORTES": 3752,
+        "CUOTA_REPORTES_PCT": 2.635313,
+        "TASA_10K": 8.012987,
+        "TASA_IC95_INF": 6.502886,
+        "TASA_IC95_SUP": 9.608885,
+        "TASA_RESTO_10K": 6.075446,
+        "RAZON_VS_NACIONAL": 1.310509,
+        "RR_VS_RESTO": 1.318913,
+        "RR_IC95_INF": 1.093977,
+        "RR_IC95_SUP": 1.589709,
+        "p_bilateral": 0.0068,
+        "q_FDR": 0.009822,
+        "CLASE": "superior",
+        "ANIOS_SOBRE_RESTO": 5,
+        "ANIOS_TOTAL": 7,
+        "PUESTO_TASA": 6,
+        "PUESTO_VOLUMEN": 12
+      },
+      {
+        "DPTO_KEY": "LAMBAYEQUE",
+        "REPORTES": 7149,
+        "CUOTA_REPORTES_PCT": 5.021282,
+        "TASA_10K": 7.644097,
+        "TASA_IC95_INF": 6.987002,
+        "TASA_IC95_SUP": 8.23653,
+        "TASA_RESTO_10K": 6.050398,
+        "RAZON_VS_NACIONAL": 1.250178,
+        "RR_VS_RESTO": 1.263404,
+        "RR_IC95_INF": 1.212057,
+        "RR_IC95_SUP": 1.32564,
+        "p_bilateral": 0.0002,
+        "q_FDR": 0.000325,
+        "CLASE": "superior",
+        "ANIOS_SOBRE_RESTO": 7,
+        "ANIOS_TOTAL": 7,
+        "PUESTO_TASA": 7,
+        "PUESTO_VOLUMEN": 5
+      },
+      {
+        "DPTO_KEY": "AREQUIPA",
+        "REPORTES": 7864,
+        "CUOTA_REPORTES_PCT": 5.52348,
+        "TASA_10K": 7.241573,
+        "TASA_IC95_INF": 6.676378,
+        "TASA_IC95_SUP": 7.646386,
+        "TASA_RESTO_10K": 6.059268,
+        "RAZON_VS_NACIONAL": 1.184346,
+        "RR_VS_RESTO": 1.195123,
+        "RR_IC95_INF": 1.14748,
+        "RR_IC95_SUP": 1.222974,
+        "p_bilateral": 0.0002,
+        "q_FDR": 0.000325,
+        "CLASE": "superior",
+        "ANIOS_SOBRE_RESTO": 7,
+        "ANIOS_TOTAL": 7,
+        "PUESTO_TASA": 8,
+        "PUESTO_VOLUMEN": 4
+      },
+      {
+        "DPTO_KEY": "LIMA METROPOLITANA",
+        "REPORTES": 46848,
+        "CUOTA_REPORTES_PCT": 32.904884,
+        "TASA_10K": 6.704216,
+        "TASA_IC95_INF": 5.993183,
+        "TASA_IC95_SUP": 7.242328,
+        "TASA_RESTO_10K": 5.861512,
+        "RAZON_VS_NACIONAL": 1.096462,
+        "RR_VS_RESTO": 1.143769,
+        "RR_IC95_INF": 1.054099,
+        "RR_IC95_SUP": 1.186363,
+        "p_bilateral": 0.0006,
+        "q_FDR": 0.000918,
+        "CLASE": "superior",
+        "ANIOS_SOBRE_RESTO": 6,
+        "ANIOS_TOTAL": 7,
+        "PUESTO_TASA": 9,
+        "PUESTO_VOLUMEN": 1
+      },
+      {
+        "DPTO_KEY": "MADRE DE DIOS",
+        "REPORTES": 859,
+        "CUOTA_REPORTES_PCT": 0.60334,
+        "TASA_10K": 6.699753,
+        "TASA_IC95_INF": 4.284725,
+        "TASA_IC95_SUP": 7.970213,
+        "TASA_RESTO_10K": 6.111167,
+        "RAZON_VS_NACIONAL": 1.095732,
+        "RR_VS_RESTO": 1.096313,
+        "RR_IC95_INF": 0.749537,
+        "RR_IC95_SUP": 1.256809,
+        "p_bilateral": 0.8768,
+        "q_FDR": 0.8784,
+        "CLASE": "no_distinguible",
+        "ANIOS_SOBRE_RESTO": 4,
+        "ANIOS_TOTAL": 7,
+        "PUESTO_TASA": 10,
+        "PUESTO_VOLUMEN": 25
+      },
+      {
+        "DPTO_KEY": "TUMBES",
+        "REPORTES": 1183,
+        "CUOTA_REPORTES_PCT": 0.83091,
+        "TASA_10K": 6.523517,
+        "TASA_IC95_INF": 5.253981,
+        "TASA_IC95_SUP": 7.402672,
+        "TASA_RESTO_10K": 6.111197,
+        "RAZON_VS_NACIONAL": 1.066909,
+        "RR_VS_RESTO": 1.06747,
+        "RR_IC95_INF": 0.908852,
+        "RR_IC95_SUP": 1.1559,
+        "p_bilateral": 0.656,
+        "q_FDR": 0.726267,
+        "CLASE": "no_distinguible",
+        "ANIOS_SOBRE_RESTO": 5,
+        "ANIOS_TOTAL": 7,
+        "PUESTO_TASA": 11,
+        "PUESTO_VOLUMEN": 23
+      },
+      {
+        "DPTO_KEY": "CALLAO",
+        "REPORTES": 5309,
+        "CUOTA_REPORTES_PCT": 3.728911,
+        "TASA_10K": 6.484371,
+        "TASA_IC95_INF": 5.964817,
+        "TASA_IC95_SUP": 6.909882,
+        "TASA_RESTO_10K": 6.100925,
+        "RAZON_VS_NACIONAL": 1.060507,
+        "RR_VS_RESTO": 1.06285,
+        "RR_IC95_INF": 1.032643,
+        "RR_IC95_SUP": 1.096809,
+        "p_bilateral": 0.0002,
+        "q_FDR": 0.000325,
+        "CLASE": "superior",
+        "ANIOS_SOBRE_RESTO": 6,
+        "ANIOS_TOTAL": 7,
+        "PUESTO_TASA": 12,
+        "PUESTO_VOLUMEN": 8
+      },
+      {
+        "DPTO_KEY": "HUANCAVELICA",
+        "REPORTES": 1497,
+        "CUOTA_REPORTES_PCT": 1.051456,
+        "TASA_10K": 6.106749,
+        "TASA_IC95_INF": 5.607093,
+        "TASA_IC95_SUP": 7.00535,
+        "TASA_RESTO_10K": 6.114489,
+        "RAZON_VS_NACIONAL": 0.998747,
+        "RR_VS_RESTO": 0.998734,
+        "RR_IC95_INF": 0.911274,
+        "RR_IC95_SUP": 1.165227,
+        "p_bilateral": 0.3664,
+        "q_FDR": 0.453638,
+        "CLASE": "no_distinguible",
+        "ANIOS_SOBRE_RESTO": 6,
+        "ANIOS_TOTAL": 7,
+        "PUESTO_TASA": 13,
+        "PUESTO_VOLUMEN": 21
+      },
+      {
+        "DPTO_KEY": "PASCO",
+        "REPORTES": 1137,
+        "CUOTA_REPORTES_PCT": 0.798601,
+        "TASA_10K": 6.046682,
+        "TASA_IC95_INF": 5.276849,
+        "TASA_IC95_SUP": 7.316224,
+        "TASA_RESTO_10K": 6.114959,
+        "RAZON_VS_NACIONAL": 0.988924,
+        "RR_VS_RESTO": 0.988834,
+        "RR_IC95_INF": 0.838214,
+        "RR_IC95_SUP": 1.243362,
+        "p_bilateral": 0.6704,
+        "q_FDR": 0.726267,
+        "CLASE": "no_distinguible",
+        "ANIOS_SOBRE_RESTO": 3,
+        "ANIOS_TOTAL": 7,
+        "PUESTO_TASA": 14,
+        "PUESTO_VOLUMEN": 24
+      },
+      {
+        "DPTO_KEY": "REGION LIMA",
+        "REPORTES": 4005,
+        "CUOTA_REPORTES_PCT": 2.813014,
+        "TASA_10K": 5.819899,
+        "TASA_IC95_INF": 5.141554,
+        "TASA_IC95_SUP": 6.304403,
+        "TASA_RESTO_10K": 6.123377,
+        "RAZON_VS_NACIONAL": 0.951834,
+        "RR_VS_RESTO": 0.950439,
+        "RR_IC95_INF": 0.89288,
+        "RR_IC95_SUP": 1.013041,
+        "p_bilateral": 0.1202,
+        "q_FDR": 0.164484,
+        "CLASE": "no_distinguible",
+        "ANIOS_SOBRE_RESTO": 2,
+        "ANIOS_TOTAL": 7,
+        "PUESTO_TASA": 15,
+        "PUESTO_VOLUMEN": 11
+      },
+      {
+        "DPTO_KEY": "MOQUEGUA",
+        "REPORTES": 767,
+        "CUOTA_REPORTES_PCT": 0.538722,
+        "TASA_10K": 5.768333,
+        "TASA_IC95_INF": 5.255648,
+        "TASA_IC95_SUP": 6.487997,
+        "TASA_RESTO_10K": 6.116396,
+        "RAZON_VS_NACIONAL": 0.9434,
+        "RR_VS_RESTO": 0.943094,
+        "RR_IC95_INF": 0.829546,
+        "RR_IC95_SUP": 1.12631,
+        "p_bilateral": 0.8784,
+        "q_FDR": 0.8784,
+        "CLASE": "no_distinguible",
+        "ANIOS_SOBRE_RESTO": 3,
+        "ANIOS_TOTAL": 7,
+        "PUESTO_TASA": 16,
+        "PUESTO_VOLUMEN": 26
+      },
+      {
+        "DPTO_KEY": "UCAYALI",
+        "REPORTES": 2477,
+        "CUOTA_REPORTES_PCT": 1.739784,
+        "TASA_10K": 5.761844,
+        "TASA_IC95_INF": 4.700227,
+        "TASA_IC95_SUP": 6.764667,
+        "TASA_RESTO_10K": 6.12104,
+        "RAZON_VS_NACIONAL": 0.942339,
+        "RR_VS_RESTO": 0.941318,
+        "RR_IC95_INF": 0.811827,
+        "RR_IC95_SUP": 1.07363,
+        "p_bilateral": 0.4428,
+        "q_FDR": 0.523309,
+        "CLASE": "no_distinguible",
+        "ANIOS_SOBRE_RESTO": 2,
+        "ANIOS_TOTAL": 7,
+        "PUESTO_TASA": 17,
+        "PUESTO_VOLUMEN": 20
+      },
+      {
+        "DPTO_KEY": "PUNO",
+        "REPORTES": 4461,
+        "CUOTA_REPORTES_PCT": 3.133297,
+        "TASA_10K": 5.272089,
+        "TASA_IC95_INF": 4.477492,
+        "TASA_IC95_SUP": 6.046998,
+        "TASA_RESTO_10K": 6.146171,
+        "RAZON_VS_NACIONAL": 0.86224,
+        "RR_VS_RESTO": 0.857784,
+        "RR_IC95_INF": 0.69613,
+        "RR_IC95_SUP": 1.022143,
+        "p_bilateral": 0.1448,
+        "q_FDR": 0.18824,
+        "CLASE": "no_distinguible",
+        "ANIOS_SOBRE_RESTO": 3,
+        "ANIOS_TOTAL": 7,
+        "PUESTO_TASA": 18,
+        "PUESTO_VOLUMEN": 10
+      },
+      {
+        "DPTO_KEY": "AMAZONAS",
+        "REPORTES": 1477,
+        "CUOTA_REPORTES_PCT": 1.037409,
+        "TASA_10K": 4.925006,
+        "TASA_IC95_INF": 4.31674,
+        "TASA_IC95_SUP": 5.452897,
+        "TASA_RESTO_10K": 6.129927,
+        "RAZON_VS_NACIONAL": 0.805476,
+        "RR_VS_RESTO": 0.803436,
+        "RR_IC95_INF": 0.726649,
+        "RR_IC95_SUP": 0.906178,
+        "p_bilateral": 0.0002,
+        "q_FDR": 0.000325,
+        "CLASE": "inferior",
+        "ANIOS_SOBRE_RESTO": 0,
+        "ANIOS_TOTAL": 7,
+        "PUESTO_TASA": 19,
+        "PUESTO_VOLUMEN": 22
+      },
+      {
+        "DPTO_KEY": "ICA",
+        "REPORTES": 3384,
+        "CUOTA_REPORTES_PCT": 2.376838,
+        "TASA_10K": 4.745677,
+        "TASA_IC95_INF": 3.918369,
+        "TASA_IC95_SUP": 5.387345,
+        "TASA_RESTO_10K": 6.157648,
+        "RAZON_VS_NACIONAL": 0.776147,
+        "RR_VS_RESTO": 0.770696,
+        "RR_IC95_INF": 0.68067,
+        "RR_IC95_SUP": 0.829528,
+        "p_bilateral": 0.0002,
+        "q_FDR": 0.000325,
+        "CLASE": "inferior",
+        "ANIOS_SOBRE_RESTO": 0,
+        "ANIOS_TOTAL": 7,
+        "PUESTO_TASA": 20,
+        "PUESTO_VOLUMEN": 14
+      },
+      {
+        "DPTO_KEY": "ANCASH",
+        "REPORTES": 3736,
+        "CUOTA_REPORTES_PCT": 2.624075,
+        "TASA_10K": 4.480119,
+        "TASA_IC95_INF": 3.816216,
+        "TASA_IC95_SUP": 5.097864,
+        "TASA_RESTO_10K": 6.175111,
+        "RAZON_VS_NACIONAL": 0.732715,
+        "RR_VS_RESTO": 0.725512,
+        "RR_IC95_INF": 0.657994,
+        "RR_IC95_SUP": 0.781747,
+        "p_bilateral": 0.0002,
+        "q_FDR": 0.000325,
+        "CLASE": "inferior",
+        "ANIOS_SOBRE_RESTO": 0,
+        "ANIOS_TOTAL": 7,
+        "PUESTO_TASA": 21,
+        "PUESTO_VOLUMEN": 13
+      },
+      {
+        "DPTO_KEY": "SAN MARTIN",
+        "REPORTES": 2661,
+        "CUOTA_REPORTES_PCT": 1.869021,
+        "TASA_10K": 4.171133,
+        "TASA_IC95_INF": 3.731246,
+        "TASA_IC95_SUP": 4.578291,
+        "TASA_RESTO_10K": 6.169149,
+        "RAZON_VS_NACIONAL": 0.682181,
+        "RR_VS_RESTO": 0.676128,
+        "RR_IC95_INF": 0.624342,
+        "RR_IC95_SUP": 0.75786,
+        "p_bilateral": 0.0002,
+        "q_FDR": 0.000325,
+        "CLASE": "inferior",
+        "ANIOS_SOBRE_RESTO": 0,
+        "ANIOS_TOTAL": 7,
+        "PUESTO_TASA": 22,
+        "PUESTO_VOLUMEN": 18
+      },
+      {
+        "DPTO_KEY": "PIURA",
+        "REPORTES": 5543,
+        "CUOTA_REPORTES_PCT": 3.893267,
+        "TASA_10K": 3.819036,
+        "TASA_IC95_INF": 3.55475,
+        "TASA_IC95_SUP": 4.111707,
+        "TASA_RESTO_10K": 6.266995,
+        "RAZON_VS_NACIONAL": 0.624596,
+        "RR_VS_RESTO": 0.609389,
+        "RR_IC95_INF": 0.595054,
+        "RR_IC95_SUP": 0.637281,
+        "p_bilateral": 0.0002,
+        "q_FDR": 0.000325,
+        "CLASE": "inferior",
+        "ANIOS_SOBRE_RESTO": 0,
+        "ANIOS_TOTAL": 7,
+        "PUESTO_TASA": 23,
+        "PUESTO_VOLUMEN": 6
+      },
+      {
+        "DPTO_KEY": "LORETO",
+        "REPORTES": 2771,
+        "CUOTA_REPORTES_PCT": 1.946282,
+        "TASA_10K": 3.797265,
+        "TASA_IC95_INF": 3.561894,
+        "TASA_IC95_SUP": 3.961099,
+        "TASA_RESTO_10K": 6.189375,
+        "RAZON_VS_NACIONAL": 0.621036,
+        "RR_VS_RESTO": 0.613514,
+        "RR_IC95_INF": 0.56326,
+        "RR_IC95_SUP": 0.676555,
+        "p_bilateral": 0.0002,
+        "q_FDR": 0.000325,
+        "CLASE": "inferior",
+        "ANIOS_SOBRE_RESTO": 0,
+        "ANIOS_TOTAL": 7,
+        "PUESTO_TASA": 24,
+        "PUESTO_VOLUMEN": 17
+      },
+      {
+        "DPTO_KEY": "LA LIBERTAD",
+        "REPORTES": 5415,
+        "CUOTA_REPORTES_PCT": 3.803363,
+        "TASA_10K": 3.731176,
+        "TASA_IC95_INF": 3.501439,
+        "TASA_IC95_SUP": 3.885139,
+        "TASA_RESTO_10K": 6.272821,
+        "RAZON_VS_NACIONAL": 0.610227,
+        "RR_VS_RESTO": 0.594816,
+        "RR_IC95_INF": 0.548523,
+        "RR_IC95_SUP": 0.642099,
+        "p_bilateral": 0.0002,
+        "q_FDR": 0.000325,
+        "CLASE": "inferior",
+        "ANIOS_SOBRE_RESTO": 0,
+        "ANIOS_TOTAL": 7,
+        "PUESTO_TASA": 25,
+        "PUESTO_VOLUMEN": 7
+      },
+      {
+        "DPTO_KEY": "CAJAMARCA",
+        "REPORTES": 2888,
+        "CUOTA_REPORTES_PCT": 2.02846,
+        "TASA_10K": 2.844186,
+        "TASA_IC95_INF": 2.556822,
+        "TASA_IC95_SUP": 3.151314,
+        "TASA_RESTO_10K": 6.263517,
+        "RAZON_VS_NACIONAL": 0.465161,
+        "RR_VS_RESTO": 0.454088,
+        "RR_IC95_INF": 0.426297,
+        "RR_IC95_SUP": 0.509272,
+        "p_bilateral": 0.0002,
+        "q_FDR": 0.000325,
+        "CLASE": "inferior",
+        "ANIOS_SOBRE_RESTO": 0,
+        "ANIOS_TOTAL": 7,
+        "PUESTO_TASA": 26,
+        "PUESTO_VOLUMEN": 15
+      }
+    ],
+    "rr_anual_rango_top5": [
+      1.0088055125068833,
+      2.4800050310413018
+    ],
+    "conteo_clases": {
+      "superior": 10,
+      "no_distinguible": 8,
+      "inferior": 8
+    }
+  },
+  "folds": {
+    "principal": {
+      "E1_relativo": {
+        "n_train": 1396,
+        "excluidas_train": 164,
+        "n_eval": 312,
+        "excluidas_eval": 0,
+        "train_con_historia_parcial": 234
+      },
+      "E2_relativo_mas_nivel": {
+        "n_train": 1396,
+        "excluidas_train": 164,
+        "n_eval": 312,
+        "excluidas_eval": 0,
+        "train_con_historia_parcial": 234
+      },
+      "E3_nivel": {
+        "n_train": 1396,
+        "excluidas_train": 164,
+        "n_eval": 312,
+        "excluidas_eval": 0,
+        "train_con_historia_parcial": 234
+      }
+    },
+    "principal_hist12": {
+      "E1_relativo": {
+        "n_train": 1162,
+        "excluidas_train": 398,
+        "n_eval": 306,
+        "excluidas_eval": 6,
+        "train_con_historia_parcial": 0
+      },
+      "E2_relativo_mas_nivel": {
+        "n_train": 1162,
+        "excluidas_train": 398,
+        "n_eval": 306,
+        "excluidas_eval": 6,
+        "train_con_historia_parcial": 0
+      },
+      "E3_nivel": {
+        "n_train": 1162,
+        "excluidas_train": 398,
+        "n_eval": 306,
+        "excluidas_eval": 6,
+        "train_con_historia_parcial": 0
+      }
+    },
+    "secundario": {
+      "E1_relativo": {
+        "n_train": 1708,
+        "excluidas_train": 164,
+        "n_eval": 312,
+        "excluidas_eval": 0,
+        "train_con_historia_parcial": 240
+      },
+      "E2_relativo_mas_nivel": {
+        "n_train": 1708,
+        "excluidas_train": 164,
+        "n_eval": 312,
+        "excluidas_eval": 0,
+        "train_con_historia_parcial": 240
+      },
+      "E3_nivel": {
+        "n_train": 1708,
+        "excluidas_train": 164,
+        "n_eval": 312,
+        "excluidas_eval": 0,
+        "train_con_historia_parcial": 240
+      }
+    },
+    "secundario_hist12": {
+      "E1_relativo": {
+        "n_train": 1468,
+        "excluidas_train": 404,
+        "n_eval": 312,
+        "excluidas_eval": 0,
+        "train_con_historia_parcial": 0
+      },
+      "E2_relativo_mas_nivel": {
+        "n_train": 1468,
+        "excluidas_train": 404,
+        "n_eval": 312,
+        "excluidas_eval": 0,
+        "train_con_historia_parcial": 0
+      },
+      "E3_nivel": {
+        "n_train": 1468,
+        "excluidas_train": 404,
+        "n_eval": 312,
+        "excluidas_eval": 0,
+        "train_con_historia_parcial": 0
+      }
+    }
+  },
+  "diseno_espacios": {
+    "E1_relativo": {
+      "variables": [
+        "ANOMALIA",
+        "CAMBIO_12M"
+      ],
+      "rango": 2,
+      "rango_completo": true,
+      "numero_condicion": 2.3459373698207613,
+      "correlaciones": [
+        [
+          1.0,
+          0.6925
+        ],
+        [
+          0.6925,
+          1.0
+        ]
+      ]
+    },
+    "E2_relativo_mas_nivel": {
+      "variables": [
+        "ANOMALIA",
+        "CAMBIO_12M",
+        "NIVEL_PREV12"
+      ],
+      "rango": 3,
+      "rango_completo": true,
+      "numero_condicion": 2.7569979137347254,
+      "correlaciones": [
+        [
+          1.0,
+          0.6925,
+          0.1592
+        ],
+        [
+          0.6925,
+          1.0,
+          -0.2034
+        ],
+        [
+          0.1592,
+          -0.2034,
+          1.0
+        ]
+      ]
+    },
+    "E3_nivel": {
+      "variables": [
+        "LOG_TASA",
+        "NIVEL_PREV12"
+      ],
+      "rango": 2,
+      "rango_completo": true,
+      "numero_condicion": 2.3669555500516797,
+      "correlaciones": [
+        [
+          1.0,
+          0.6971
+        ],
+        [
+          0.6971,
+          1.0
+        ]
+      ]
+    }
+  },
+  "seleccion_k": {
+    "espacio": "E2_relativo_mas_nivel",
+    "fold": "principal",
+    "n": 1396,
+    "K_elegido": 4,
+    "motivo": "Ningún K alcanzó el umbral; se eligió el de mayor estabilidad mínima",
+    "K_tibshirani_desde_2": 2,
+    "K_tibshirani_desde_1": 1,
+    "evidencia_agrupabilidad_gap": false,
+    "candidatos_estables": [],
+    "tabla": [
+      {
+        "K": 2,
+        "silhouette": 0.280516,
+        "davies_bouldin": 1.289282,
+        "calinski_harabasz": 654.546331,
+        "ari_media_unidad": 0.840223,
+        "ari_de_unidad": 0.163053,
+        "ari_p2_5_unidad": 0.464526,
+        "ari_p97_5_unidad": 0.992916,
+        "ari_media_bloque_temporal": 0.546007,
+        "ari_de_bloque_temporal": 0.260821,
+        "ari_p2_5_bloque_temporal": 0.109421,
+        "ari_p97_5_bloque_temporal": 0.978828,
+        "ari_media_fila": 0.862897,
+        "ari_de_fila": 0.153695,
+        "ari_p2_5_fila": 0.496288,
+        "ari_p97_5_fila": 0.994273,
+        "gap": 1.400109,
+        "s_k": 0.01636,
+        "ESTABILIDAD_MIN": 0.546007
+      },
+      {
+        "K": 3,
+        "silhouette": 0.293319,
+        "davies_bouldin": 1.127962,
+        "calinski_harabasz": 669.4846,
+        "ari_media_unidad": 0.735039,
+        "ari_de_unidad": 0.128518,
+        "ari_p2_5_unidad": 0.452462,
+        "ari_p97_5_unidad": 0.919352,
+        "ari_media_bloque_temporal": 0.60984,
+        "ari_de_bloque_temporal": 0.204376,
+        "ari_p2_5_bloque_temporal": 0.278059,
+        "ari_p97_5_bloque_temporal": 0.897978,
+        "ari_media_fila": 0.816489,
+        "ari_de_fila": 0.099764,
+        "ari_p2_5_fila": 0.607356,
+        "ari_p97_5_fila": 0.945827,
+        "gap": 1.410822,
+        "s_k": 0.015742,
+        "ESTABILIDAD_MIN": 0.60984
+      },
+      {
+        "K": 4,
+        "silhouette": 0.292405,
+        "davies_bouldin": 1.069192,
+        "calinski_harabasz": 654.257245,
+        "ari_media_unidad": 0.676094,
+        "ari_de_unidad": 0.207181,
+        "ari_p2_5_unidad": 0.235718,
+        "ari_p97_5_unidad": 0.922583,
+        "ari_media_bloque_temporal": 0.632993,
+        "ari_de_bloque_temporal": 0.146164,
+        "ari_p2_5_bloque_temporal": 0.225862,
+        "ari_p97_5_bloque_temporal": 0.883766,
+        "ari_media_fila": 0.770861,
+        "ari_de_fila": 0.166197,
+        "ari_p2_5_fila": 0.26826,
+        "ari_p97_5_fila": 0.941384,
+        "gap": 1.432354,
+        "s_k": 0.014198,
+        "ESTABILIDAD_MIN": 0.632993
+      },
+      {
+        "K": 5,
+        "silhouette": 0.29123,
+        "davies_bouldin": 0.967231,
+        "calinski_harabasz": 651.293362,
+        "ari_media_unidad": 0.664089,
+        "ari_de_unidad": 0.140257,
+        "ari_p2_5_unidad": 0.370758,
+        "ari_p97_5_unidad": 0.898674,
+        "ari_media_bloque_temporal": 0.52162,
+        "ari_de_bloque_temporal": 0.171756,
+        "ari_p2_5_bloque_temporal": 0.256606,
+        "ari_p97_5_bloque_temporal": 0.878038,
+        "ari_media_fila": 0.747454,
+        "ari_de_fila": 0.138676,
+        "ari_p2_5_fila": 0.505718,
+        "ari_p97_5_fila": 0.951962,
+        "gap": 1.422955,
+        "s_k": 0.013894,
+        "ESTABILIDAD_MIN": 0.52162
+      },
+      {
+        "K": 6,
+        "silhouette": 0.286033,
+        "davies_bouldin": 0.972595,
+        "calinski_harabasz": 636.425297,
+        "ari_media_unidad": 0.649328,
+        "ari_de_unidad": 0.117424,
+        "ari_p2_5_unidad": 0.422704,
+        "ari_p97_5_unidad": 0.850949,
+        "ari_media_bloque_temporal": 0.573169,
+        "ari_de_bloque_temporal": 0.128432,
+        "ari_p2_5_bloque_temporal": 0.382328,
+        "ari_p97_5_bloque_temporal": 0.837806,
+        "ari_media_fila": 0.695314,
+        "ari_de_fila": 0.139878,
+        "ari_p2_5_fila": 0.496307,
+        "ari_p97_5_fila": 0.949532,
+        "gap": 1.387408,
+        "s_k": 0.013463,
+        "ESTABILIDAD_MIN": 0.573169
+      },
+      {
+        "K": 7,
+        "silhouette": 0.287431,
+        "davies_bouldin": 1.001213,
+        "calinski_harabasz": 617.745783,
+        "ari_media_unidad": 0.578662,
+        "ari_de_unidad": 0.127132,
+        "ari_p2_5_unidad": 0.397025,
+        "ari_p97_5_unidad": 0.824409,
+        "ari_media_bloque_temporal": 0.616976,
+        "ari_de_bloque_temporal": 0.154691,
+        "ari_p2_5_bloque_temporal": 0.38994,
+        "ari_p97_5_bloque_temporal": 0.899928,
+        "ari_media_fila": 0.647081,
+        "ari_de_fila": 0.146419,
+        "ari_p2_5_fila": 0.460989,
+        "ari_p97_5_fila": 0.891035,
+        "gap": 1.380245,
+        "s_k": 0.012827,
+        "ESTABILIDAD_MIN": 0.578662
+      },
+      {
+        "K": 8,
+        "silhouette": 0.286232,
+        "davies_bouldin": 0.999621,
+        "calinski_harabasz": 606.876988,
+        "ari_media_unidad": 0.614815,
+        "ari_de_unidad": 0.108406,
+        "ari_p2_5_unidad": 0.433248,
+        "ari_p97_5_unidad": 0.826259,
+        "ari_media_bloque_temporal": 0.556304,
+        "ari_de_bloque_temporal": 0.102578,
+        "ari_p2_5_bloque_temporal": 0.382189,
+        "ari_p97_5_bloque_temporal": 0.763655,
+        "ari_media_fila": 0.702967,
+        "ari_de_fila": 0.136495,
+        "ari_p2_5_fila": 0.457932,
+        "ari_p97_5_fila": 0.903361,
+        "gap": 1.38675,
+        "s_k": 0.013897,
+        "ESTABILIDAD_MIN": 0.556304
+      }
+    ],
+    "gap": [
+      {
+        "K": 1,
+        "gap": 1.850593,
+        "s_k": 0.016516
+      },
+      {
+        "K": 2,
+        "gap": 1.400109,
+        "s_k": 0.01636
+      },
+      {
+        "K": 3,
+        "gap": 1.410822,
+        "s_k": 0.015742
+      },
+      {
+        "K": 4,
+        "gap": 1.432354,
+        "s_k": 0.014198
+      },
+      {
+        "K": 5,
+        "gap": 1.422955,
+        "s_k": 0.013894
+      },
+      {
+        "K": 6,
+        "gap": 1.387408,
+        "s_k": 0.013463
+      },
+      {
+        "K": 7,
+        "gap": 1.380245,
+        "s_k": 0.012827
+      },
+      {
+        "K": 8,
+        "gap": 1.38675,
+        "s_k": 0.013897
+      },
+      {
+        "K": 9,
+        "gap": 1.407709,
+        "s_k": 0.013675
+      }
+    ]
+  },
+  "multialgoritmo": [
+    {
+      "algoritmo": "KMeans",
+      "K_resultante": 4,
+      "ruido_pct": 0.0,
+      "cobertura_pct": 100.0,
+      "silhouette": 0.293621,
+      "davies_bouldin": 1.071487,
+      "calinski_harabasz": 655.316372,
+      "ARI_vs_KMeans_todas": 1.0,
+      "ARI_vs_KMeans_sin_ruido": 1.0,
+      "nota": ""
+    },
+    {
+      "algoritmo": "Ward",
+      "K_resultante": 4,
+      "ruido_pct": 0.0,
+      "cobertura_pct": 100.0,
+      "silhouette": 0.244025,
+      "davies_bouldin": 1.220273,
+      "calinski_harabasz": 468.48882,
+      "ARI_vs_KMeans_todas": 0.313087,
+      "ARI_vs_KMeans_sin_ruido": 0.313087,
+      "nota": ""
+    },
+    {
+      "algoritmo": "GMM",
+      "K_resultante": 4,
+      "ruido_pct": 0.0,
+      "cobertura_pct": 100.0,
+      "silhouette": 0.182468,
+      "davies_bouldin": 1.918044,
+      "calinski_harabasz": 267.81286,
+      "ARI_vs_KMeans_todas": 0.229236,
+      "ARI_vs_KMeans_sin_ruido": 0.229236,
+      "nota": ""
+    },
+    {
+      "algoritmo": "HDBSCAN",
+      "K_resultante": 2,
+      "ruido_pct": 69.91404,
+      "cobertura_pct": 30.08596,
+      "silhouette": 0.44879,
+      "davies_bouldin": 0.9014,
+      "calinski_harabasz": 429.652928,
+      "ARI_vs_KMeans_todas": 0.038306,
+      "ARI_vs_KMeans_sin_ruido": 0.528772,
+      "nota": "Índices internos calculados solo sobre la cobertura (sin ruido); no comparables con algoritmos de cobertura completa."
+    }
+  ],
+  "perfiles_media_de": [
+    {
+      "CLUSTER": 0,
+      "N": 163,
+      "UNIDADES": 26,
+      "TASA_10K_MEDIA": 0.313775,
+      "TASA_10K_DE": 0.158789,
+      "ANOMALIA_MEDIA": -1.403882,
+      "CAMBIO_12M_MEDIA": -0.228364,
+      "NIVEL_PREV12_MEDIA": 0.49416,
+      "ANOMALIA_DE": 0.63705,
+      "CAMBIO_12M_DE": 0.105953,
+      "NIVEL_PREV12_DE": 0.135211
+    },
+    {
+      "CLUSTER": 1,
+      "N": 500,
+      "UNIDADES": 19,
+      "TASA_10K_MEDIA": 0.346063,
+      "TASA_10K_DE": 0.103466,
+      "ANOMALIA_MEDIA": -0.384424,
+      "CAMBIO_12M_MEDIA": -0.00498,
+      "NIVEL_PREV12_MEDIA": 0.299246,
+      "ANOMALIA_DE": 0.603379,
+      "CAMBIO_12M_DE": 0.058381,
+      "NIVEL_PREV12_DE": 0.057525
+    },
+    {
+      "CLUSTER": 2,
+      "N": 439,
+      "UNIDADES": 20,
+      "TASA_10K_MEDIA": 0.640604,
+      "TASA_10K_DE": 0.174065,
+      "ANOMALIA_MEDIA": -0.107296,
+      "CAMBIO_12M_MEDIA": -0.0277,
+      "NIVEL_PREV12_MEDIA": 0.517542,
+      "ANOMALIA_DE": 0.511328,
+      "CAMBIO_12M_DE": 0.058648,
+      "NIVEL_PREV12_DE": 0.093338
+    },
+    {
+      "CLUSTER": 3,
+      "N": 294,
+      "UNIDADES": 26,
+      "TASA_10K_MEDIA": 0.782639,
+      "TASA_10K_DE": 0.29404,
+      "ANOMALIA_MEDIA": 1.20566,
+      "CAMBIO_12M_MEDIA": 0.113169,
+      "NIVEL_PREV12_MEDIA": 0.452568,
+      "ANOMALIA_DE": 0.550988,
+      "CAMBIO_12M_DE": 0.087963,
+      "NIVEL_PREV12_DE": 0.132561
+    }
+  ],
+  "perfiles": [
+    {
+      "CLUSTER": 0,
+      "N": 163,
+      "UNIDADES": 26,
+      "TASA_10K_MENSUAL_MEDIA": 0.313775,
+      "TASA_10K_MENSUAL_MEDIANA": 0.27826,
+      "LOG_TASA_MEDIA": 0.265796,
+      "ANOMALIA_MEDIA": -1.403882,
+      "CAMBIO_12M_MEDIA": -0.228364,
+      "NIVEL_PREV12_MEDIA": 0.49416
+    },
+    {
+      "CLUSTER": 1,
+      "N": 500,
+      "UNIDADES": 19,
+      "TASA_10K_MENSUAL_MEDIA": 0.346063,
+      "TASA_10K_MENSUAL_MEDIANA": 0.330653,
+      "LOG_TASA_MEDIA": 0.294266,
+      "ANOMALIA_MEDIA": -0.384424,
+      "CAMBIO_12M_MEDIA": -0.00498,
+      "NIVEL_PREV12_MEDIA": 0.299246
+    },
+    {
+      "CLUSTER": 2,
+      "N": 439,
+      "UNIDADES": 20,
+      "TASA_10K_MENSUAL_MEDIA": 0.640604,
+      "TASA_10K_MENSUAL_MEDIANA": 0.619868,
+      "LOG_TASA_MEDIA": 0.489842,
+      "ANOMALIA_MEDIA": -0.107296,
+      "CAMBIO_12M_MEDIA": -0.0277,
+      "NIVEL_PREV12_MEDIA": 0.517542
+    },
+    {
+      "CLUSTER": 3,
+      "N": 294,
+      "UNIDADES": 26,
+      "TASA_10K_MENSUAL_MEDIA": 0.782639,
+      "TASA_10K_MENSUAL_MEDIANA": 0.744502,
+      "LOG_TASA_MEDIA": 0.565738,
+      "ANOMALIA_MEDIA": 1.20566,
+      "CAMBIO_12M_MEDIA": 0.113169,
+      "NIVEL_PREV12_MEDIA": 0.452568
+    }
+  ],
+  "auditoria_proxy": [
+    {
+      "historia": "min6",
+      "espacio": "E1_relativo",
+      "n": 1396,
+      "NMI_cluster_unidad": 0.014795,
+      "ARI_cluster_unidad": 0.001069,
+      "H_cluster_bits": 1.802984,
+      "H_cluster_dado_unidad_bits": 1.754877,
+      "fraccion_H_asociada_a_unidad": 0.026682,
+      "unidades_con_pureza_>=0.95": 0,
+      "unidades_totales": 26,
+      "pureza_media": 0.428993,
+      "NMI_nulo_p95_bloques_anuales": 0.021295,
+      "p_perm_bloques_anuales": 0.813,
+      "NMI_nulo_p95_filas": 0.01572,
+      "p_perm_filas": 0.096,
+      "ARI_bootstrap_unidad": 0.827198
+    },
+    {
+      "historia": "min6",
+      "espacio": "E2_relativo_mas_nivel",
+      "n": 1396,
+      "NMI_cluster_unidad": 0.137719,
+      "ARI_cluster_unidad": 0.038444,
+      "H_cluster_bits": 1.890483,
+      "H_cluster_dado_unidad_bits": 1.436644,
+      "fraccion_H_asociada_a_unidad": 0.240065,
+      "unidades_con_pureza_>=0.95": 0,
+      "unidades_totales": 26,
+      "pureza_media": 0.575555,
+      "NMI_nulo_p95_bloques_anuales": 0.064566,
+      "p_perm_bloques_anuales": 0.001,
+      "NMI_nulo_p95_filas": 0.015446,
+      "p_perm_filas": 0.001,
+      "ARI_bootstrap_unidad": 0.676094
+    },
+    {
+      "historia": "min6",
+      "espacio": "E3_nivel",
+      "n": 1396,
+      "NMI_cluster_unidad": 0.252172,
+      "ARI_cluster_unidad": 0.06791,
+      "H_cluster_bits": 1.814215,
+      "H_cluster_dado_unidad_bits": 0.99282,
+      "fraccion_H_asociada_a_unidad": 0.452755,
+      "unidades_con_pureza_>=0.95": 3,
+      "unidades_totales": 26,
+      "pureza_media": 0.702909,
+      "NMI_nulo_p95_bloques_anuales": 0.115717,
+      "p_perm_bloques_anuales": 0.001,
+      "NMI_nulo_p95_filas": 0.015619,
+      "p_perm_filas": 0.001,
+      "ARI_bootstrap_unidad": 0.701067
+    },
+    {
+      "historia": "min12",
+      "espacio": "E1_relativo",
+      "n": 1162,
+      "NMI_cluster_unidad": 0.026423,
+      "ARI_cluster_unidad": 0.003058,
+      "H_cluster_bits": 1.788356,
+      "H_cluster_dado_unidad_bits": 1.702858,
+      "fraccion_H_asociada_a_unidad": 0.047808,
+      "unidades_con_pureza_>=0.95": 0,
+      "unidades_totales": 26,
+      "pureza_media": 0.450296,
+      "NMI_nulo_p95_bloques_anuales": 0.027475,
+      "p_perm_bloques_anuales": 0.094,
+      "NMI_nulo_p95_filas": 0.019245,
+      "p_perm_filas": 0.001,
+      "ARI_bootstrap_unidad": 0.826654
+    },
+    {
+      "historia": "min12",
+      "espacio": "E2_relativo_mas_nivel",
+      "n": 1162,
+      "NMI_cluster_unidad": 0.166236,
+      "ARI_cluster_unidad": 0.046127,
+      "H_cluster_bits": 1.898974,
+      "H_cluster_dado_unidad_bits": 1.351891,
+      "fraccion_H_asociada_a_unidad": 0.288094,
+      "unidades_con_pureza_>=0.95": 0,
+      "unidades_totales": 26,
+      "pureza_media": 0.600986,
+      "NMI_nulo_p95_bloques_anuales": 0.079734,
+      "p_perm_bloques_anuales": 0.001,
+      "NMI_nulo_p95_filas": 0.018714,
+      "p_perm_filas": 0.001,
+      "ARI_bootstrap_unidad": 0.734603
+    },
+    {
+      "historia": "min12",
+      "espacio": "E3_nivel",
+      "n": 1162,
+      "NMI_cluster_unidad": 0.27065,
+      "ARI_cluster_unidad": 0.080467,
+      "H_cluster_bits": 1.847506,
+      "H_cluster_dado_unidad_bits": 0.96376,
+      "fraccion_H_asociada_a_unidad": 0.478345,
+      "unidades_con_pureza_>=0.95": 4,
+      "unidades_totales": 26,
+      "pureza_media": 0.733902,
+      "NMI_nulo_p95_bloques_anuales": 0.129652,
+      "p_perm_bloques_anuales": 0.001,
+      "NMI_nulo_p95_filas": 0.019087,
+      "p_perm_filas": 0.001,
+      "ARI_bootstrap_unidad": 0.790562
+    }
+  ],
+  "sensibilidad_historia_12m": {
+    "filas_comunes": 1162,
+    "ARI_min6_vs_min12": 0.6735886615522241,
+    "concordancia_etiquetas": 0.0387263339070568
+  },
+  "validacion_temporal": {
+    "principal": {
+      "n_eval": 312,
+      "ARI_transferido_vs_reajustado": 0.4098432298801459,
+      "concordancia_etiquetas_semanticas": 0.375,
+      "indices_internos_eval": {
+        "cobertura_pct": 100.0,
+        "silhouette": 0.2755233477233882,
+        "davies_bouldin": 1.009320058608774,
+        "calinski_harabasz": 149.06496756984828
+      },
+      "proporciones_train": [
+        0.1168,
+        0.3582,
+        0.3145,
+        0.2106
+      ],
+      "proporciones_eval": [
+        0.1026,
+        0.5641,
+        0.1955,
+        0.1378
+      ],
+      "JS_distancia_base2": 0.18078230620645075,
+      "JS_divergencia_bits": 0.03268224223732292,
+      "nota": "El ARI mide acuerdo entre la partición transferida y una reajustada en el año evaluado; no es exactitud predictiva de desapariciones.",
+      "nota_fold": "2024 es el último año consolidado según MININTER."
+    },
+    "secundario": {
+      "n_eval": 312,
+      "ARI_transferido_vs_reajustado": 0.5245146541108228,
+      "concordancia_etiquetas_semanticas": 0.5,
+      "indices_internos_eval": {
+        "cobertura_pct": 100.0,
+        "silhouette": 0.26324696961771354,
+        "davies_bouldin": 1.0779621688784087,
+        "calinski_harabasz": 143.50410094012878
+      },
+      "proporciones_train": [
+        0.1546,
+        0.4034,
+        0.2588,
+        0.1833
+      ],
+      "proporciones_eval": [
+        0.1186,
+        0.4038,
+        0.2628,
+        0.2147
+      ],
+      "JS_distancia_base2": 0.05123332674179903,
+      "JS_divergencia_bits": 0.002624853769031939,
+      "nota": "El ARI mide acuerdo entre la partición transferida y una reajustada en el año evaluado; no es exactitud predictiva de desapariciones.",
+      "nota_fold": "2025 es preliminar según MININTER y fue inspeccionado en versiones previas."
+    }
+  },
+  "espacial": {
+    "geometria": {
+      "provincias_en_capa": 197,
+      "crs_original": "EPSG:4326",
+      "vertices_totales": 18991,
+      "geometrias_invalidas_originales": 0,
+      "unidades": 26,
+      "punto_de_referencia_knn": "representative_point() calculado en EPSG:32718",
+      "fuente": "Capa provincial simplificada de terceros (repositorio GitHub juaneladio/peru-geojson), derivada de la cartografía censal del INEI. No es la capa oficial; puede sustituirse por la del INEI/IGN.",
+      "sha256": "3663a2b58e52a6bba9c43acabe33e7d9bb065e54551edd9aa375a411fd0c7fa1"
+    },
+    "pesos": {
+      "queen": {
+        "n": 26,
+        "vecinos_medio": 4.153846153846154,
+        "vecinos_min": 1,
+        "vecinos_max": 7
+      },
+      "knn4_geodesico": {
+        "n": 26,
+        "vecinos_medio": 4.0,
+        "vecinos_min": 4,
+        "vecinos_max": 4
+      }
+    },
+    "moran_global": [
+      {
+        "periodo": "2019_2025",
+        "pesos": "queen",
+        "variable": "TASA_10K_EXPOSICION_OBSERVADA",
+        "I": 0.122204,
+        "E_I": -0.04,
+        "z_perm": 1.169023,
+        "p_sim_plegado": 0.122,
+        "p_bilateral": 0.244,
+        "p_normal_bilateral": 0.237168
+      },
+      {
+        "periodo": "2019_2025",
+        "pesos": "queen",
+        "variable": "TASA_10K_EXPOSICION_TOTAL",
+        "I": 0.115563,
+        "E_I": -0.04,
+        "z_perm": 1.120796,
+        "p_sim_plegado": 0.1298,
+        "p_bilateral": 0.2596,
+        "p_normal_bilateral": 0.256922
+      },
+      {
+        "periodo": "2019_2025",
+        "pesos": "queen",
+        "variable": "REPORTES",
+        "I": -0.008355,
+        "E_I": -0.04,
+        "z_perm": 0.551531,
+        "p_sim_plegado": 0.2686,
+        "p_bilateral": 0.5372,
+        "p_normal_bilateral": 0.817608
+      },
+      {
+        "periodo": "2019_2025",
+        "pesos": "queen",
+        "variable": "TASA_EB_EXPOSICION_OBSERVADA",
+        "I": 0.122344,
+        "E_I": -0.04,
+        "z_perm": 1.16998,
+        "p_sim_plegado": 0.122,
+        "p_bilateral": 0.244,
+        "p_normal_bilateral": null
+      },
+      {
+        "periodo": "2019_2025",
+        "pesos": "knn4_geodesico",
+        "variable": "TASA_10K_EXPOSICION_OBSERVADA",
+        "I": 0.288109,
+        "E_I": -0.04,
+        "z_perm": 2.790217,
+        "p_sim_plegado": 0.0091,
+        "p_bilateral": 0.0182,
+        "p_normal_bilateral": 0.004623
+      },
+      {
+        "periodo": "2019_2025",
+        "pesos": "knn4_geodesico",
+        "variable": "TASA_10K_EXPOSICION_TOTAL",
+        "I": 0.281704,
+        "E_I": -0.04,
+        "z_perm": 2.733297,
+        "p_sim_plegado": 0.01,
+        "p_bilateral": 0.02,
+        "p_normal_bilateral": 0.005488
+      },
+      {
+        "periodo": "2019_2025",
+        "pesos": "knn4_geodesico",
+        "variable": "REPORTES",
+        "I": -0.003977,
+        "E_I": -0.04,
+        "z_perm": 0.750389,
+        "p_sim_plegado": 0.2257,
+        "p_bilateral": 0.4514,
+        "p_normal_bilateral": 0.755846
+      },
+      {
+        "periodo": "2019_2025",
+        "pesos": "knn4_geodesico",
+        "variable": "TASA_EB_EXPOSICION_OBSERVADA",
+        "I": 0.288172,
+        "E_I": -0.04,
+        "z_perm": 2.790579,
+        "p_sim_plegado": 0.0091,
+        "p_bilateral": 0.0182,
+        "p_normal_bilateral": null
+      },
+      {
+        "periodo": "2019_2024",
+        "pesos": "queen",
+        "variable": "TASA_10K_EXPOSICION_OBSERVADA",
+        "I": 0.093761,
+        "E_I": -0.04,
+        "z_perm": 0.970157,
+        "p_sim_plegado": 0.1625,
+        "p_bilateral": 0.325,
+        "p_normal_bilateral": 0.329654
+      },
+      {
+        "periodo": "2019_2024",
+        "pesos": "queen",
+        "variable": "TASA_10K_EXPOSICION_TOTAL",
+        "I": 0.087154,
+        "E_I": -0.04,
+        "z_perm": 0.921718,
+        "p_sim_plegado": 0.1749,
+        "p_bilateral": 0.3498,
+        "p_normal_bilateral": 0.354101
+      },
+      {
+        "periodo": "2019_2024",
+        "pesos": "queen",
+        "variable": "REPORTES",
+        "I": -0.007587,
+        "E_I": -0.04,
+        "z_perm": 0.557611,
+        "p_sim_plegado": 0.2669,
+        "p_bilateral": 0.5338,
+        "p_normal_bilateral": 0.813267
+      },
+      {
+        "periodo": "2019_2024",
+        "pesos": "queen",
+        "variable": "TASA_EB_EXPOSICION_OBSERVADA",
+        "I": 0.093965,
+        "E_I": -0.04,
+        "z_perm": 0.971512,
+        "p_sim_plegado": 0.162,
+        "p_bilateral": 0.324,
+        "p_normal_bilateral": null
+      },
+      {
+        "periodo": "2019_2024",
+        "pesos": "knn4_geodesico",
+        "variable": "TASA_10K_EXPOSICION_OBSERVADA",
+        "I": 0.245298,
+        "E_I": -0.04,
+        "z_perm": 2.438869,
+        "p_sim_plegado": 0.0161,
+        "p_bilateral": 0.0322,
+        "p_normal_bilateral": 0.013792
+      },
+      {
+        "periodo": "2019_2024",
+        "pesos": "knn4_geodesico",
+        "variable": "TASA_10K_EXPOSICION_TOTAL",
+        "I": 0.23904,
+        "E_I": -0.04,
+        "z_perm": 2.382094,
+        "p_sim_plegado": 0.0169,
+        "p_bilateral": 0.0338,
+        "p_normal_bilateral": 0.016013
+      },
+      {
+        "periodo": "2019_2024",
+        "pesos": "knn4_geodesico",
+        "variable": "REPORTES",
+        "I": -0.002611,
+        "E_I": -0.04,
+        "z_perm": 0.769453,
+        "p_sim_plegado": 0.2199,
+        "p_bilateral": 0.4398,
+        "p_normal_bilateral": 0.746895
+      },
+      {
+        "periodo": "2019_2024",
+        "pesos": "knn4_geodesico",
+        "variable": "TASA_EB_EXPOSICION_OBSERVADA",
+        "I": 0.24547,
+        "E_I": -0.04,
+        "z_perm": 2.44003,
+        "p_sim_plegado": 0.0161,
+        "p_bilateral": 0.0322,
+        "p_normal_bilateral": null
+      },
+      {
+        "periodo": "train_2019_2023",
+        "pesos": "queen",
+        "variable": "PROP_MESES_ESTADO_ALTO_E2_relativo_mas_nivel",
+        "I": -0.103954,
+        "E_I": -0.04,
+        "z_perm": -0.486603,
+        "p_sim_plegado": 0.3315,
+        "p_bilateral": 0.663,
+        "p_normal_bilateral": 0.641159
+      },
+      {
+        "periodo": "train_2019_2023",
+        "pesos": "knn4_geodesico",
+        "variable": "PROP_MESES_ESTADO_ALTO_E2_relativo_mas_nivel",
+        "I": 0.013818,
+        "E_I": -0.04,
+        "z_perm": 0.451368,
+        "p_sim_plegado": 0.2945,
+        "p_bilateral": 0.589,
+        "p_normal_bilateral": 0.642256
+      }
+    ],
+    "local": {
+      "queen": {
+        "gi_transform": "B",
+        "gi_star": true,
+        "lisa_transform": "R",
+        "p_locales": "aleatorización condicional exacta (Gi* y LISA comparten distribución)",
+        "unidades_no_significables_al_5pct": [
+          "CALLAO",
+          "TUMBES"
+        ],
+        "Gi_FDR": {
+          "Coldspot": [
+            "LAMBAYEQUE",
+            "AMAZONAS"
+          ],
+          "n.s.": [
+            "APURIMAC",
+            "CUSCO",
+            "AYACUCHO",
+            "PUNO",
+            "AREQUIPA",
+            "JUNIN",
+            "UCAYALI",
+            "PASCO",
+            "MOQUEGUA",
+            "TACNA",
+            "HUANCAVELICA",
+            "MADRE DE DIOS",
+            "REGION LIMA",
+            "CALLAO",
+            "ICA",
+            "LIMA METROPOLITANA",
+            "ANCASH",
+            "TUMBES",
+            "LORETO",
+            "PIURA",
+            "SAN MARTIN",
+            "HUANUCO",
+            "LA LIBERTAD",
+            "CAJAMARCA"
+          ]
+        },
+        "Gi_sin_ajuste": {
+          "Coldspot": [
+            "HUANUCO",
+            "LAMBAYEQUE",
+            "AMAZONAS"
+          ],
+          "n.s.": [
+            "APURIMAC",
+            "CUSCO",
+            "AYACUCHO",
+            "PUNO",
+            "AREQUIPA",
+            "JUNIN",
+            "UCAYALI",
+            "PASCO",
+            "MOQUEGUA",
+            "TACNA",
+            "HUANCAVELICA",
+            "MADRE DE DIOS",
+            "REGION LIMA",
+            "CALLAO",
+            "ICA",
+            "LIMA METROPOLITANA",
+            "ANCASH",
+            "TUMBES",
+            "LORETO",
+            "PIURA",
+            "SAN MARTIN",
+            "LA LIBERTAD",
+            "CAJAMARCA"
+          ]
+        },
+        "LISA_FDR": {
+          "Alto-Bajo": [
+            "LAMBAYEQUE"
+          ],
+          "Bajo-Bajo": [
+            "AMAZONAS"
+          ],
+          "n.s.": [
+            "APURIMAC",
+            "CUSCO",
+            "AYACUCHO",
+            "PUNO",
+            "AREQUIPA",
+            "JUNIN",
+            "UCAYALI",
+            "PASCO",
+            "MOQUEGUA",
+            "TACNA",
+            "HUANCAVELICA",
+            "MADRE DE DIOS",
+            "REGION LIMA",
+            "CALLAO",
+            "ICA",
+            "LIMA METROPOLITANA",
+            "ANCASH",
+            "TUMBES",
+            "LORETO",
+            "PIURA",
+            "SAN MARTIN",
+            "HUANUCO",
+            "LA LIBERTAD",
+            "CAJAMARCA"
+          ]
+        },
+        "LISA_BY": {
+          "Bajo-Bajo": [
+            "AMAZONAS"
+          ],
+          "n.s.": [
+            "APURIMAC",
+            "CUSCO",
+            "AYACUCHO",
+            "PUNO",
+            "AREQUIPA",
+            "JUNIN",
+            "UCAYALI",
+            "PASCO",
+            "MOQUEGUA",
+            "TACNA",
+            "HUANCAVELICA",
+            "MADRE DE DIOS",
+            "REGION LIMA",
+            "CALLAO",
+            "ICA",
+            "LIMA METROPOLITANA",
+            "ANCASH",
+            "TUMBES",
+            "LORETO",
+            "PIURA",
+            "SAN MARTIN",
+            "HUANUCO",
+            "LA LIBERTAD",
+            "LAMBAYEQUE",
+            "CAJAMARCA"
+          ]
+        },
+        "LIMA_METROPOLITANA": {
+          "VALOR": 6.70421626913284,
+          "k_vecinos": 2,
+          "N_configuraciones": 300,
+          "metodo_p": "exacto",
+          "LISA_Ii": -0.01269919647387056,
+          "LISA_cuadrante": "Alto-Bajo",
+          "Gi_z": 0.07010889313835547,
+          "p_plegado": 0.48333333333333334,
+          "p_bilateral": 0.9666666666666667,
+          "p_bilateral_min_alcanzable": 0.006666666666666667,
+          "q_FDR": 0.9666666666666667,
+          "q_BY": 1.0,
+          "LISA_clase_FDR": "n.s.",
+          "LISA_clase_sin_ajuste": "n.s.",
+          "LISA_clase_BY": "n.s.",
+          "Gi_clase_FDR": "n.s.",
+          "Gi_clase_sin_ajuste": "n.s."
+        }
+      },
+      "knn4_geodesico": {
+        "gi_transform": "B",
+        "gi_star": true,
+        "lisa_transform": "R",
+        "p_locales": "aleatorización condicional exacta (Gi* y LISA comparten distribución)",
+        "unidades_no_significables_al_5pct": [],
+        "Gi_FDR": {
+          "Coldspot": [
+            "LAMBAYEQUE",
+            "SAN MARTIN"
+          ],
+          "n.s.": [
+            "APURIMAC",
+            "CUSCO",
+            "AREQUIPA",
+            "MOQUEGUA",
+            "TACNA",
+            "PUNO",
+            "AYACUCHO",
+            "MADRE DE DIOS",
+            "UCAYALI",
+            "PASCO",
+            "HUANUCO",
+            "CALLAO",
+            "LIMA METROPOLITANA",
+            "REGION LIMA",
+            "HUANCAVELICA",
+            "JUNIN",
+            "ICA",
+            "ANCASH",
+            "TUMBES",
+            "PIURA",
+            "AMAZONAS",
+            "CAJAMARCA",
+            "LA LIBERTAD",
+            "LORETO"
+          ]
+        },
+        "Gi_sin_ajuste": {
+          "Coldspot": [
+            "LAMBAYEQUE",
+            "LORETO",
+            "SAN MARTIN"
+          ],
+          "n.s.": [
+            "APURIMAC",
+            "CUSCO",
+            "AREQUIPA",
+            "MOQUEGUA",
+            "TACNA",
+            "PUNO",
+            "AYACUCHO",
+            "MADRE DE DIOS",
+            "UCAYALI",
+            "PASCO",
+            "HUANUCO",
+            "CALLAO",
+            "LIMA METROPOLITANA",
+            "REGION LIMA",
+            "HUANCAVELICA",
+            "JUNIN",
+            "ICA",
+            "ANCASH",
+            "TUMBES",
+            "PIURA",
+            "AMAZONAS",
+            "CAJAMARCA",
+            "LA LIBERTAD"
+          ]
+        },
+        "LISA_FDR": {
+          "Alto-Bajo": [
+            "LAMBAYEQUE"
+          ],
+          "Bajo-Bajo": [
+            "SAN MARTIN"
+          ],
+          "n.s.": [
+            "APURIMAC",
+            "CUSCO",
+            "AREQUIPA",
+            "MOQUEGUA",
+            "TACNA",
+            "PUNO",
+            "AYACUCHO",
+            "MADRE DE DIOS",
+            "UCAYALI",
+            "PASCO",
+            "HUANUCO",
+            "CALLAO",
+            "LIMA METROPOLITANA",
+            "REGION LIMA",
+            "HUANCAVELICA",
+            "JUNIN",
+            "ICA",
+            "ANCASH",
+            "TUMBES",
+            "PIURA",
+            "AMAZONAS",
+            "CAJAMARCA",
+            "LA LIBERTAD",
+            "LORETO"
+          ]
+        },
+        "LISA_BY": {
+          "n.s.": [
+            "APURIMAC",
+            "CUSCO",
+            "AREQUIPA",
+            "MOQUEGUA",
+            "TACNA",
+            "PUNO",
+            "AYACUCHO",
+            "MADRE DE DIOS",
+            "UCAYALI",
+            "PASCO",
+            "HUANUCO",
+            "CALLAO",
+            "LIMA METROPOLITANA",
+            "REGION LIMA",
+            "HUANCAVELICA",
+            "JUNIN",
+            "ICA",
+            "ANCASH",
+            "TUMBES",
+            "PIURA",
+            "AMAZONAS",
+            "CAJAMARCA",
+            "LAMBAYEQUE",
+            "LA LIBERTAD",
+            "LORETO",
+            "SAN MARTIN"
+          ]
+        },
+        "LIMA_METROPOLITANA": {
+          "VALOR": 6.70421626913284,
+          "k_vecinos": 4,
+          "N_configuraciones": 12650,
+          "metodo_p": "exacto",
+          "LISA_Ii": 0.0569162415533035,
+          "LISA_cuadrante": "Alto-Alto",
+          "Gi_z": 0.6130584676852888,
+          "p_plegado": 0.2922529644268775,
+          "p_bilateral": 0.584505928853755,
+          "p_bilateral_min_alcanzable": 0.00015810276679841898,
+          "q_FDR": 0.6907797340998922,
+          "q_BY": 1.0,
+          "LISA_clase_FDR": "n.s.",
+          "LISA_clase_sin_ajuste": "n.s.",
+          "LISA_clase_BY": "n.s.",
+          "Gi_clase_FDR": "n.s.",
+          "Gi_clase_sin_ajuste": "n.s."
+        }
+      }
+    },
+    "loo_queen": {
+      "I_min": 0.029080407959874946,
+      "I_max": 0.28939875726663616,
+      "significativos_p_bilateral_<0.05": [
+        "HUANUCO"
+      ],
+      "no_calculables": [
+        "LIMA METROPOLITANA",
+        "PIURA"
+      ]
+    }
+  },
+  "multiverso": {
+    "M1": {
+      "especificaciones": 108,
+      "ancla_manuscrito": {
+        "unidad": "celda",
+        "winsor": true,
+        "espacio": "O_manuscrito",
+        "escalador": "robust",
+        "regla_k": "silhouette_max",
+        "n": 20000,
+        "K": 3,
+        "silhouette": 0.5594043072346643,
+        "ari_fila": 0.9706292351651152,
+        "ari_unidad": 0.6818323253849253,
+        "ari_bloque_temporal": 0.9753278422749159,
+        "NMI_unidad": 0.3304469217029395,
+        "p_NMI_bloques": 0.005,
+        "fraccion_H_unidad": 0.7835497269636233,
+        "unidades_pureza_095": 12,
+        "es_manuscrito_original": true,
+        "afirma_estructura_por_silhouette": true,
+        "afirma_estructura_por_filas": true,
+        "estructura_robusta_panel": false,
+        "fuga_identidad": true
+      },
+      "manuscrito_reportado": {
+        "K": 3,
+        "silhouette": 0.5503
+      },
+      "soporte": [
+        {
+          "afirmacion": "afirma_estructura_por_silhouette",
+          "especificaciones": 108,
+          "proporcion_que_la_sostiene": 0.342593
+        },
+        {
+          "afirmacion": "afirma_estructura_por_filas",
+          "especificaciones": 108,
+          "proporcion_que_la_sostiene": 0.972222
+        },
+        {
+          "afirmacion": "estructura_robusta_panel",
+          "especificaciones": 108,
+          "proporcion_que_la_sostiene": 0.305556
+        },
+        {
+          "afirmacion": "fuga_identidad",
+          "especificaciones": 108,
+          "proporcion_que_la_sostiene": 0.62037
+        }
+      ],
+      "importancia": [
+        {
+          "resultado": "silhouette",
+          "decision": "escalador",
+          "eta2_parcial": 0.371331,
+          "F": 51.387666,
+          "p": 0.0
+        },
+        {
+          "resultado": "silhouette",
+          "decision": "unidad",
+          "eta2_parcial": 0.366721,
+          "F": 50.380241,
+          "p": 0.0
+        },
+        {
+          "resultado": "silhouette",
+          "decision": "espacio",
+          "eta2_parcial": 0.123528,
+          "F": 4.087185,
+          "p": 0.009155
+        },
+        {
+          "resultado": "silhouette",
+          "decision": "regla_k",
+          "eta2_parcial": 0.051415,
+          "F": 2.357762,
+          "p": 0.100652
+        },
+        {
+          "resultado": "silhouette",
+          "decision": "winsor",
+          "eta2_parcial": 9.1e-05,
+          "F": 0.007911,
+          "p": 0.92933
+        },
+        {
+          "resultado": "NMI_unidad",
+          "decision": "espacio",
+          "eta2_parcial": 0.597191,
+          "F": 42.994497,
+          "p": 0.0
+        },
+        {
+          "resultado": "NMI_unidad",
+          "decision": "escalador",
+          "eta2_parcial": 0.263919,
+          "F": 31.193456,
+          "p": 0.0
+        },
+        {
+          "resultado": "NMI_unidad",
+          "decision": "unidad",
+          "eta2_parcial": 0.178976,
+          "F": 18.965293,
+          "p": 3.6e-05
+        },
+        {
+          "resultado": "NMI_unidad",
+          "decision": "regla_k",
+          "eta2_parcial": 0.10065,
+          "F": 4.868279,
+          "p": 0.009906
+        },
+        {
+          "resultado": "NMI_unidad",
+          "decision": "winsor",
+          "eta2_parcial": 0.003955,
+          "F": 0.345455,
+          "p": 0.55822
+        },
+        {
+          "resultado": "ari_bloque_temporal",
+          "decision": "unidad",
+          "eta2_parcial": 0.420468,
+          "F": 63.121196,
+          "p": 0.0
+        },
+        {
+          "resultado": "ari_bloque_temporal",
+          "decision": "escalador",
+          "eta2_parcial": 0.344564,
+          "F": 45.736076,
+          "p": 0.0
+        },
+        {
+          "resultado": "ari_bloque_temporal",
+          "decision": "espacio",
+          "eta2_parcial": 0.228143,
+          "F": 8.57172,
+          "p": 4.8e-05
+        },
+        {
+          "resultado": "ari_bloque_temporal",
+          "decision": "winsor",
+          "eta2_parcial": 0.021895,
+          "F": 1.947519,
+          "p": 0.166406
+        },
+        {
+          "resultado": "ari_bloque_temporal",
+          "decision": "regla_k",
+          "eta2_parcial": 0.020864,
+          "F": 0.926944,
+          "p": 0.399634
+        },
+        {
+          "resultado": "ari_fila",
+          "decision": "unidad",
+          "eta2_parcial": 0.357132,
+          "F": 48.331031,
+          "p": 0.0
+        },
+        {
+          "resultado": "ari_fila",
+          "decision": "espacio",
+          "eta2_parcial": 0.215442,
+          "F": 7.963487,
+          "p": 9.4e-05
+        },
+        {
+          "resultado": "ari_fila",
+          "decision": "escalador",
+          "eta2_parcial": 0.171062,
+          "F": 17.953578,
+          "p": 5.6e-05
+        },
+        {
+          "resultado": "ari_fila",
+          "decision": "regla_k",
+          "eta2_parcial": 0.010643,
+          "F": 0.46797,
+          "p": 0.62784
+        },
+        {
+          "resultado": "ari_fila",
+          "decision": "winsor",
+          "eta2_parcial": 0.007296,
+          "F": 0.639424,
+          "p": 0.426097
+        }
+      ]
+    },
+    "M2": {
+      "especificaciones": 240,
+      "ancla_manuscrito": {
+        "winsor": true,
+        "periodo": "2019_2025",
+        "variable": "tasa_exposicion_total",
+        "pesos": "knn5_grados_manuscrito",
+        "tipo_p": "original",
+        "correccion_local": "ninguna",
+        "moran_I": 0.3302592059919368,
+        "p_global": 0.0039,
+        "moran_significativo": true,
+        "n_hotspots": 6,
+        "n_coldspots": 7,
+        "hotspots": "AREQUIPA;AYACUCHO;CUSCO;MOQUEGUA;PUNO;TACNA",
+        "sur_andino_hotspots": 5,
+        "lima_hotspot": false,
+        "es_manuscrito_original": true,
+        "sur_andino_detectado": true
+      },
+      "manuscrito_reportado": {
+        "moran_I": 0.33,
+        "p": 0.002
+      },
+      "soporte": [
+        {
+          "afirmacion": "moran_significativo",
+          "especificaciones": 160,
+          "proporcion_que_la_sostiene": 0.725,
+          "subconjunto": "tasas"
+        },
+        {
+          "afirmacion": "sur_andino_detectado",
+          "especificaciones": 160,
+          "proporcion_que_la_sostiene": 0.49375,
+          "subconjunto": "tasas"
+        },
+        {
+          "afirmacion": "lima_hotspot",
+          "especificaciones": 160,
+          "proporcion_que_la_sostiene": 0.0,
+          "subconjunto": "tasas"
+        },
+        {
+          "afirmacion": "moran_significativo",
+          "especificaciones": 80,
+          "proporcion_que_la_sostiene": 0.0,
+          "subconjunto": "conteos"
+        },
+        {
+          "afirmacion": "sur_andino_detectado",
+          "especificaciones": 80,
+          "proporcion_que_la_sostiene": 0.0,
+          "subconjunto": "conteos"
+        },
+        {
+          "afirmacion": "lima_hotspot",
+          "especificaciones": 80,
+          "proporcion_que_la_sostiene": 0.0,
+          "subconjunto": "conteos"
+        }
+      ],
+      "importancia": [
+        {
+          "resultado": "moran_I",
+          "decision": "pesos",
+          "eta2_parcial": 0.998233,
+          "F": 10169.135099,
+          "p": 0.0
+        },
+        {
+          "resultado": "moran_I",
+          "decision": "periodo",
+          "eta2_parcial": 0.977889,
+          "F": 3184.348817,
+          "p": 0.0
+        },
+        {
+          "resultado": "moran_I",
+          "decision": "winsor",
+          "eta2_parcial": 0.696024,
+          "F": 164.860663,
+          "p": 0.0
+        },
+        {
+          "resultado": "moran_I",
+          "decision": "variable",
+          "eta2_parcial": 0.581511,
+          "F": 100.047364,
+          "p": 0.0
+        },
+        {
+          "resultado": "n_hotspots",
+          "decision": "pesos",
+          "eta2_parcial": 0.82461,
+          "F": 176.309042,
+          "p": 0.0
+        },
+        {
+          "resultado": "n_hotspots",
+          "decision": "correccion_local",
+          "eta2_parcial": 0.645064,
+          "F": 272.611336,
+          "p": 0.0
+        },
+        {
+          "resultado": "n_hotspots",
+          "decision": "tipo_p",
+          "eta2_parcial": 0.486071,
+          "F": 141.869096,
+          "p": 0.0
+        },
+        {
+          "resultado": "n_hotspots",
+          "decision": "periodo",
+          "eta2_parcial": 0.090388,
+          "F": 14.905533,
+          "p": 0.000168
+        },
+        {
+          "resultado": "n_hotspots",
+          "decision": "winsor",
+          "eta2_parcial": 0.01002,
+          "F": 1.518219,
+          "p": 0.219817
+        },
+        {
+          "resultado": "n_hotspots",
+          "decision": "variable",
+          "eta2_parcial": 0.001123,
+          "F": 0.168691,
+          "p": 0.681864
+        }
+      ]
+    }
+  },
+  "figuras_articulo": {
+    "carpeta": "results/figures_article",
+    "archivos": [
+      "Fig1_framework_en.png",
+      "Fig1_framework_en.tiff",
+      "Fig1_framework_es.png",
+      "Fig1_framework_es.tiff",
+      "Fig2_priority_en.png",
+      "Fig2_priority_en.tiff",
+      "Fig2_priority_es.png",
+      "Fig2_priority_es.tiff",
+      "Fig3_persistence_en.png",
+      "Fig3_persistence_en.tiff",
+      "Fig3_persistence_es.png",
+      "Fig3_persistence_es.tiff",
+      "Fig4_states_en.png",
+      "Fig4_states_en.tiff",
+      "Fig4_states_es.png",
+      "Fig4_states_es.tiff",
+      "Fig5_validation_en.png",
+      "Fig5_validation_en.tiff",
+      "Fig5_validation_es.png",
+      "Fig5_validation_es.tiff"
+    ]
+  },
+  "entorno": {
+    "hardware": {
+      "python": "3.13.15",
+      "plataforma": "Linux-6.6.122+-x86_64-with-glibc2.39",
+      "procesador": "x86_64",
+      "cpu_logicos": 2,
+      "cpu_fisicos": 1,
+      "ram_total_gb": 12.67,
+      "gpu": "sin GPU (no requerida)"
+    },
+    "paquetes": {
+      "numpy": "2.1.3",
+      "pandas": "2.2.3",
+      "scipy": "1.16.3",
+      "scikit-learn": "1.6.1",
+      "matplotlib": "3.10.0",
+      "openpyxl": "3.1.5",
+      "statsmodels": "0.15.0",
+      "geopandas": "1.1.4",
+      "shapely": "2.1.2",
+      "pyproj": "3.7.2",
+      "libpysal": "4.14.1",
+      "esda": "2.9.0"
+    }
+  },
+  "tiempos_por_etapa_s": {
+    "1_datos_y_panel": 2.23,
+    "1b_territorios_prioritarios": 0.24,
+    "2_variables_por_fold": 0.68,
+    "3_seleccion_K": 125.75,
+    "4_multialgoritmo_y_perfiles": 1.06,
+    "5_auditoria_proxy": 64.86,
+    "6_validacion_temporal": 0.3,
+    "7_espacial": 8.8,
+    "8_multiverso_M1": 1532.1,
+    "8_multiverso_M2": 36.74,
+    "9_figuras_articulo": 39.63
+  }
+}

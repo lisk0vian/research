@@ -1,0 +1,19 @@
+{
+  "title": "Data and code for \"A reproducible GeoAI framework for explainable spatiotemporal analysis of national missing-person registers: multi-algorithm clustering and multilevel validation (Peru, 2019–2025)\"",
+  "upload_type": "software",
+  "version": "3.3.2",
+  "description": "<p>Reproducibility package of the article submitted to <em>Information Sciences</em>. It contains the input data (RENIPED extract published by MININTER on Peru's National Open Data Platform, INEI population projections 2018–2026 and a provincial boundary layer), the Python package <code>reniped</code>, the frozen analysis plan (v3.3.2, SHA-256 3b6e0f676646baed271a107db441579d58230bbcec607f85a5f45d7e7e1f2958), ten automated tests, a Google Colab notebook and all results (FINAL_RESULTS.json, 35 tables and Figs. 1–5). A full run takes about 30 minutes on a free Colab CPU.</p>",
+  "creators": [
+    {"name": "Evangelista Gamarra, Moisés", "orcid": "0009-0002-5382-1390",
+     "affiliation": "Servicio Nacional de Adiestramiento en Trabajo Industrial (SENATI)"},
+    {"name": "Alama Carreño, Edwar Abrahan", "orcid": "0009-0006-8029-4302",
+     "affiliation": "Servicio Nacional de Adiestramiento en Trabajo Industrial (SENATI)"},
+    {"name": "Figueroa Rosas, Pamela Estefani", "orcid": "0009-0007-6100-9382",
+     "affiliation": "Servicio Nacional de Adiestramiento en Trabajo Industrial (SENATI)"}
+  ],
+  "license": "MIT",
+  "keywords": ["missing persons", "GeoAI", "spatiotemporal clustering", "spatial autocorrelation",
+               "priority territories", "multilevel validation", "administrative registers", "Peru"],
+  "language": "eng",
+  "access_right": "open"
+}
