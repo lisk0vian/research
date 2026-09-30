@@ -5,6 +5,11 @@ type: software
 version: "3.3.2"
 license: MIT
 repository-code: "https://github.com/pamelafiguer/research/tree/main/C26-202609-missingpersons"
+doi: "10.5281/zenodo.23066963"
+identifiers:
+  - type: doi
+    value: "10.5281/zenodo.23066963"
+    description: "Zenodo archive of this reproducibility package"
 keywords:
   - missing persons
   - GeoAI

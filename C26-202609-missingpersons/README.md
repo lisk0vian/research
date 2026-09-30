@@ -1,10 +1,10 @@
 # GeoAI-MissingPersons-Peru
 
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/YOUR-GITHUB-USER/GeoAI-MissingPersons-Peru/blob/main/notebooks/GeoAI_MissingPersons_Peru.ipynb)
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.XXXXXXX.svg)](https://doi.org/10.5281/zenodo.XXXXXXX)
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/pamelafiguer/research/blob/main/C26-202609-missingpersons/notebooks/GeoAI_MissingPersons_Peru.ipynb)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23066963.svg)](https://doi.org/10.5281/zenodo.23066963)
 [![License: MIT](https://img.shields.io/badge/code-MIT-blue.svg)](LICENSE)
 
-This repository holds the data, code and results for the following article:
+This folder (`C26-202609-missingpersons` in the [`pamelafiguer/research`](https://github.com/pamelafiguer/research) repository) holds the data, code and results for the following article:
 
 > M. Evangelista Gamarra, E.A. Alama Carreño, P.E. Figueroa Rosas. *A reproducible GeoAI framework for explainable spatiotemporal analysis of national missing-person registers: multi-algorithm clustering and multilevel validation (Peru, 2019–2025).* Submitted to *Information Sciences*.
 
@@ -16,7 +16,7 @@ The pipeline analyses the 142,374 missing-person reports that the Peruvian Minis
 4. temporal dynamics;
 5. multilevel validation: a territorial-identity leakage audit, a reproduction of the initial analysis and a specification multiverse.
 
-Every number in the article is read from `results/FINAL_RESULTS.json` or `results/tables/`, and the article figures are generated from those tables.
+Every number in the article is read from `results/FINAL_RESULTS.json` or `results/tables/`, and the article figures are generated from those tables and the territory-month panel.
 
 ---
 
@@ -27,22 +27,22 @@ Every number in the article is read from `results/FINAL_RESULTS.json` or `result
 1. Click the **Open in Colab** badge above.
 2. Select **Runtime ▸ Run all**.
 
-The notebook clones this repository, installs the two missing libraries (`libpysal`, `esda`) and checks the versions of all others against the reference environment. It then verifies the SHA-256 of the three input files, runs the automated tests and executes every stage of the analysis. When it finishes, it compares all 35 regenerated tables with the reference tables committed in this repository.
+The notebook downloads only this folder of the repository, installs the two missing libraries (`libpysal`, `esda`) and checks the versions of all others against the reference environment. It then verifies the SHA-256 of the three input files, runs the automated tests and executes every stage of the analysis. When it finishes, it compares all 35 regenerated tables with the reference tables committed in this repository.
 
 A full run takes about 30 minutes on a free Colab CPU. No GPU is needed. About 25 of those minutes are the clustering multiverse (stage 8). At the end, you can download the results as a ZIP file.
 
 ### Option B: local run (Python 3.11–3.13)
 
 ```bash
-git clone https://github.com/pamelafiguer/research
-cd GeoAI-MissingPersons-Peru
+git clone https://github.com/pamelafiguer/research.git
+cd research/C26-202609-missingpersons
 python -m venv .venv && source .venv/bin/activate      # Windows: .venv\Scripts\activate
 pip install -r requirements.txt pytest
 python -m pytest -q tests          # 10 tests, < 1 min
 python run_all.py                  # full pipeline, about 30 min
 ```
 
-You can also open `notebooks/GeoAI_MissingPersons_Peru.ipynb` locally with Jupyter. It detects that it is running inside the repository and skips the clone.
+You can also open `notebooks/GeoAI_MissingPersons_Peru.ipynb` locally with Jupyter. It detects that it is running inside this folder and skips the download.
 
 ---
 
@@ -69,7 +69,7 @@ You can also open `notebooks/GeoAI_MissingPersons_Peru.ipynb` locally with Jupyt
 ## Repository structure
 
 ```
-GeoAI-MissingPersons-Peru/
+C26-202609-missingpersons/
 ├── README.md                  this file
 ├── LICENSE                    MIT (code)
 ├── DATA_LICENSES.md           sources, licenses and hashes of the input data
@@ -90,7 +90,7 @@ GeoAI-MissingPersons-Peru/
 └── results/
     ├── FINAL_RESULTS.json     every number reported in the article
     ├── tables/                35 CSV tables (T01–T14b)
-    ├── figures_article/       Figs. 1–5 of the article (ES/EN)
+    ├── figures_article/       Figs. 1–6 of the article (ES/EN)
     ├── figures/               supplementary diagnostic figures
     └── environment.json       software and hardware of the reference run
 ```
@@ -102,16 +102,16 @@ The PNG previews of the figures are versioned. The TIFF files for submission (60
 | Stage (`pipeline.py`) | Module | Manuscript |
 |---|---|---|
 | `stage_init` | `config.py` | Section 4.7 |
-| `stage_data` | `io_utils.py`, `population.py`, `panel.py` | Section 3 |
-| `stage_priority` | `prioridad.py` | Sections 4.1, 5.1; Figs. 2–3 |
+| `stage_data` | `io_utils.py`, `population.py`, `panel.py` | Section 3; Fig. 2 |
+| `stage_priority` | `prioridad.py` | Sections 4.1, 5.1; Figs. 3–4 |
 | `stage_features` | `features.py` | Section 4.2; Table 1 |
-| `stage_k` | `clustering.py` | Sections 4.3, 5.2; Fig. 4a–c |
-| `stage_algorithms` | `clustering.py` | Sections 4.3, 5.2; Fig. 4d |
+| `stage_k` | `clustering.py` | Sections 4.3, 5.2; Fig. 5a–c |
+| `stage_algorithms` | `clustering.py` | Sections 4.3, 5.2; Fig. 5d |
 | `stage_audit` | `audit.py` | Sections 4.6, 5.5; Table 3 (Panel A) |
 | `stage_temporal` | `temporal.py` | Sections 4.5, 5.4 |
 | `stage_spatial` | `spatial.py`, `maps.py` | Sections 4.4, 5.3; Table 2 |
-| `stage_multiverse` | `multiverse.py`, `figures.py` | Sections 4.6, 5.5; Fig. 5, Table 3 (Panel B) |
-| `stage_article_figures` | `article_figures.py` | Figs. 1–5 |
+| `stage_multiverse` | `multiverse.py`, `figures.py` | Sections 4.6, 5.5; Fig. 6, Table 3 (Panel B) |
+| `stage_article_figures` | `article_figures.py` | Figs. 1–6 |
 
 ---
 
@@ -120,11 +120,12 @@ The PNG previews of the figures are versioned. The TIFF files for submission (60
 | Article | Output file(s) | Source |
 |---|---|---|
 | Fig. 1 | `results/figures_article/Fig1_framework_{en,es}` | diagram (no data) |
-| Fig. 2 | `Fig2_priority_*` | `T14_territorios_prioritarios.csv` + geometry |
-| Fig. 3 | `Fig3_persistence_*` | `T14b_razon_tasas_anual.csv`, `T14_territorios_prioritarios.csv` |
-| Fig. 4 | `Fig4_states_*` | `T02_seleccion_K.csv`, `T02b_gap_desde_K1.csv`, `T04_perfiles_cluster.csv`, `T04c_distribucion_estandarizada_por_estado.csv` |
-| Fig. 5 | `Fig5_validation_*` | `T12_multiverso_M1_especificaciones.csv`, `T13_multiverso_M2_especificaciones.csv` |
-| Table 1 | — | `config/analysis_plan.json` (`features.espacios`), `FINAL_RESULTS.json` (`diseno_espacios`) |
+| Fig. 2 | `Fig2_reports_*` | `data/processed/panel_departamento_mes.csv` (reports per year and per month) |
+| Fig. 3 | `Fig3_priority_*` | `T14_territorios_prioritarios.csv` + geometry |
+| Fig. 4 | `Fig4_persistence_*` | `T14b_razon_tasas_anual.csv`, `T14_territorios_prioritarios.csv` |
+| Fig. 5 | `Fig5_states_*` | `T02_seleccion_K.csv`, `T02b_gap_desde_K1.csv`, `T04_perfiles_cluster.csv`, `T04c_distribucion_estandarizada_por_estado.csv` |
+| Fig. 6 | `Fig6_validation_*` | `T12_multiverso_M1_especificaciones.csv`, `T13_multiverso_M2_especificaciones.csv` |
+| Table 1 | — | `config/analysis_plan.json` (`features.espacios`); code names in the glossary below |
 | Table 2, Panel A | — | `T09_moran_global.csv` |
 | Table 2, Panel B | — | `T10_local_queen.csv`, `T10_local_knn4_geodesico.csv` |
 | Table 3, Panel A | — | `T05_auditoria_proxy.csv` |
@@ -191,7 +192,7 @@ If you use this code or data, please cite the article and this archive:
 ```
 M. Evangelista Gamarra, E.A. Alama Carreño, P.E. Figueroa Rosas (2026). Data and code for
 "A reproducible GeoAI framework for explainable spatiotemporal analysis of national
-missing-person registers" (version 3.3.2) [dataset]. Zenodo. https://doi.org/10.5281/zenodo.XXXXXXX
+missing-person registers"
 ```
 
 GitHub's **"Cite this repository"** button reads [`CITATION.cff`](CITATION.cff).

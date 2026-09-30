@@ -1,0 +1,29 @@
+[
+  {
+    "person_or_org": {
+      "type": "personal",
+      "family_name": "Evangelista Gamarra",
+      "given_name": "Moisés",
+      "identifiers": [{ "scheme": "orcid", "identifier": "0009-0002-5382-1390" }]
+    },
+    "affiliations": [{ "name": "Servicio Nacional de Adiestramiento en Trabajo Industrial (SENATI)" }]
+  },
+  {
+    "person_or_org": {
+      "type": "personal",
+      "family_name": "Alama Carreño",
+      "given_name": "Edwar Abrahan",
+      "identifiers": [{ "scheme": "orcid", "identifier": "0009-0006-8029-4302" }]
+    },
+    "affiliations": [{ "name": "Servicio Nacional de Adiestramiento en Trabajo Industrial (SENATI)" }]
+  },
+  {
+    "person_or_org": {
+      "type": "personal",
+      "family_name": "Figueroa Rosas",
+      "given_name": "Pamela Estefani",
+      "identifiers": [{ "scheme": "orcid", "identifier": "0009-0007-6100-9382" }]
+    },
+    "affiliations": [{ "name": "Servicio Nacional de Adiestramiento en Trabajo Industrial (SENATI)" }]
+  }
+]

@@ -2,16 +2,16 @@
 
 Stages and manuscript sections:
   stage_init            plan freeze and SHA-256 lock                      (Section 4.7)
-  stage_data            data integrity, territory-month panel             (Section 3)
-  stage_priority        rates and priority territories                    (4.1, 5.1; Figs. 2-3)
+  stage_data            data integrity, territory-month panel             (Section 3; Fig. 2)
+  stage_priority        rates and priority territories                    (4.1, 5.1; Figs. 3-4)
   stage_features        features by temporal fold                         (4.2; Table 1)
-  stage_k               choice of K                                       (4.3, 5.2; Fig. 4a-c)
-  stage_algorithms      multi-algorithm clustering and state profiles     (4.3, 5.2; Fig. 4d)
+  stage_k               choice of K                                       (4.3, 5.2; Fig. 5a-c)
+  stage_algorithms      multi-algorithm clustering and state profiles     (4.3, 5.2; Fig. 5d)
   stage_audit           territorial-identity leakage audit                (4.6, 5.5; Table 3A)
   stage_temporal        temporal transfer to 2024 and 2025                (4.5, 5.4)
   stage_spatial         global Moran, local Gi*/LISA with FDR             (4.4, 5.3; Table 2)
-  stage_multiverse      specification multiverse M1 and M2                (4.6, 5.5; Fig. 5, Table 3B)
-  stage_article_figures manuscript Figs. 1-5 (ES and EN)
+  stage_multiverse      specification multiverse M1 and M2                (4.6, 5.5; Fig. 6, Table 3B)
+  stage_article_figures manuscript Figs. 1-6 (ES and EN)
 
 Console messages, table names and column names are in Spanish (see the glossary in README.md).
 
@@ -215,7 +215,7 @@ def stage_algorithms(ctx):
         prof_std = pd.DataFrame(lk.cluster_centers_, columns=feats).assign(CLUSTER=range(K))
         res.table("T04_perfiles_cluster", prof)
         res.table("T04b_centroides_estandarizados", prof_std)
-        # v3.3.2: distribution of each standardized feature by state (Fig. 4d) and mean ± SD
+        # v3.3.2: distribution of each standardized feature by state (Fig. 5d) and mean ± SD
         z = pd.DataFrame(np.asarray(X), columns=feats).assign(CLUSTER=labels["KMeans"])
         dist = (z.melt(id_vars="CLUSTER", var_name="VARIABLE", value_name="Z")
                 .groupby(["CLUSTER", "VARIABLE"])["Z"]
@@ -442,12 +442,12 @@ def stage_priority(ctx):
 
 # ---------------------------------------------------------------- stage 9 (v3.3)
 def stage_article_figures(ctx):
-    """Manuscript Figs. 1-5 in Spanish (internal review) and English (submission)."""
+    """Manuscript Figs. 1-6 in Spanish (internal review) and English (submission)."""
     from .article_figures import build_all
     res = ctx["res"]
     with res.timer("9_figuras_articulo"):
         out = res.root / "figures_article"
-        files = build_all(res.tables, ctx["units"], res.data["seleccion_k"]["K_elegido"], out)
+        files = build_all(res.tables, ctx["units"], res.data["seleccion_k"]["K_elegido"], out, ctx["panel"])
         res.set("figuras_articulo", {"carpeta": "results/figures_article", "archivos": files})
     print("\n".join(files))
     return ctx
