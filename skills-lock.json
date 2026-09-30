@@ -1,25 +1,31 @@
 {
   "version": 1,
   "skills": {
-    "docx": {
+    "util-docx": {
       "source": "anthropics/skills",
       "sourceType": "github",
       "skillPath": "skills/docx/SKILL.md",
       "computedHash": "59c70107f8eae818bdfca7da685a6e4111aa519638b667775b794cb74987ec47"
     },
-    "humanize-academic-writing": {
+    "grilling": {
+      "source": "mattpocock/skills",
+      "sourceType": "github",
+      "skillPath": "skills/productivity/grilling/SKILL.md",
+      "computedHash": "4dd886b0196bf43729d954ae326016f2bd9f5f79d892500b407c33a753362f14"
+    },
+    "paper-humanize": {
       "source": "momo2young/humanize-academic-writing",
       "sourceType": "github",
       "skillPath": "SKILL.md",
       "computedHash": "91048fa27b9eea34850be5ec88b8c3fdd70528d759c9384579dd836ea191e005"
     },
-    "nature-academic-search": {
+    "paper-search": {
       "source": "yuan1z0825/nature-skills",
       "sourceType": "github",
       "skillPath": "skills/nature-academic-search/SKILL.md",
       "computedHash": "1d4f214d50ec190721a929789647764fc5546c27a746a3f3b2e7fb07034e58fe"
     },
-    "office-to-md": {
+    "util-office-to-md": {
       "source": "claude-office-skills/skills",
       "sourceType": "github",
       "skillPath": "office-to-md/SKILL.md",
