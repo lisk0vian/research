@@ -1,0 +1,10 @@
+journal: "Engineering Applications of Artificial Intelligence"
+publisher: unknown
+format: latex
+extension: ""
+quarto_format: pdf
+cite_style: number
+issn: ""
+url: ""
+notes: >
+  TODO: placeholder creado para pasar paper_validate.py — completar metadata desde Guide for Authors.
