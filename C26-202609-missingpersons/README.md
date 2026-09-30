@@ -192,7 +192,7 @@ If you use this code or data, please cite the article and this archive:
 ```
 M. Evangelista Gamarra, E.A. Alama Carreño, P.E. Figueroa Rosas (2026). Data and code for
 "A reproducible GeoAI framework for explainable spatiotemporal analysis of national
-missing-person registers" (version 3.3.2) [dataset]. Zenodo. https://doi.org/10.5281/zenodo.XXXXXXX
+missing-person registers"
 ```
 
 GitHub's **"Cite this repository"** button reads [`CITATION.cff`](CITATION.cff).

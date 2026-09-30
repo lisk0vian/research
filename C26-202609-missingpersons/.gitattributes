@@ -1,0 +1,8 @@
+# Input data are stored byte for byte: the pipeline checks their SHA-256 against the
+# analysis plan. Never let Git convert their line endings (the RENIPED CSV uses CRLF).
+data/** -text
+*.csv -text
+*.geojson -text
+*.xlsx binary
+*.tiff binary
+*.png binary
