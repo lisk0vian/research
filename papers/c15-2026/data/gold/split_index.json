@@ -1,0 +1,79 @@
+{
+  "splits": {
+    "search_train": {
+      "years": [
+        2019,
+        2020,
+        2021,
+        2022
+      ],
+      "n_rows": 4862,
+      "prevalence": 0.14109419991772934
+    },
+    "search_valid": {
+      "years": [
+        2023
+      ],
+      "n_rows": 1214,
+      "prevalence": 0.13509060955518945
+    },
+    "train_full": {
+      "years": [
+        2019,
+        2020,
+        2021,
+        2022,
+        2023
+      ],
+      "n_rows": 6076,
+      "prevalence": 0.13989466754443713
+    },
+    "calib": {
+      "years": [
+        2024
+      ],
+      "n_rows": 1195,
+      "prevalence": 0.13305439330543933
+    },
+    "test": {
+      "years": [
+        2025
+      ],
+      "n_rows": 1199,
+      "prevalence": 0.14345287739783152
+    },
+    "external": {
+      "years": [
+        2026
+      ],
+      "n_rows": 1123,
+      "prevalence": 0.20213713268032057
+    }
+  },
+  "thresholds": {
+    "q75_s": 11.0,
+    "q25_t": 0.9162303664921466
+  },
+  "feature_list": [
+    "ubigeo_pjfs",
+    "post_pandemia",
+    "periodo_pandemia_2020",
+    "hist_ingresado_mean_prev",
+    "hist_saldo_mean_prev",
+    "growth_ingresado_prev",
+    "hist_saldo_mean_prev_was_null",
+    "especializada__DELITOS DE CORRUPCION DE FUNCIONARIOS",
+    "especializada__VIOLENCIA CONTRA LA MUJER Y LOS INTEGRANTES DEL GRUPO FAMILIAR",
+    "especializada__missing",
+    "inter_tipo_fiscalia_especialidad__PROVINCIAL|FAMILIA PENAL",
+    "inter_tipo_fiscalia_especialidad__PROVINCIAL|FAMILIA TUTELAR",
+    "inter_tipo_fiscalia_especialidad__PROVINCIAL|PENAL",
+    "inter_tipo_fiscalia_especialidad__SUPERIOR|FAMILIA CIVIL",
+    "inter_tipo_fiscalia_especialidad__SUPERIOR|FAMILIA PENAL",
+    "inter_tipo_fiscalia_especialidad__SUPERIOR|FAMILIA TUTELAR",
+    "inter_tipo_fiscalia_especialidad__SUPERIOR|PENAL",
+    "inter_tipo_fiscalia_especialidad__SUPREMA|CONTROL INTERNO",
+    "freq_inter_distrito_tipo_caso"
+  ],
+  "target": "riesgo_congestion"
+}
