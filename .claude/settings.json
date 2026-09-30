@@ -1,0 +1,20 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash",
+            "args": [
+              "-c",
+              "python \"$CLAUDE_PROJECT_DIR/scripts/link_skills.py\" >/dev/null 2>&1 || python3 \"$CLAUDE_PROJECT_DIR/scripts/link_skills.py\" >/dev/null 2>&1 || true"
+            ],
+            "timeout": 30,
+            "statusMessage": "Linking repository skills for Claude"
+          }
+        ]
+      }
+    ]
+  }
+}

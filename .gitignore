@@ -105,6 +105,19 @@ papers/*/notebooks/.ipynb_checkpoints/
 .opencode/logs/
 .opencode/*.local.json
 
+# ---- Claude skill links (machine-local) ----
+# .claude/skills/* are links to the canonical .agents/skills/*. They are OS
+# specific (symlink vs Windows junction), so they are not committed. Recreate
+# them on a fresh clone with: python scripts/link_skills.py
+# .claude/settings.json IS committed (it carries the SessionStart hook that
+# creates the links automatically); only the personal override is ignored.
+.claude/skills/
+.claude/settings.local.json
+
+# ---- Test / tooling caches ----
+.pytest_cache/
+.tgrep/
+
 # ---- Secrets / credentials (never commit) ----
 .env
 .env.*
