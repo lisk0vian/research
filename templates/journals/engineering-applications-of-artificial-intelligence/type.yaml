@@ -1,10 +1,13 @@
 journal: "Engineering Applications of Artificial Intelligence"
-publisher: unknown
+publisher: Elsevier
+issn: "0952-1976"
 format: latex
-extension: ""
-quarto_format: pdf
-cite_style: number
-issn: ""
-url: ""
+extension: "quarto-journals/elsevier-cas"
+quarto_extension: "quarto-journals/elsevier-cas"
+quarto_format: elsevier-cas-pdf
+model: 1p                 # single-column (desk-reject gate #4)
+formatting: doubleblind   # double anonymized: title page separate from manuscript
+cite_style: authoryear    # (Allan, 2020; Allan and Jones, 2019; Kramer et al., 2023)
+url: "https://www.sciencedirect.com/journal/engineering-applications-of-artificial-intelligence/publish/guide-for-authors"
 notes: >
-  TODO: placeholder creado para pasar paper_validate.py — completar metadata desde Guide for Authors.
+  IFAC journal. Double anonymized review (title page + anonymized manuscript separate). Single-column format (desk-reject if not). Abstract max 250 words, must state AI contribution + engineering application, no undefined acronyms in title/abstract. Keywords 1-6. Highlights 3-5 x max 85 chars encouraged. Graphical abstract 531x1328 encouraged. SI units + up to 6 Inspec codes. CRediT required. References authoryear (Allan 2020a, Allan and Jones 2019, Kramer et al. 2023), alphabetical then chronological, LTWA abbreviations. Data Option C: deposit + cite/link dataset, Data statement required. Max 50 pages, <100MB. Source: Guide for Authors 30/9/26, https://www.sciencedirect.com/journal/engineering-applications-of-artificial-intelligence/publish/guide-for-authors
