@@ -1,5 +1,5 @@
 ---
-name: tgrep
+name: util-search
 description: Use tgrep instead of grep/rg for content search. Trigram-indexed, ripgrep-compatible regex search with client/server architecture. Triggers on any need to search file contents, find symbols, TODOs, or list searchable files.
 ---
 

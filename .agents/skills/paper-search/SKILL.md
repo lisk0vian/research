@@ -1,5 +1,5 @@
 ---
-name: nature-academic-search
+name: paper-search
 description: >-
   Multi-source literature search, citation verification, strict independent other-citation
   audits, article-level citation metric tables, influential citer profiling with

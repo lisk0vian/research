@@ -1,5 +1,5 @@
 ---
-name: humanize-academic-writing
+name: paper-humanize
 description: Transform AI-generated academic text into natural, human-like scholarly writing for social sciences. Detects AI patterns (repetitive structures, abstract language, mechanical flow) and rewrites with authentic academic voice. Use when revising AI-drafted papers, improving writing naturalness, reducing AI detection markers, or when user mentions humanizing text, academic writing quality, or social science writing for non-native English speakers.
 ---
 

@@ -6,9 +6,9 @@ a `.gitkeep` so Git tracks them.
 ```
 papers/<slug>/
 ├── paper/
-│   ├── main.qmd               # from assets/main.qmd.template (or migrated)
-│   ├── manifest.yaml          # from assets/manifest.yaml.template
-│   ├── references.bib         # from assets/references.bib.template (empty)
+│   ├── main.qmd               # from templates/paper/main.qmd.template (or migrated)
+│   ├── manifest.yaml          # from templates/paper/manifest.yaml.template
+│   ├── references.bib         # from templates/paper/references.bib.template (empty)
 │   ├── references-source.bib  # raw export from the reference manager (biblatex)
 │   ├── media/                 # figures from a migrated Word doc live here
 │   └── _extensions/           # NOT created here; `quarto add` makes it (gitignored)
@@ -24,9 +24,9 @@ papers/<slug>/
 │
 ├── reviews/
 │   └── round-1/
-│       ├── comments.yaml      # from assets/comments.yaml.template
-│       ├── responses.yaml     # from assets/responses.yaml.template
-│       └── ai-review.yaml     # from assets/ai-review.yaml.template
+│       ├── comments.yaml      # from templates/paper/comments.yaml.template
+│       ├── responses.yaml     # from templates/paper/responses.yaml.template
+│       └── ai-review.yaml     # from templates/paper/ai-review.yaml.template
 │
 └── build/                     # gitignored except the final PDF
 ```

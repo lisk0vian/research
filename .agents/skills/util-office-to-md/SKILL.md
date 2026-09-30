@@ -4,8 +4,8 @@
 # ═══════════════════════════════════════════════════════════════════════════════
 
 # Basic Information
-name: office-to-md
-description: ">"
+name: util-office-to-md
+description: "Convert Office files (.docx, .pptx, .xlsx, .pdf) to Markdown with markitdown. Use to turn Word/PowerPoint/Excel/PDF sources into Markdown for reading, diffing or feeding to a pipeline without burning tokens on binary formats."
 version: "1.0"
 author: claude-office-skills
 license: MIT
