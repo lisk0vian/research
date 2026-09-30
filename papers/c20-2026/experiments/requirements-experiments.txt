@@ -1,0 +1,8 @@
+# Declared only — not installed yet (author request).
+pandas
+numpy
+scikit-learn
+lightgbm
+pyyaml
+click
+pytest

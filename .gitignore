@@ -147,7 +147,7 @@ tmp/
 scratch/
 
 # ---- Experiments in papers ----
-papers/*/experiments/
+# papers/*/experiments/
 
 # ---- Pipeline run logs (verbose, regenerable) ----
 papers/*/outputs/logs/

@@ -1,0 +1,95 @@
+project: C20-2026-temperatura
+design_version: "2.0"
+station:
+  name: "EMA Observatorio de Huancayo (Huayao)"
+  provider: "IGP-LAMAR"
+  lat: -12.0401
+  lon: -75.32049
+  elev_m: 3329
+  n_stations: 1
+data:
+  resolution: hourly
+  coverage_declared: [2018, 2025]
+  local_tz_offset_hours: -5
+  tz_of_source: TO_VERIFY        # V1
+  target_variable: TT
+  non_predictors: [FECHA_CORTE, UBIGEO]
+qc_hourly:
+  range: {TT: [-15, 35], HR: [0, 100], PP: [640, 720], RR: [0, 60], FF: [0, 40], DD: [0, 360]}
+  hr_clip_upper: 103
+  step_TT_max_degC: 8
+  stuck_run_hours: 6
+daily_aggregation:
+  min_hours: 20
+  require_each_6h_block: true
+  rr_min_hours: 24
+  rr_flag_hours: [22, 23]
+  wind: vector_components
+target:
+  type: period_mean_anomaly
+  horizons:
+    W1: [1, 7]
+    W2: [8, 14]
+    W3_4: [15, 28]
+  min_valid_days: {W1: 5, W2: 5, W3_4: 10}
+  impute_target: false
+issuance:
+  evaluation: weekly
+  weekday: monday
+  weekday_sensitivity: thursday
+  training: daily_allowed
+climatology:
+  primary: C2_harmonic
+  harmonics_K: 3
+  period_days: 365.25
+  sensitivity: [C1_window_pm15d, C3_harmonic_plus_trend]
+  fit_on: daily_training_only
+predictors:
+  local: [TT_anom_lags_0_6, TT_anom_mean_7_14_30, A0_7d, DTR_anom_7d, TTmax_anom_7d, TTmin_anom_7d,
+          HR_anom_7_30, log1p_RR_sum_7_30, PP_anom_7d, PP_tendency_3d, u_mean_7d, v_mean_7d,
+          doy_sin_cos_target_midpoint]
+  large_scale:
+    nino34_weekly: {source: CPC_OISST_weekly, lag_days: 7}
+    nino12_weekly: {source: CPC_OISST_weekly, lag_days: 7}
+    rmm: {components: [RMM1, RMM2], lag_days: 1, provider: TO_VERIFY}
+    era5_pcs: {lag_days: 5, k: 5, k_sensitivity: [3, 10], fit: per_fold_training_only,
+               domain: TO_CONFIRM_D4, variables: TO_CONFIRM_D4}
+  excluded_leaky: [ONI, ICEN]
+models:
+  references: [Clim, Damp, Pers]
+  candidates: [Ridge_L, Ridge_LG, GBM_L, GBM_LG]
+  strategy: direct_per_horizon
+  damp: {intercept: true, by: season_quarter}
+  gaussian_sigma: by_horizon_and_quarter
+  gbm_quantiles: [0.05, 0.10, 0.15, 0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50,
+                  0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95]
+  quantile_crossing_fix: rearrangement
+  primary_model_selection: {among: [Ridge_LG, GBM_LG], criterion: mean_CRPS_dev_folds}
+validation:
+  scheme: rolling_origin_expanding
+  embargo_days: 28
+  folds:
+    - {id: D1, train: [2018, 2020], test: 2021, role: dev}
+    - {id: D2, train: [2018, 2021], test: 2022, role: dev}
+    - {id: D3, train: [2018, 2022], test: 2023, role: dev}
+    - {id: B1, train: [2018, 2023], test: 2024, role: blind}
+    - {id: B2, train: [2018, 2024], test: 2025, role: blind}
+  freeze_before_blind: [hyperparameters, primary_model]
+metrics:
+  deterministic: [MAE, RMSE, ACC, MSSS_clim, MSSS_damp, murphy_decomposition]
+  probabilistic: [CRPS_quantile_grid, CRPSS_clim, CRPSS_damp, RPSS_terciles, PIT, reliability, coverage_50_90, sharpness]
+  fair_scores: false
+inference:
+  population: blind_test_only
+  h1_ridge: clark_west_hac
+  h1_gbm: block_bootstrap_delta_mse
+  h1_probabilistic: block_bootstrap_delta_crps
+  h2: block_bootstrap_msss_damp_W3_4
+  h3: block_bootstrap_crpss_clim
+  bootstrap: {type: moving_block, unit: weekly_issuance, block_weeks: 8, block_sensitivity: [4, 13], B: 10000}
+  hac: {kernel: bartlett, bandwidth: "max(floor(4*(n/100)^(2/9)), overlap_order)"}
+  multiplicity: {method: holm, families: {H1: 3, H2: 1, H3: 3}}
+  alpha: 0.05
+  secondary_calibration_criterion: {interval: 0.90, coverage_range: [0.85, 0.95]}
+extensions_enabled: {E1_LSTM_TFT: false, E2_multistation: false, E3_S2S_benchmark: false,
+                     E4_long_climatology: false, E5_Tmin: false}
