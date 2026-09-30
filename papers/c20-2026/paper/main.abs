@@ -1,0 +1,6 @@
+This template helps you to create a properly formatted LaTeX manuscript.
+
+\texttt{begin\{abstract\}} \ldots{} \texttt{end\{abstract\}} and
+\texttt{begin\{keyword\}} \ldots{} \texttt{end\{keyword\}} which contain
+the abstract and keywords respectively. Each keyword shall be separated
+by a \texttt{sep} command.

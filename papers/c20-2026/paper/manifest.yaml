@@ -1,0 +1,40 @@
+# papers/c20-2026/paper/manifest.yaml
+# Single source of truth for this paper's metadata. Does NOT duplicate author
+# data: it references authors/<id>.yaml by id only.
+
+paper: c20-2026
+title: "Subseasonal Temperature Forecasting in Andean Stations: A Benchmark of Machine Learning and Deep Learning Models with Anomaly Decomposition"
+
+# --- Editorial target ---
+journal: engineering-applications-of-artificial-intelligence          # must exist under templates/journals/<journal>/
+internal_code: "C20-2026" # institutional code (empty "" if none)
+
+# --- Funding / institution ---
+institution: "SENATI"
+funding: "This work was funded by SENATI, Peru (Project C20-2026)."             # exact text for the paper's Funding section
+
+# --- Authors (id + role + order for THIS paper only) ---
+# Full details (name, orcid, email, affiliation) live in authors/<id>.yaml
+authors:
+  - id: moises
+    role: corresponding
+    order: 1
+  - id: jeremi
+    role: author
+    order: 2
+
+# --- Claims: verifiable statements made by the paper ---
+# Each claim anchors a number/result in the text to its origin in the pipeline,
+# so paper-refs and the reviewers can audit that nothing was fabricated.
+claims:
+  - id: claim-1
+    text: "EXAMPLE: The model reaches F1 = 0.469 on the 2025 test set."
+    source: "experiments/exp-01/results/metrics.json"   # where the number comes from
+    status: draft                                        # draft | verified | stale
+
+# --- Figures: registry of each figure and its origin ---
+figures:
+  - id: fig-1
+    caption: "EXAMPLE: Methodological workflow diagram."
+    file: "media/image2.png"          # path relative to paper/
+    source: "migrated"                # migrated (came from Word) | experiments/exp-XX

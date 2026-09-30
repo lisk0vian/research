@@ -1,0 +1,16 @@
+# reviews/round-1/comments.yaml
+# Comments from the journal's HUMAN editor/reviewers.
+# Each comment is a structured entry so it can be cross-referenced in responses.yaml.
+#
+# status: pending   -> not yet answered
+#         addressed -> has a response + commit in responses.yaml
+#         wontfix   -> decided not to act (justify in responses.yaml)
+
+comments: []
+# Example:
+# comments:
+#   - id: r1-c1
+#     reviewer: "Reviewer 2"
+#     category: methodology        # methodology | results | writing | formatting | references
+#     text: "The silhouette coefficient is not justified for k=4."
+#     status: pending

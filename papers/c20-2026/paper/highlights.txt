@@ -1,0 +1,5 @@
+Zero-leakage climatology isolates thermal anomaly signal
+Sliding 2025 windows benchmark ensembles vs LSTM vs TFT
+Public IGP Huayao hourly data enables full replication
+Ablation quantifies physical feature group contributions
+Probabilistic skill supports subseasonal planning use
