@@ -1,0 +1,45 @@
+name: validate
+
+# Gate every pull request on the repository structure contract. A PR that
+# touches papers, the shared catalogs, the scripts or the skills must keep the
+# folder layout, manifests and naming rules valid (see AGENTS.md).
+
+on:
+  pull_request:
+    paths:
+      - "papers/**"
+      - "authors/**"
+      - "templates/**"
+      - "scripts/**"
+      - "tests/**"
+      - ".agents/skills/**"
+      - ".github/workflows/validate.yml"
+  push:
+    branches: [main, master]
+    paths:
+      - "papers/**"
+      - "authors/**"
+      - "templates/**"
+      - "scripts/**"
+      - "tests/**"
+      - ".agents/skills/**"
+  workflow_dispatch:
+
+jobs:
+  structure:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install test dependencies
+        run: pip install -r requirements-dev.txt
+
+      - name: Validate repository structure
+        run: python scripts/paper_validate.py
+
+      - name: Run tests
+        run: pytest -q
