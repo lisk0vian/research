@@ -1,7 +1,7 @@
 # GeoAI-MissingPersons-Peru
 
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/pamelafiguer/research/blob/main/C26-202609-missingpersons/notebooks/GeoAI_MissingPersons_Peru.ipynb)
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.XXXXXXX.svg)](https://doi.org/10.5281/zenodo.XXXXXXX)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23066963.svg)](https://doi.org/10.5281/zenodo.23066963)
 [![License: MIT](https://img.shields.io/badge/code-MIT-blue.svg)](LICENSE)
 
 This folder (`C26-202609-missingpersons` in the [`pamelafiguer/research`](https://github.com/pamelafiguer/research) repository) holds the data, code and results for the following article:
