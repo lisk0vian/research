@@ -1,0 +1,37 @@
+---
+title: "{{TITLE}}"
+{{FORMAT_BLOCK}}author:
+{{AUTHORS_BLOCK}}
+abstract: |
+  {{ABSTRACT}}
+keywords:
+{{KEYWORDS_BLOCK}}
+bibliography: references.bib
+---
+
+<!--
+  PAPER BODY — replace with the real content.
+  Repo conventions (see AGENTS.md):
+  - Citations: [@bibtex_key], never hand-written [1]/[2].
+  - Do NOT write a "# References" section: Quarto generates it from references.bib.
+  - Equations: $$ ... $$ (native LaTeX), never as an image.
+  - Section numbering: added by the journal template; do not write "I.", "A.".
+  - Figures: ![Caption](media/file.png){#fig-label}
+
+  The format: block above is written by scripts/paper_new.py from the journal's
+  type.yaml. To change the target venue later, run scripts/paper_journal.py.
+-->
+
+# Introduction
+
+# Related Work
+
+# Methodology
+
+# Results
+
+# Discussion
+
+# Limitations
+
+# Conclusions
