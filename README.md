@@ -1,87 +1,88 @@
 # Research
 
-Repository for organizing and documenting ongoing and completed research projects.
+Repository for organizing and documenting ongoing and completed research
+projects: source code, data, manuscripts and submission materials.
 
-## Purpose
-
-The purpose of this repository is to maintain a centralized collection of research projects, their source code, documentation, and related academic materials.
-
-Each research project is maintained in a separate directory and contains its own `README.md` with detailed information about the project, including its objectives, methodology, code, datasets, experiments, results, and other relevant materials.
-
+Each active paper lives under [`papers/`](./papers/) with a standardized layout
+so the tooling, the build and the review process all find what they expect. The
+rules are enforced in CI (see [`AGENTS.md`](./AGENTS.md)).
 
 ## Status
 
-Research projects may use the following statuses:
+- `Planning` — proposed or being prepared.
+- `In Progress` — currently being developed.
+- `Revision` — being corrected after reviewer feedback.
+- `Resubmitted` — revised and resubmitted, awaiting response.
+- `Under Review` — submitted and under review.
+- `Accepted` — accepted for publication.
+- `Published` — officially published.
+- `Completed` — finished (may be unpublished).
 
--   `Planning` — Research has been proposed or is being prepared.
--   `In Progress` — Research is currently being developed.
--   `Revision` — Manuscript is being corrected based on reviewer feedback.
--   `Resubmitted` — Manuscript has been revised and resubmitted, awaiting response.
--   `Under Review` — Manuscript has been submitted and is under review.
--   `Accepted` — Research has been accepted for publication.
--   `Published` — Research has been officially published.
--   `Completed` — Research has been completed but may not have been published.
+## Research projects
 
+### Active papers
 
-## Research Team
+| Code | Title | Journal | Status | Folder |
+|---|---|---|---|---|
+| `C15-2026` | A Reproducible Methodological Framework for Prosecutorial Congestion Risk Prediction | Machine Learning with Applications | `Revision` | [`papers/c15-2026/`](./papers/c15-2026/) |
+| `C21-2026` | Early Prediction of Low Birth Weight in a National Peruvian Cohort | Discover Artificial Intelligence | `Revision` | [`papers/c21-2026/`](./papers/c21-2026/) |
 
-The repository may contain multiple research groups. Each project has its own authorship and collaboration structure.
+### Legacy projects (pre-standardization)
 
-Authors and co-authors are listed within their respective research projects to accurately represent their contribution to each study.
+| Code | Title | Status | Folder |
+|---|---|---|---|
+| `C20-2026` | Subseasonal Temperature Forecasting in Andean Stations | `In Progress` | [`C20-202610-temperature/`](./C20-202610-temperature/) |
+| `C25-2026` | Violence analysis | `In Progress` | [`C25-202620-violence/`](./C25-202620-violence/) |
+| `C26-2026` | Explainable Spatiotemporal Analysis of National Missing Persons Records | `In Progress` | [`C26-202609-missingpersons/`](./C26-202609-missingpersons/) |
+| `C20-GeoAI` | Reproducible GeoAI | `In Progress` | [`C20-2026-Reproducible GeoAi/`](./C20-2026-Reproducible%20GeoAi/) |
 
-## Research Projects
+## Structure of an active paper
 
-List of research works with their identifiers, titles, journals, and current status.
-
-| Research   | Title                                                                                                                                                                | Journal / Conference | Status     | Last Update |
-| ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------- | ---------- | ----------- |
-| `C15-2026` | [A Reproducible Methodological Framework for Prosecutorial Congestion RiskPrediction Using Explainable Machine Learning and Temporal Validation](./C15-2026-fiscal/) | Pending Decision | `Revision` | 18-jul-2026 |
-| `C10-2026` | [Subseasonal Temperature Forecasting in Andean Stations: A Benchmark of Machine Learning and Deep Learning Models with Anomaly Decomposition](./C10-2026-temperature/) | Pending Decision | `Revision` | 18-jul-2026 |
-| `C21-2026` | [Early Prediction of Low Birth Weight: Characterizing Predictive Performance in a National Peruvian Cohort (2015–2025)](./C21-202610-birth/) | Pending Decision | `Revision` | 24-aug-2026 |
-| `C26-2026` | [A Reproducible GeoAI Framework for the Explainable Spatiotemporal Analysis of National Missing Persons Records: Multi-Algorithm Clustering and Multi-Level Validation (Peru, 2019–2025)](./C26-202609-missingpersons/) | ESWA | `In Progress` | 21-sep-2026 |
-
-## Repository Guidelines
-
-Each research project should have its own directory using its assigned research code.
-
-```text
-research/
-├── CODE-KEYWORD/
-│   ├── README.md
-│   ├── src/
-│   ├── data/
-│   ├── notebooks/
-│   └── ...
-│
-├── CODE-KEYWORD/
-│   ├── README.md
-│   ├── src/
-│   ├── data/
-│   ├── notebooks/
-│   └── ...
-│
-└── README.md
+```
+papers/<slug>/
+├── paper/       main.qmd (source), manifest.yaml, references.bib, media/
+├── data/        raw + processed data (large files stay out of git)
+├── experiments/ pipeline code that produces the numbers
+├── notebooks/   exploratory notebooks
+├── outputs/     machine-readable results (CSV/JSON/PNG/PKL)
+├── reviews/     round-N/ with comments, responses and ai-review
+├── build/       rendered PDF (only the final PDF is committed)
+└── legacy/      original .docx/.pdf when migrating
 ```
 
-The root README provides an overview of the research projects, while each project README contains the detailed information specific to that research.
+## Quick start
+
+```bash
+# Create a new paper ("paper-new" skill can guide you)
+python scripts/paper_new.py --slug c22-2026 --title "My paper" \
+    --journal machine-learning-with-applications \
+    --author moises:corresponding:1 --author jeremi:author:2
+
+# Build PDF and Word
+python scripts/paper_build.py --slug c22-2026 --format all
+
+# Validate the repository structure (also runs in CI on every PR)
+python scripts/paper_validate.py
+
+# Claude Code: link the shared skills into .claude/skills (OpenCode needs no
+# setup: it reads .agents/skills directly). A SessionStart hook normally does
+# this for you; run it once by hand if you prefer.
+python scripts/link_skills.py
+```
+
+## Contributing
+
+Opening a pull request that touches `papers/`, `authors/`, `templates/`,
+`scripts/`, `tests/` or `.agents/skills/` runs the validation workflow. Make it
+pass locally first:
+
+```bash
+pip install -r requirements-dev.txt
+python scripts/paper_validate.py && pytest -q
+```
 
 ## License
 
-### Code
-
-Source code in this repository is licensed under the [MIT License](./LICENSE).
-
-### Research Content
-
-Research papers, documentation, figures, and other original research
-content are licensed under the [Creative Commons Attribution 4.0
-International License](./LICENSE-CONTENT).
-
-You are free to share and adapt the research content, provided that
-appropriate credit is given to the original authors and any applicable
-license terms are respected.
-
-### Third-Party Materials
-
-Third-party datasets, libraries, images, publications, and other
-materials are subject to their respective licenses and terms.
+- **Code** — [MIT](./LICENSE).
+- **Research content** — [CC BY 4.0](./LICENSE-CONTENT).
+- Third-party datasets, libraries and publications keep their own licenses.

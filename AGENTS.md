@@ -1,122 +1,177 @@
-# AGENTS.md — Research Repository Guidance
+# AGENTS.md — Research Repository
 
-This repository contains multi-project academic research and papers.
+Single source of truth for how this repository is laid out and how a paper is
+created, built and validated. Everything here is enforced by
+`scripts/paper_validate.py` in CI (`.github/workflows/validate.yml`), so a pull
+request that breaks a rule fails the check.
 
-## Project Structure
-
-- `C15-202610-fiscal/`: Prosecutorial Congestion Risk Prediction (Springer / Journal of Big Data, under revision).
-- `C20-202610-temperature/`: Subseasonal Temperature Forecasting in Andean Stations (In Progress).
-- `C21-202610-birth/`: Early Prediction of Low Birth Weight, National Peruvian Cohort (under revision).
-
-> Note: The root `README.md` table lists `C10-2026` for the temperature project — the actual directory is `C20-202610-temperature`. Use directory names, not README table entries.
+Language: English everywhere in the repository (docs, code, commit messages).
 
 ---
 
-## Available Agent Skills
+## 1. Repository layout
 
-Five skills are installed (see `.agents/skills/` and `skills-lock.json`). Load with the `skill` tool before use:
+```
+research/
+├── papers/                 # active papers, one standardized folder each
+├── authors/                # shared author records (one YAML per person)
+├── templates/
+│   ├── paper/              # seed files used by scripts/paper_new.py
+│   └── journals/<slug>/    # editorial metadata (type.yaml) per journal
+├── scripts/                # the reproducible automation (plain Python)
+├── tests/                  # structure + script tests
+├── AGENTS.md               # this file
+├── README.md               # project index
+└── <LEGACY PROJECTS>/      # pre-standardization work (see section 7)
+```
 
-| Skill | When to use |
+## 2. Paper folder structure
+
+Every paper lives in `papers/<slug>/` and is born with **exactly** this tree:
+
+```
+papers/<slug>/
+├── paper/
+│   ├── main.qmd            # single source of the manuscript
+│   ├── manifest.yaml       # paper metadata: title, journal, authors, claims, figures
+│   ├── references.bib      # classic BibTeX (what Quarto reads)
+│   ├── media/              # figures (migrated PNGs or generated here)
+│   └── _extensions/        # Quarto extension (regenerated; gitignored)
+├── data/                   # raw + processed (large/sensitive files stay out of git)
+├── experiments/            # pipeline code that produces numbers and figures
+├── notebooks/              # exploratory notebooks
+├── outputs/                # machine-readable results (CSV/JSON/PNG/PKL)
+├── reviews/round-N/        # comments.yaml, responses.yaml, ai-review.yaml
+├── build/                  # rendered output (only the final PDF is committed)
+└── legacy/                 # original .docx/.pdf when migrating an existing paper
+```
+
+Rules:
+
+- **`main.qmd` is the only manuscript source.** `.tex`, `.docx`, `.pdf` are
+  derived; never edit a derivative and never write paper content in
+  `experiments/`.
+- **Numbers live in `outputs/` as CSV/JSON.** No `.xlsx`/`.xls` may be an
+  artefact of record under `paper/`, `outputs/` or `experiments/`. Every figure
+  or table in the manuscript must trace back to a file in `outputs/`.
+- **Metadata is referenced, never duplicated.** Authors live in
+  `authors/<id>.yaml`; the paper's `manifest.yaml` references them by `id` plus
+  per-paper `role`/`order`. Journals live in `templates/journals/<slug>/type.yaml`.
+
+### Folder naming
+
+- Institutional code exists → lowercase it: `C15-2026` → `papers/c15-2026/`.
+- No code → short kebab-case topic+method slug: `carrion-clustering`.
+- Lowercase letters, digits and hyphens only. No spaces, underscores or accents.
+
+## 3. Workflow and commands
+
+The scripts are the reproducible implementation; the skills are thin wrappers
+that know *when* to call them and interview you for the arguments.
+
+| Step | Command |
 |---|---|
-| `docx` | Creating/editing `.docx` files — use `docx` npm package for new docs, `unzip`+edit+`zip` for edits. Key gotchas: A4 default page size, tables need dual widths, `ShadingType.CLEAR` not `SOLID`, never use `\n`. |
-| `humanize-academic-writing` | Rewriting AI-drafted academic text into natural scholarly prose. Run `python scripts/ai_detector.py` first to identify patterns. |
-| `nature-academic-search` | Literature search, citation verification, MeSH strategy, .nbib/.ris/.bib conversion via MCP tools (PubMed, CrossRef, etc.). Always load `manifest.yaml` and `static/core/` files first. |
-| `office-to-md` | Converting Office files to Markdown using `markitdown`. |
-| `tgrep` | Content search — **use instead of `grep`/`rg`**. Trigram-indexed, ripgrep-compatible. Always `--` before pattern; `serve`/`index` once per repo. |
+| Create a paper | `python scripts/paper_new.py --slug <slug> --journal <journal> --author id:role:order ...` |
+| Change journal | `python scripts/paper_journal.py --slug <slug> --journal <journal>` |
+| Add a journal from a link | `python scripts/paper_journal.py --add-journal <slug> --meta meta.json` |
+| Build PDF/DOCX | `python scripts/paper_build.py --slug <slug> --format all` |
+| Check environment only | `python scripts/paper_build.py --slug <slug> --check-only` |
+| Validate the repo | `python scripts/paper_validate.py` |
+| Verify Claude skill links | `python scripts/link_skills.py --check` |
+| Link skills for Claude | `python scripts/link_skills.py` |
+| Run tests | `pytest -q` |
 
----
+A new paper typically follows: `paper_new.py` → literature search
+(`paper-search`) → pipeline in `experiments/` writing to `outputs/` →
+`paper_build.py` → `reviews/round-N/`.
 
-## Project C15 (`C15-202610-fiscal/`) — Key Rules
+## 4. Manifest contract
 
-See `C15-202610-fiscal/CLAUDE.md` for exhaustive project instructions. **An agent will miss critical constraints without reading it.** Key rules:
+`paper/manifest.yaml` must contain at least:
 
-### Truth Source & Numbers
-- **`src/tables/*.xlsx` (78 files) is the single source of truth for every reported figure.** Never cite notebook cell outputs — they are stale (notebook shows `n_features=69`, `f1=0.466165`; `Tabla_76` shows 74 features, `f1=0.467967`).
-- **Never write a number into a manuscript that you have not traced to a `Tabla_NN`.** If untraceable, say so.
-- `src/tables/Tabla_02_Project_Scorecard.xlsx` is self-assessment — not evidence.
-- `src/` contains **no `.py` files**. Only code is `notebooks/experiments.ipynb`, `papers/drafts/springer/make_figures.py`, and `context/convert.sh`.
+```yaml
+paper: <slug>            # must equal the folder name
+journal: <journal-slug>  # must exist in templates/journals/
+authors:                 # at least one; id must exist in authors/
+  - id: <author-id>
+    role: <corresponding | author | advisor | ...>
+    order: <int>
+```
 
-### Context Files
-- **Always check `context/INDEX.md` first** before exploring `data/` or `papers/drafts/`. The `context/` folder contains markdown mirrors of key documents (converted with markitdown/pandoc) to reduce token usage.
-- `context/experiments.md` is a markdown mirror of `notebooks/experiments.ipynb` — **not listed in INDEX.md**. Use it to read pipeline code without loading the 9.8 MB notebook.
-- Raw CSVs in `data/` have no markdown version — read them normally for notebooks.
+Optional but encouraged: `title`, `internal_code`, `institution`, `funding`,
+`claims[]` (each number anchored to its `outputs/` source), `figures[]`.
 
-### LaTeX Compilation (`papers/drafts/springer/`)
-- **Do not use `latexmk`** (BibTeX fails under Git Bash). Compile manually:
+## 5. Skills
+
+Canonical skills live in `.agents/skills/` (committed). Agent paths:
+
+- **OpenCode** reads `.agents/skills/` directly — no setup needed.
+- **Claude Code** reads only `.claude/skills/`, so each skill there is a link to
+  its `.agents/skills/` twin (a junction on Windows, a relative symlink
+  elsewhere). `.claude/settings.json` carries a `SessionStart` hook that runs
+  `scripts/link_skills.py`, so the links are created automatically on the first
+  session. Verify or recreate them by hand if needed:
+
   ```bash
-  cd papers/drafts/springer
-  mkdir -p build2 && cp references.bib sn-vancouver.bst build2/
-  pdflatex -interaction=nonstopmode -output-directory=build2 main.tex
-  (cd build2 && bibtex main)
-  pdflatex -interaction=nonstopmode -output-directory=build2 main.tex
-  pdflatex -interaction=nonstopmode -output-directory=build2 main.tex
+  python scripts/link_skills.py --check   # exit 1 if missing/stale
+  python scripts/link_skills.py           # create/refresh
   ```
-- Then copy `main.pdf` and `main.bbl` up to folder root and into `build/`.
-- Use the **Edit tool, not `sed`** — Git Bash mangles backslashes in LaTeX.
-- When writing checker scripts, strip comments with `(?<!\\)%.*`, never `%.*`.
-- **Acceptance bar: 0 errors, 0 undefined references/citations, 0 overfull hboxes.**
 
-### Methodological Limits (load-bearing)
-1. **2026 data is Jan–May exploratory only** — excluded from all performance ranges. Walk-forward ranges cover **six** complete-year folds (2020–2025); `Tabla_34` fold 7 evaluates 2026 and is excluded.
-2. **2025 is the single locked evaluation** — model family selection was closed before 2025 was opened.
-3. **The reported model is not recalibrated** — calibration is measured and characterized, never corrected.
-4. **The ablation is a LightGBM result** — every mention must say so.
-5. **Two data hues only** — `BLUE #1f5c99` and `ORANGE #c2571a`. Third hue uses small multiples (Fig. 4 is three stacked panels).
-6. **No commas in numerical values inside tables.** Use `9593`, not `9{,}593`.
-7. **Figure/table titles ≤15 words.** Figure captions need short title + legend.
-8. **Declarations headings are fixed and ordered** — no "Code availability" heading.
+  The links are machine-local and gitignored. `paper_validate.py` warns when
+  they are missing or stale (skipped on CI).
 
-### Known Provenance Traps
-- `derived_dca.csv` and `derived_strata.csv` are reconstructions from `Tabla_49` bin-rounded data — cannot refine below 0.10 steps.
-- `Tabla_72` records all 8 models omitted from external validation due to logging bug (`append_to_csv` undefined). `Tabla_71` holds real 2026 metrics.
-- `Tabla_03` says all 8 years come from one consolidated CSV, but `data/` holds eight per-year CSVs and the consolidated file is not in the repo.
+Registry:
 
-### Figure Constraints
-- All ten figures generated by `make_figures.py` from `src/tables/*.xlsx`. **Never edit PNGs by hand or hard-code numbers into the script.**
-- Partial 2026 file always marked with `PARTIAL` wash, hollow marker, dashed connector.
-- Width ≤170 mm at 300 dpi (≤2008 px). Verify with: `python -c "from PIL import Image;import glob,os;[print(os.path.basename(f), Image.open(f).size[0]/300*25.4) for f in sorted(glob.glob('figures/*.png'))]"`
+| Skill | Purpose |
+|---|---|
+| `paper-new` | Scaffold a paper via `scripts/paper_new.py` |
+| `paper-build` | Render PDF/DOCX via `scripts/paper_build.py` |
+| `paper-journal` | Set/change the journal via `scripts/paper_journal.py` |
+| `paper-validate` | Run `scripts/paper_validate.py` |
+| `paper-search` | Literature search, citation verification, BibTeX |
+| `paper-humanize` | Rewrite AI-drafted prose into natural academic writing |
+| `util-docx` | Create/edit Word (`.docx`) files |
+| `util-office-to-md` | Convert Office files to Markdown |
+| `util-search` | Content search (prefer over `grep`/`rg`) |
+| `grilling` | Relentless design interview before committing to a plan |
 
-### Open Items
-- `Availability of data and materials` has placeholders `[REPOSITORY NAME]` and `[PERSISTENT IDENTIFIER...]` — **manuscript cannot be submitted until a public Zenodo DOI is archived.**
-- Second author has no ORCID (`TODO(submission)`).
-- Generative-AI disclosure has `TODO(authors)`.
-- `remarks/senati/reviewer.md` references wrong file path and section numbers.
+## 6. Pull request validation
 
-### C15 `.claude/` Commands & Settings
-- **`build-latex` command**: Builds LaTeX via `make` (Unix) or `.\build-latex.ps1` (Windows). Copies PDF to `papers/renders/`.
-- **`settings.local.json`**: Pre-approves `pdflatex`, `bibtex`, `python`, `curl`, `awk`, `grep`, and `node` commands. Denies `rm -rf`, `sudo`, and `curl | bash`.
+`.github/workflows/validate.yml` runs `scripts/paper_validate.py` and `pytest`
+on every PR that touches `papers/`, `authors/`, `templates/`, `scripts/`,
+`tests/` or `.agents/skills/`. The validator checks:
 
----
+- paper folder naming and required directories;
+- presence and shape of `manifest.yaml`, `references.bib`, `main.qmd`;
+- journal and author references resolve to the shared catalogs;
+- no spreadsheet artefacts under `paper/`, `outputs/`, `experiments/`;
+- no secrets/credentials tracked by git;
+- every skill folder has a `SKILL.md` whose `name` matches the folder.
 
-## Project C21 (`C21-202610-birth/`) Notes
-- Dataset **not in repo** (exceeds GitHub 100 MB limit) — download from official source, place in configured data directory.
-- Pipeline runs in **Google Colab**. Notebook: `notebooks/early_prediction_colab.ipynb`.
-- Manuscript: `C03-202610-Nacimiento_CORREGIDO.docx` (use `docx` skill to edit).
-- `correction_objectives.md` describes the methodological corrections.
-- `references.bib` contains BibTeX for data sources.
-- **Do not generate PDFs/figures/model binaries unless reproducible from the notebook.**
+Run it locally before pushing: `python scripts/paper_validate.py`.
 
----
+## 7. Legacy projects (pre-standardization)
 
-## Project C20 (`C20-202610-temperature/`) Notes
-- Pipeline runs in notebooks only (`notebooks/preprocess-andean-dataset.ipynb`, `notebooks/huayao-pipeline.ipynb`).
-- Data: `data/IGP_EstacionEMA_data_2018_2025.csv`.
-- Uses zero-leakage climatology decomposition — training partition (2018–2023) only for climatology signal.
-- Models benchmarked: RF, XGBoost, LightGBM, CatBoost, LSTM, Temporal Fusion Transformer.
+These folders predate the `papers/` standard and are **frozen**: do not
+restructure them, and do not treat them as the reference layout.
 
----
+| Folder | Notes |
+|---|---|
+| `C20-202610-temperature/` | Notebook-only pipeline; data `data/EstacionEMA_2018_2025.csv`. |
+| `C25-202620-violence/` | Early stage. |
+| `C26-202609-missingpersons/` | Information Sciences submission; `src/reniped/`, `run_all.py`. |
+| `C20-2026-Reproducible GeoAi/` | Early stage. |
 
-## Repository-Level Conventions
-- **Licensing**: Code = MIT (`./LICENSE`). Research content = CC BY 4.0 (`./LICENSE-CONTENT`).
-- **Each project has its own `README.md`** with project-specific details.
-- **`context/` folders** (C15): Markdown mirrors of documents, always check `context/INDEX.md` first.
-- **No `opencode.json`**, `.cursorrules`, or `.github/copilot-instructions.md` exist at the root.
+New work always goes under `papers/` with the structure in section 2.
 
----
+## 8. How to investigate an existing paper
 
-## How to Investigate a New Project
-1. Read the project's `README.md` for overview and status.
-2. Check for `CLAUDE.md` (C15) or `correction_objectives.md` (C21) for project-specific rules.
-3. Check `context/INDEX.md` if it exists before opening raw data files.
-4. Inspect `notebooks/` for the actual analysis pipeline.
-5. Check `papers/` for manuscripts and their build instructions.
+1. Read `papers/<slug>/paper/manifest.yaml` (metadata + claims/figures).
+2. Read `papers/<slug>/outputs/manifest_index.json` (the numbers's source).
+3. Read `papers/<slug>/paper/main.qmd` for the narrative.
+4. `papers/<slug>/reviews/round-N/` for reviewer comments and responses.
+
+## 9. Licensing
+
+- Code: MIT (`./LICENSE`).
+- Research content: CC BY 4.0 (`./LICENSE-CONTENT`).
