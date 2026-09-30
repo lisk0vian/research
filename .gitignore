@@ -135,3 +135,6 @@ scratch/
 
 # ---- Experiments in papers ----
 papers/*/experiments/
+
+# ---- Pipeline run logs (verbose, regenerable) ----
+papers/*/outputs/logs/

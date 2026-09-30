@@ -1,0 +1,169 @@
+{
+  "stage": "feature_selection",
+  "methods": [
+    "mi",
+    "anova",
+    "chi2",
+    "rf",
+    "boruta",
+    "rfecv"
+  ],
+  "consensus_threshold": 2,
+  "filters": {
+    "pearson_dropped": [
+      "hist_atendido_mean_prev",
+      "growth_atendido_prev",
+      "hist_atendido_mean_prev_was_null",
+      "hist_ingresado_mean_prev_was_null",
+      "growth_ingresado_prev_was_null",
+      "growth_atendido_prev_was_null"
+    ],
+    "cramer_dropped": [
+      "dpto_pjfs",
+      "prov_pjfs",
+      "distrito_fiscal",
+      "tipo_fiscalia",
+      "materia",
+      "especialidad",
+      "tipo_caso",
+      "dist_pjfs",
+      "inter_materia_tipo_fiscalia"
+    ],
+    "tie_break_rule": "target_mi_train"
+  },
+  "fit_block": [
+    2019,
+    2020,
+    2021,
+    2022
+  ],
+  "votes": {
+    "ubigeo_pjfs": 5,
+    "post_pandemia": 2,
+    "periodo_pandemia_2020": 2,
+    "hist_ingresado_mean_prev": 6,
+    "hist_saldo_mean_prev": 6,
+    "growth_ingresado_prev": 4,
+    "atendido_was_null": 0,
+    "hist_saldo_mean_prev_was_null": 2,
+    "especializada__CONTRA LA CRIMINALIDAD ORGANIZADA": 0,
+    "especializada__CRIMINALIDAD ORGANIZADA": 0,
+    "especializada__DELITOS ADUANEROS Y CONTRA LA PROPIEDAD INTELECTUAL": 0,
+    "especializada__DELITOS DE CIBERDELINCUENCIA": 0,
+    "especializada__DELITOS DE CORRUPCION DE FUNCIONARIOS": 2,
+    "especializada__DELITOS DE TRAFICO ILICITO DE DROGAS": 1,
+    "especializada__DELITOS DE TRATA DE PERSONAS": 0,
+    "especializada__DELITOS TRIBUTARIOS": 0,
+    "especializada__LAVADO DE ACTIVOS Y PERDIDA DE DOMINIO": 1,
+    "especializada__MATERIA AMBIENTAL": 0,
+    "especializada__TRANSITO Y SEGURIDAD VIAL": 1,
+    "especializada__TURISMO": 0,
+    "especializada__VIOLENCIA CONTRA LA MUJER Y LOS INTEGRANTES DEL GRUPO FAMILIAR": 4,
+    "especializada__missing": 3,
+    "inter_tipo_fiscalia_especialidad__PROVINCIAL|ACTOS CONTRA LA LIBERTAD SEXUAL": 0,
+    "inter_tipo_fiscalia_especialidad__PROVINCIAL|CIVIL": 0,
+    "inter_tipo_fiscalia_especialidad__PROVINCIAL|FAMILIA CIVIL": 1,
+    "inter_tipo_fiscalia_especialidad__PROVINCIAL|FAMILIA PENAL": 6,
+    "inter_tipo_fiscalia_especialidad__PROVINCIAL|FAMILIA TUTELAR": 5,
+    "inter_tipo_fiscalia_especialidad__PROVINCIAL|PENAL": 4,
+    "inter_tipo_fiscalia_especialidad__PROVINCIAL|VIOLENCIA FAMILIAR": 1,
+    "inter_tipo_fiscalia_especialidad__SUPERIOR|CIVIL": 0,
+    "inter_tipo_fiscalia_especialidad__SUPERIOR|FAMILIA CIVIL": 3,
+    "inter_tipo_fiscalia_especialidad__SUPERIOR|FAMILIA PENAL": 4,
+    "inter_tipo_fiscalia_especialidad__SUPERIOR|FAMILIA TUTELAR": 2,
+    "inter_tipo_fiscalia_especialidad__SUPERIOR|PENAL": 6,
+    "inter_tipo_fiscalia_especialidad__SUPERIOR|VIOLENCIA FAMILIAR": 1,
+    "inter_tipo_fiscalia_especialidad__SUPREMA|CIVIL": 0,
+    "inter_tipo_fiscalia_especialidad__SUPREMA|CONTENCIOSO ADMINISTRATIVO": 0,
+    "inter_tipo_fiscalia_especialidad__SUPREMA|CONTROL INTERNO": 2,
+    "inter_tipo_fiscalia_especialidad__SUPREMA|FAMILIA": 0,
+    "inter_tipo_fiscalia_especialidad__SUPREMA|PENAL": 0,
+    "freq_inter_distrito_tipo_caso": 4
+  },
+  "selected_features": [
+    "ubigeo_pjfs",
+    "post_pandemia",
+    "periodo_pandemia_2020",
+    "hist_ingresado_mean_prev",
+    "hist_saldo_mean_prev",
+    "growth_ingresado_prev",
+    "hist_saldo_mean_prev_was_null",
+    "especializada__DELITOS DE CORRUPCION DE FUNCIONARIOS",
+    "especializada__VIOLENCIA CONTRA LA MUJER Y LOS INTEGRANTES DEL GRUPO FAMILIAR",
+    "especializada__missing",
+    "inter_tipo_fiscalia_especialidad__PROVINCIAL|FAMILIA PENAL",
+    "inter_tipo_fiscalia_especialidad__PROVINCIAL|FAMILIA TUTELAR",
+    "inter_tipo_fiscalia_especialidad__PROVINCIAL|PENAL",
+    "inter_tipo_fiscalia_especialidad__SUPERIOR|FAMILIA CIVIL",
+    "inter_tipo_fiscalia_especialidad__SUPERIOR|FAMILIA PENAL",
+    "inter_tipo_fiscalia_especialidad__SUPERIOR|FAMILIA TUTELAR",
+    "inter_tipo_fiscalia_especialidad__SUPERIOR|PENAL",
+    "inter_tipo_fiscalia_especialidad__SUPREMA|CONTROL INTERNO",
+    "freq_inter_distrito_tipo_caso"
+  ],
+  "encoding": {
+    "one_hot_cols": [
+      "especializada",
+      "inter_tipo_fiscalia_especialidad"
+    ],
+    "one_hot_categories": {
+      "especializada": [
+        "CONTRA LA CRIMINALIDAD ORGANIZADA",
+        "CRIMINALIDAD ORGANIZADA",
+        "DELITOS ADUANEROS Y CONTRA LA PROPIEDAD INTELECTUAL",
+        "DELITOS DE CIBERDELINCUENCIA",
+        "DELITOS DE CORRUPCION DE FUNCIONARIOS",
+        "DELITOS DE TRAFICO ILICITO DE DROGAS",
+        "DELITOS DE TRATA DE PERSONAS",
+        "DELITOS TRIBUTARIOS",
+        "LAVADO DE ACTIVOS Y PERDIDA DE DOMINIO",
+        "MATERIA AMBIENTAL",
+        "TRANSITO Y SEGURIDAD VIAL",
+        "TURISMO",
+        "VIOLENCIA CONTRA LA MUJER Y LOS INTEGRANTES DEL GRUPO FAMILIAR",
+        "missing"
+      ],
+      "inter_tipo_fiscalia_especialidad": [
+        "PROVINCIAL|ACTOS CONTRA LA LIBERTAD SEXUAL",
+        "PROVINCIAL|CIVIL",
+        "PROVINCIAL|FAMILIA CIVIL",
+        "PROVINCIAL|FAMILIA PENAL",
+        "PROVINCIAL|FAMILIA TUTELAR",
+        "PROVINCIAL|PENAL",
+        "PROVINCIAL|VIOLENCIA FAMILIAR",
+        "SUPERIOR|CIVIL",
+        "SUPERIOR|FAMILIA CIVIL",
+        "SUPERIOR|FAMILIA PENAL",
+        "SUPERIOR|FAMILIA TUTELAR",
+        "SUPERIOR|PENAL",
+        "SUPERIOR|VIOLENCIA FAMILIAR",
+        "SUPREMA|CIVIL",
+        "SUPREMA|CONTENCIOSO ADMINISTRATIVO",
+        "SUPREMA|CONTROL INTERNO",
+        "SUPREMA|FAMILIA",
+        "SUPREMA|PENAL"
+      ]
+    },
+    "frequency_cols": [
+      "inter_distrito_tipo_caso"
+    ],
+    "n_encoded": 41,
+    "fit_block": "train_full",
+    "fitted_num_cols": [
+      "ubigeo_pjfs",
+      "post_pandemia",
+      "periodo_pandemia_2020",
+      "hist_ingresado_mean_prev",
+      "hist_saldo_mean_prev",
+      "growth_ingresado_prev",
+      "atendido_was_null",
+      "hist_saldo_mean_prev_was_null"
+    ],
+    "fitted_cat_cols": [
+      "especializada",
+      "inter_distrito_tipo_caso",
+      "inter_tipo_fiscalia_especialidad"
+    ]
+  },
+  "n_candidates": 26
+}

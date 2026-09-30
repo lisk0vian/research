@@ -1,0 +1,24 @@
+{
+  "stage": "feature_engineering",
+  "derive": "auto",
+  "n_derived": 14,
+  "derived_names": [
+    "saldo_casos",
+    "tasa_atencion",
+    "ratio_saldo",
+    "anio_centrado",
+    "post_pandemia",
+    "periodo_pandemia_2020",
+    "inter_distrito_tipo_caso",
+    "inter_materia_tipo_fiscalia",
+    "inter_tipo_fiscalia_especialidad",
+    "hist_ingresado_mean_prev",
+    "hist_atendido_mean_prev",
+    "hist_saldo_mean_prev",
+    "growth_ingresado_prev",
+    "growth_atendido_prev"
+  ],
+  "artifact_path": "../data/silver/engineered.parquet",
+  "n_rows": 9593,
+  "source_of_truth": "outputs/manifest_index.json#feature_engineering.manifest"
+}

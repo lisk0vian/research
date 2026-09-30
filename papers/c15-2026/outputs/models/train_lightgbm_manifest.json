@@ -1,0 +1,77 @@
+{
+  "stage": "train",
+  "model": "lightgbm",
+  "optimizer": "randomized_search",
+  "trials": 30,
+  "seeds": {
+    "global": 42,
+    "sampler": 42
+  },
+  "versions": {
+    "sklearn": "1.6.1",
+    "pandas": "2.2.3",
+    "numpy": "2.1.3",
+    "optuna": "5.0.0",
+    "lightgbm": "4.6.0",
+    "xgboost": "3.4.1",
+    "catboost": "1.2.10"
+  },
+  "best_params": {
+    "n_estimators": 100,
+    "learning_rate": 0.18240048805061929,
+    "num_leaves": 20
+  },
+  "best_search_f1": 0.725435312242485,
+  "tau_star": 0.7699999999999999,
+  "metrics_valid": {
+    "f1_macro": 0.7677009901575201,
+    "f1_binary": 0.5954692556634305,
+    "accuracy": 0.895397489539749,
+    "precision": 0.609271523178808,
+    "recall": 0.5822784810126582,
+    "tau": 0.7699999999999999,
+    "n": 1195,
+    "prevalence": 0.1322175732217573,
+    "roc_auc": 0.886225480023925
+  },
+  "metrics_test": {
+    "f1_macro": 0.6903409090909091,
+    "f1_binary": 0.45454545454545453,
+    "accuracy": 0.8698915763135947,
+    "precision": 0.5603448275862069,
+    "recall": 0.38235294117647056,
+    "tau": 0.7699999999999999,
+    "n": 1199,
+    "prevalence": 0.14178482068390325,
+    "roc_auc": 0.8330274967129708
+  },
+  "metrics_external": {
+    "f1_macro": 0.7507573823976563,
+    "f1_binary": 0.5876288659793815,
+    "accuracy": 0.8575244879786287,
+    "precision": 0.7037037037037037,
+    "recall": 0.504424778761062,
+    "tau": 0.7699999999999999,
+    "n": 1123,
+    "prevalence": 0.201246660730187,
+    "roc_auc": 0.8600669882893814
+  },
+  "n_features": 10,
+  "feature_cols": [
+    "freq_distrito_fiscal",
+    "freq_tipo_fiscalia",
+    "freq_materia",
+    "freq_especialidad",
+    "freq_tipo_caso",
+    "freq_especializada",
+    "freq_dpto_pjfs",
+    "freq_prov_pjfs",
+    "freq_dist_pjfs",
+    "ubigeo_pjfs"
+  ],
+  "summary": {
+    "tau_star": 0.7699999999999999,
+    "f1_test": 0.6903409090909091,
+    "roc_auc_test": 0.8330274967129708
+  }
+}

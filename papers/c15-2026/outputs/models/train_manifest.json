@@ -1,0 +1,154 @@
+{
+  "stage": "train",
+  "target": {
+    "primary": "P75/P25",
+    "q75_s": 11.0,
+    "q25_t": 0.915284147557328,
+    "train_prevalence": 0.13759052007899933
+  },
+  "models": [
+    "dummy",
+    "logreg",
+    "svm_linear",
+    "xgboost",
+    "lightgbm",
+    "lightgbm_optuna",
+    "catboost",
+    "voting",
+    "stacking"
+  ],
+  "active_models": [
+    "logreg",
+    "svm_linear",
+    "xgboost",
+    "lightgbm",
+    "lightgbm_optuna",
+    "catboost",
+    "voting",
+    "stacking"
+  ],
+  "seeds": {
+    "global": 42,
+    "sampler": 42
+  },
+  "versions": {
+    "sklearn": "1.6.1",
+    "pandas": "2.2.3",
+    "numpy": "2.1.3",
+    "optuna": "5.0.0",
+    "lightgbm": "4.6.0",
+    "xgboost": "3.4.1",
+    "catboost": "1.2.10"
+  },
+  "n_features": 10,
+  "metrics": {
+    "logreg": {
+      "f1_macro": 0.5421759276777698,
+      "roc_auc": 0.681541187903733,
+      "accuracy": 0.7222685571309424
+    },
+    "svm_linear": {
+      "f1_macro": 0.5666294393567121,
+      "roc_auc": 0.6868004344594981,
+      "accuracy": 0.7773144286905754
+    },
+    "xgboost": {
+      "f1_macro": 0.7007197563318336,
+      "roc_auc": 0.8320928371348539,
+      "accuracy": 0.8682235195996664
+    },
+    "lightgbm": {
+      "f1_macro": 0.6903409090909091,
+      "roc_auc": 0.8330274967129708,
+      "accuracy": 0.8698915763135947
+    },
+    "lightgbm_optuna": {
+      "f1_macro": 0.7153771760154739,
+      "roc_auc": 0.8301149031040989,
+      "accuracy": 0.8648874061718098
+    },
+    "catboost": {
+      "f1_macro": 0.7018435945806895,
+      "roc_auc": 0.8410735722860574,
+      "accuracy": 0.8548790658882403
+    },
+    "voting": {
+      "f1_macro": 0.695196261653445,
+      "roc_auc": 0.8407991768135826,
+      "accuracy": 0.8623853211009175
+    },
+    "stacking": {
+      "f1_macro": 0.6681346787190806,
+      "roc_auc": 0.8419710741439432,
+      "accuracy": 0.8682235195996664
+    }
+  },
+  "per_model": {
+    "logreg": {
+      "tau_star": 0.5299999999999999,
+      "f1_test": 0.5421759276777698,
+      "roc_auc_test": 0.681541187903733
+    },
+    "svm_linear": {
+      "tau_star": 0.18,
+      "f1_test": 0.5666294393567121,
+      "roc_auc_test": 0.6868004344594981
+    },
+    "xgboost": {
+      "tau_star": 0.74,
+      "f1_test": 0.7007197563318336,
+      "roc_auc_test": 0.8320928371348539
+    },
+    "lightgbm": {
+      "tau_star": 0.7699999999999999,
+      "f1_test": 0.6903409090909091,
+      "roc_auc_test": 0.8330274967129708
+    },
+    "lightgbm_optuna": {
+      "tau_star": 0.71,
+      "f1_test": 0.7153771760154739,
+      "roc_auc_test": 0.8301149031040989
+    },
+    "catboost": {
+      "tau_star": 0.6699999999999999,
+      "f1_test": 0.7018435945806895,
+      "roc_auc_test": 0.8410735722860574
+    },
+    "voting": {
+      "tau_star": 0.6799999999999999,
+      "f1_test": 0.695196261653445,
+      "roc_auc_test": 0.8407991768135826
+    },
+    "stacking": {
+      "tau_star": 0.82,
+      "f1_test": 0.6681346787190806,
+      "roc_auc_test": 0.8419710741439432
+    }
+  },
+  "calibration": {
+    "valid_year": 2024,
+    "grid": [
+      0.05,
+      0.95,
+      91
+    ]
+  },
+  "quality_gates": {
+    "lightgbm": {
+      "f1_macro": {
+        "min": 0.6,
+        "max": 1.0
+      },
+      "roc_auc": {
+        "min": 0.75,
+        "max": 1.0
+      }
+    }
+  },
+  "quality_check": {
+    "passed": true,
+    "failures": [],
+    "placeholders": false
+  },
+  "note": "real metrics from temporal training; gates calibrate from this run with justification, never lowered to pass"
+}

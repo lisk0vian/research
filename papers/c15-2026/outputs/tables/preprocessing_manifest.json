@@ -1,0 +1,51 @@
+{
+  "stage": "preprocessing",
+  "missing_strategy": "median_train_only + flag_nulo",
+  "fit_block": "train_years",
+  "n_rows": 9593,
+  "n_columns": 37,
+  "imputed_cols": [
+    "atendido",
+    "hist_ingresado_mean_prev",
+    "hist_atendido_mean_prev",
+    "hist_saldo_mean_prev",
+    "growth_ingresado_prev",
+    "growth_atendido_prev",
+    "especializada"
+  ],
+  "flag_cols": [
+    "atendido_was_null",
+    "hist_ingresado_mean_prev_was_null",
+    "hist_atendido_mean_prev_was_null",
+    "hist_saldo_mean_prev_was_null",
+    "growth_ingresado_prev_was_null",
+    "growth_atendido_prev_was_null"
+  ],
+  "medians": {
+    "anio": 2021.0,
+    "ingresado": 65.0,
+    "atendido": 62.0,
+    "ubigeo_pjfs": 140101.0,
+    "saldo_casos": 1.0,
+    "tasa_atencion": 0.9848484848484849,
+    "ratio_saldo": 0.015151515151515152,
+    "anio_centrado": -1.4762847909935317,
+    "post_pandemia": 1.0,
+    "periodo_pandemia_2020": 0.0,
+    "hist_ingresado_mean_prev": 27795.0,
+    "hist_atendido_mean_prev": 25812.0,
+    "hist_saldo_mean_prev": 2529.75,
+    "growth_ingresado_prev": 0.10978886756238004,
+    "growth_atendido_prev": 0.12323027389405901
+  },
+  "leakage_cols_present": [
+    "ingresado",
+    "atendido",
+    "saldo_casos",
+    "tasa_atencion",
+    "ratio_saldo"
+  ],
+  "leakage_check": "pass",
+  "artifact_path": "../data/silver/processed.parquet",
+  "target_col": "riesgo_congestion"
+}

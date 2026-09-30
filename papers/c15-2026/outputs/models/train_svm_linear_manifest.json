@@ -1,0 +1,84 @@
+{
+  "stage": "train",
+  "model": "svm_linear",
+  "optimizer": "randomized_search",
+  "trials": 100,
+  "seeds": {
+    "global": 42,
+    "sampler": 42
+  },
+  "versions": {
+    "sklearn": "1.9.1",
+    "pandas": "3.0.5",
+    "numpy": "2.5.3",
+    "optuna": "5.0.0",
+    "lightgbm": "4.7.0",
+    "xgboost": "missing",
+    "catboost": "missing"
+  },
+  "best_params": {
+    "C": 0.0024016146828777997
+  },
+  "best_search_f1": 0.4981117240504724,
+  "tau_star": 0.16999999999999998,
+  "metrics_valid": {
+    "f1_macro": 0.638251498456136,
+    "f1_binary": 0.3969849246231156,
+    "accuracy": 0.799163179916318,
+    "precision": 0.3305439330543933,
+    "recall": 0.4968553459119497,
+    "tau": 0.16999999999999998,
+    "n": 1195,
+    "prevalence": 0.13305439330543933,
+    "roc_auc": 0.7559614870935625
+  },
+  "metrics_test": {
+    "f1_macro": 0.6662552960882846,
+    "f1_binary": 0.44607843137254904,
+    "accuracy": 0.8115095913261051,
+    "precision": 0.3855932203389831,
+    "recall": 0.5290697674418605,
+    "tau": 0.16999999999999998,
+    "n": 1199,
+    "prevalence": 0.14345287739783152,
+    "roc_auc": 0.7796472000181156
+  },
+  "metrics_external": {
+    "f1_macro": 0.653203989546327,
+    "f1_binary": 0.4398148148148148,
+    "accuracy": 0.7845057880676759,
+    "precision": 0.4634146341463415,
+    "recall": 0.4185022026431718,
+    "tau": 0.16999999999999998,
+    "n": 1123,
+    "prevalence": 0.20213713268032057,
+    "roc_auc": 0.7714487295468848
+  },
+  "n_features": 19,
+  "feature_cols": [
+    "ubigeo_pjfs",
+    "post_pandemia",
+    "periodo_pandemia_2020",
+    "hist_ingresado_mean_prev",
+    "hist_saldo_mean_prev",
+    "growth_ingresado_prev",
+    "hist_saldo_mean_prev_was_null",
+    "especializada__DELITOS DE CORRUPCION DE FUNCIONARIOS",
+    "especializada__VIOLENCIA CONTRA LA MUJER Y LOS INTEGRANTES DEL GRUPO FAMILIAR",
+    "especializada__missing",
+    "inter_tipo_fiscalia_especialidad__PROVINCIAL|FAMILIA PENAL",
+    "inter_tipo_fiscalia_especialidad__PROVINCIAL|FAMILIA TUTELAR",
+    "inter_tipo_fiscalia_especialidad__PROVINCIAL|PENAL",
+    "inter_tipo_fiscalia_especialidad__SUPERIOR|FAMILIA CIVIL",
+    "inter_tipo_fiscalia_especialidad__SUPERIOR|FAMILIA PENAL",
+    "inter_tipo_fiscalia_especialidad__SUPERIOR|FAMILIA TUTELAR",
+    "inter_tipo_fiscalia_especialidad__SUPERIOR|PENAL",
+    "inter_tipo_fiscalia_especialidad__SUPREMA|CONTROL INTERNO",
+    "freq_inter_distrito_tipo_caso"
+  ],
+  "summary": {
+    "tau_star": 0.16999999999999998,
+    "f1_test": 0.6662552960882846,
+    "roc_auc_test": 0.7796472000181156
+  }
+}

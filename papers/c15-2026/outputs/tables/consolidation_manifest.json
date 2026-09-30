@@ -1,0 +1,23 @@
+{
+  "stage": "consolidation",
+  "n_rows": 9593,
+  "n_columns": 17,
+  "n_files_consolidated": 8,
+  "sha256_12": "80d48de35550",
+  "output_path": "../data/consolidated.csv",
+  "silver_path": "../data/silver/consolidated.parquet",
+  "artifact_path": "../data/silver/consolidated.parquet",
+  "silver_sha256_12": "5b235137900c",
+  "raw_hashes": {
+    "2019.csv": "123db3f4676a",
+    "2020.csv": "0227b33abc56",
+    "2021.csv": "31de7c9c9432",
+    "2022.csv": "b3c4e27bd16a",
+    "2023.csv": "903ae51c5eb1",
+    "2024.csv": "56b3df4e9095",
+    "2025.csv": "df31f71454dd",
+    "2026.csv": "a155e67b4ad3"
+  },
+  "dictionary_sha256_12": "bd17f23b5056",
+  "skipped": true
+}
