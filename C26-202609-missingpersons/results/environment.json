@@ -1,0 +1,25 @@
+{
+  "hardware": {
+    "python": "3.13.15",
+    "plataforma": "Linux-6.6.122+-x86_64-with-glibc2.39",
+    "procesador": "x86_64",
+    "cpu_logicos": 2,
+    "cpu_fisicos": 1,
+    "ram_total_gb": 12.67,
+    "gpu": "sin GPU (no requerida)"
+  },
+  "paquetes": {
+    "numpy": "2.1.3",
+    "pandas": "2.2.3",
+    "scipy": "1.16.3",
+    "scikit-learn": "1.6.1",
+    "matplotlib": "3.10.0",
+    "openpyxl": "3.1.5",
+    "statsmodels": "0.15.0",
+    "geopandas": "1.1.4",
+    "shapely": "2.1.2",
+    "pyproj": "3.7.2",
+    "libpysal": "4.14.1",
+    "esda": "2.9.0"
+  }
+}
