@@ -1,7 +1,8 @@
-"""Manuscript figures (Figs. 1-5) in Spanish (internal review) and English (submission).
+"""Manuscript figures (Figs. 1-6) in Spanish (internal review) and English (submission).
 
-The figures are built only from the tables in results/tables and the geometry of the 26
-territorial units, so they can be regenerated without rerunning the analysis.
+The figures are built only from the tables in results/tables, the territory-month panel
+(data/processed/panel_departamento_mes.csv, for Fig. 2) and the geometry of the 26 territorial
+units, so they can be regenerated without rerunning the analysis.
 Elsevier artwork guidelines: double-column width 190 mm; printed text of at least 7 pt (6 pt for
 subscripts); TIFF at 1000 dpi for line art and 600 dpi for maps; PNG at 300 dpi for preview.
 Every figure is drawn at its final size (190 mm wide), so the declared font size is the printed
@@ -77,6 +78,11 @@ L = {
         "f3cb": "Razón de tasas frente al resto del país (escala logarítmica)",
         "f3leg": "Clasificación 2019–2025",
         "f3note": "* 2025 preliminar",
+        "rep_a": "(a) Denuncias registradas por año y variación frente al año anterior (%)",
+        "rep_b": "(b) Denuncias registradas por mes",
+        "rep_ylab": "Denuncias por mes",
+        "rep_gap": "ene. 2023: sin datos\nde 6 departamentos",
+        "months": ["ene.", "feb.", "mar.", "abr.", "may.", "jun.", "jul.", "ago.", "sep.", "oct.", "nov.", "dic."],
         "years_above": "Años por\nencima",
         "f5a": "(a) Agrupamiento: información compartida con el territorio (108 especificaciones)",
         "f5b": "(b) Estructura espacial: I de Moran global de las tasas (40 especificaciones)",
@@ -92,10 +98,10 @@ L = {
                        "Exposición observada (principal) y total (sensibilidad)"]),
             "stages": [("(i) Territorios prioritarios",
                         ["Razón de tasas frente al resto del país",
-                         "Bootstrap de bloques de 12 meses y FDR"], "Fig. 2 y Fig. 3"),
+                         "Bootstrap de bloques de 12 meses y FDR"], "Fig. 3 y Fig. 4"),
                        ("(ii) Estados espaciotemporales",
                         ["Espacios E1, E2 y E3; k-medias, Ward, mezcla gaussiana y HDBSCAN",
-                         "K por gap y estabilidad"], "Fig. 4"),
+                         "K por gap y estabilidad"], "Fig. 5"),
                        ("(iii) Estructura espacial",
                         ["I de Moran global, LISA y Gi* con valores p exactos",
                          "Dos matrices de vecindad y FDR"], "Tabla 2"),
@@ -106,7 +112,7 @@ L = {
                     ["Identidad territorial: NMI frente a permutaciones por año",
                      "Reproducción del análisis inicial",
                      "Multiverso: 108 especificaciones de agrupamiento y 240 espaciales"],
-                    "Fig. 5 y Tabla 3"),
+                    "Fig. 6 y Tabla 3"),
             "repro": ("Reproducibilidad",
                       "Plan de análisis congelado con huella SHA-256 · archivos de entrada verificados · "
                       "semilla 42 · versiones de librerías fijadas · pruebas automáticas · "
@@ -155,6 +161,11 @@ L = {
         "f3cb": "Rate ratio versus the rest of the country (log scale)",
         "f3leg": "Classification 2019–2025",
         "f3note": "* 2025 preliminary",
+        "rep_a": "(a) Reports recorded per year and change from the previous year (%)",
+        "rep_b": "(b) Reports recorded per month",
+        "rep_ylab": "Reports per month",
+        "rep_gap": "Jan 2023: no data\nfor 6 departments",
+        "months": ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
         "years_above": "Years\nabove",
         "f5a": "(a) Clustering: information shared with territory (108 specifications)",
         "f5b": "(b) Spatial structure: global Moran's I of rates (40 specifications)",
@@ -170,10 +181,10 @@ L = {
                        "Observed exposure (main) and total (sensitivity)"]),
             "stages": [("(i) Priority territories",
                         ["Rate ratio versus the rest of the country",
-                         "12-month block bootstrap and FDR"], "Fig. 2 and Fig. 3"),
+                         "12-month block bootstrap and FDR"], "Fig. 3 and Fig. 4"),
                        ("(ii) Spatiotemporal states",
                         ["Spaces E1, E2 and E3; k-means, Ward, Gaussian mixture and HDBSCAN",
-                         "K by gap statistic and stability"], "Fig. 4"),
+                         "K by gap statistic and stability"], "Fig. 5"),
                        ("(iii) Spatial structure",
                         ["Global Moran's I, LISA and Gi* with exact p-values",
                          "Two weights matrices and FDR"], "Table 2"),
@@ -184,7 +195,7 @@ L = {
                     ["Territorial identity: NMI against within-year permutations",
                      "Reproduction of the initial analysis",
                      "Multiverse: 108 clustering and 240 spatial specifications"],
-                    "Fig. 5 and Table 3"),
+                    "Fig. 6 and Table 3"),
             "repro": ("Reproducibility",
                       "Frozen analysis plan with SHA-256 fingerprint · verified input files · "
                       "seed 42 · pinned library versions · automated tests · "
@@ -291,7 +302,7 @@ def figure1_framework(out_dir, lang):
         _box(ax, xa, y, wa, hb, ti, [tx], fc="#f3f2ef")
     xb, wb = 1.66, 1.36
     yb0, yb1 = ys[-1], ys[0] + hb
-    _box(ax, xb, yb0, wb, yb1 - yb0, t["panel"][0], t["panel"][1], fc="#e8f0fb")
+    _box(ax, xb, yb0, wb, yb1 - yb0, t["panel"][0], t["panel"][1], fc="#e8f0fb", ref="Fig. 2")
     for y in ys:
         _arrow(ax, (xa + wa, y + hb / 2), (xb, y + hb / 2))
     xc, wc = 3.26, 2.42
@@ -310,14 +321,85 @@ def figure1_framework(out_dir, lang):
     _save(fig, out_dir, f"Fig1_framework_{lang}", 1000)
 
 
-# ---------------------------------------------------------------- Fig. 2 (priority territories)
+# ---------------------------------------------------------------- Fig. 2 (reports per year and month)
+def _pct(x, lang):
+    s = (f"{x:+.1f} %" if lang == "es" else f"{x:+.1f}%").replace("-", "−")
+    return s.replace(".", ",") if lang == "es" else s
+
+
+def figure2_reports(panel, out_dir, lang):
+    """Fig. 2: national reports per year with the change from the previous year (a) and per
+    month (b). Months without source rows count as missing, so January 2023 is marked."""
+    _style()
+    t = L[lang]
+    m = panel.groupby(["ANO", "MES"])["REPORTES"].sum(min_count=1).reset_index()
+    years = sorted(m["ANO"].unique())
+    annual = m.groupby("ANO")["REPORTES"].sum().reindex(years)
+    change = annual.pct_change() * 100
+    fig = plt.figure(figsize=(W_FIG, 4.6))
+
+    # (a) annual totals; the preliminary last year is hatched
+    ax = fig.add_axes([0.075, 0.62, 0.90, 0.29])
+    x = list(range(len(years)))
+    ax.bar(x, annual.values, width=0.62, color=[AZUL] * (len(years) - 1) + ["white"],
+           edgecolor=AZUL, linewidth=0.8)
+    ax.bar([x[-1]], [annual.values[-1]], width=0.62, color="none", edgecolor=AZUL, hatch="////",
+           linewidth=0.8)
+    top = annual.max()
+    for i, (v, c) in enumerate(zip(annual.values, change.values)):
+        ax.text(i, v + top * 0.03, _int(v, lang), ha="center", va="bottom", fontsize=FS)
+        if i > 0:
+            ax.text(i, v + top * 0.145, _pct(c, lang), ha="center", va="bottom", fontsize=FS, color=TXT2)
+    ax.set_xticks(x)
+    ax.set_xticklabels([f"{y}*" if y == years[-1] else str(y) for y in years])
+    ax.set_xlim(-0.6, len(years) - 0.4)
+    ax.set_ylim(0, top * 1.32)
+    ax.set_yticks([])
+    ax.spines["left"].set_visible(False)
+    ax.tick_params(axis="x", length=0)
+    fig.text(0.01, 0.975, t["rep_a"], fontsize=FS_T, va="top")
+
+    # (b) monthly totals; the preliminary last year is shaded
+    bx = fig.add_axes([0.075, 0.10, 0.90, 0.36])
+    xi = list(range(len(m)))
+    y = m["REPORTES"].to_numpy()
+    bx.axvspan((len(years) - 1) * 12 - 0.5, len(m) - 0.5, color=GRIS_CLARO, alpha=0.55, lw=0, zorder=0)
+    for k in range(1, len(years)):
+        bx.axvline(k * 12 - 0.5, color="0.85", lw=0.5, zorder=0)
+    bx.plot(xi, y, color=AZUL, lw=1.2, zorder=3)
+    bx.scatter(xi, y, s=6, color=AZUL, zorder=4, linewidths=0)
+    for i, dy in ((int(np.nanargmax(y)), 0), (int(np.nanargmin(y)), -2)):
+        label = f"{t['months'][int(m['MES'][i]) - 1]} {int(m['ANO'][i])}: {_int(y[i], lang)}"
+        bx.annotate(label, (i, y[i]), xytext=(8, dy), textcoords="offset points", fontsize=FS,
+                    color=TXT2, va="center")
+    gap = m.index[(m["ANO"] == 2023) & (m["MES"] == 1)]
+    if len(gap):
+        g = int(gap[0])
+        bx.scatter([g], [y[g]], s=22, facecolor="white", edgecolor=NARANJA, lw=1.0, zorder=5)
+        bx.annotate(t["rep_gap"], (g, y[g]), xytext=(0, -22), textcoords="offset points", fontsize=FS,
+                    color=TXT2, ha="center", va="top", arrowprops=dict(arrowstyle="-", color="0.6", lw=0.5))
+    bx.set_xticks([k * 12 + 5.5 for k in range(len(years))])
+    bx.set_xticklabels([f"{yy}*" if yy == years[-1] else str(yy) for yy in years])
+    bx.tick_params(axis="x", length=0)
+    bx.set_xlim(-0.8, len(m) - 0.2)
+    bx.set_ylim(0, np.nanmax(y) * 1.12)
+    bx.set_ylabel(t["rep_ylab"])
+    bx.yaxis.set_major_formatter(plt.FuncFormatter(lambda v, _: _int(v, lang)))
+    bx.grid(axis="y", color="0.9", lw=0.5)
+    bx.set_axisbelow(True)
+    fig.text(0.01, 0.525, t["rep_b"], fontsize=FS_T, va="top")
+    fig.text(0.075, 0.005, t["f3note"], fontsize=FS, color=TXT2, va="bottom")
+    _save(fig, out_dir, f"Fig2_reports_{lang}", 1000)
+
+
+# ---------------------------------------------------------------- Fig. 3 (priority territories)
 def _halo(color):
     other = "black" if color == "white" else "white"
     return [patheffects.withStroke(linewidth=1.6, foreground=other, alpha=0.55)]
 
 
-def figure2_priority(units, prio, out_dir, lang):
-    """Fig. 2: map of the priority classes (a) and forest plot of rate ratios with 95% CIs (b)."""
+def figure3_priority(units, prio, out_dir, lang):
+    """Fig. 3: map of the priority classes (a) and forest plot of rate ratios with 95% CIs (b)."""
     _style()
     t = L[lang]
     d = prio.sort_values("RR_VS_RESTO", ascending=False).reset_index(drop=True)
@@ -385,12 +467,12 @@ def figure2_priority(units, prio, out_dir, lang):
                         Patch(fc=AZUL, ec="0.3", lw=0.3, label=t["inf"])],
                loc="lower center", bbox_to_anchor=(0.5, -0.005), frameon=False, ncol=3,
                handlelength=1.4, columnspacing=1.2)
-    _save(fig, out_dir, f"Fig2_priority_{lang}", 600)
+    _save(fig, out_dir, f"Fig3_priority_{lang}", 600)
 
 
-# ---------------------------------------------------------------- Fig. 3 (persistence)
-def figure3_persistence(anual, prio, out_dir, lang):
-    """Fig. 3 heat map: annual rate ratio of each territory versus the rest of the country."""
+# ---------------------------------------------------------------- Fig. 4 (persistence)
+def figure4_persistence(anual, prio, out_dir, lang):
+    """Fig. 4 heat map: annual rate ratio of each territory versus the rest of the country."""
     from matplotlib.colors import LinearSegmentedColormap, LogNorm
     _style()
     t = L[lang]
@@ -437,12 +519,12 @@ def figure3_persistence(anual, prio, out_dir, lang):
                         Patch(fc=AZUL, ec="0.3", lw=0.3, label=t["inf"])],
                loc="lower right", bbox_to_anchor=(0.995, 0.0), frameon=False, ncol=1,
                title=t["f3leg"], handlelength=1.4, alignment="left")
-    _save(fig, out_dir, f"Fig3_persistence_{lang}", 1000)
+    _save(fig, out_dir, f"Fig4_persistence_{lang}", 1000)
 
 
-# ---------------------------------------------------------------- Fig. 4 (spatiotemporal states)
-def figure4_states(ktab, gap, k_star, prof, dist, out_dir, lang):
-    """Fig. 4: choice of K (gap, stability, silhouette) and standardized profile of each state."""
+# ---------------------------------------------------------------- Fig. 5 (spatiotemporal states)
+def figure5_states(ktab, gap, k_star, prof, dist, out_dir, lang):
+    """Fig. 5: choice of K (gap, stability, silhouette) and standardized profile of each state."""
     _style()
     t = L[lang]
     gap = gap[gap.K <= ktab.K.max()]
@@ -505,10 +587,10 @@ def figure4_states(ktab, gap, k_star, prof, dist, out_dir, lang):
                                                   r=_fmt(r.TASA_10K_MENSUAL_MEDIA, lang, 2))))
     fig.legend(handles=hand, loc="lower center", bbox_to_anchor=(0.53, 0.0), ncol=2, frameon=False,
                handlelength=1.4, columnspacing=1.5, labelspacing=0.4)
-    _save(fig, out_dir, f"Fig4_states_{lang}", 1000)
+    _save(fig, out_dir, f"Fig5_states_{lang}", 1000)
 
 
-# ---------------------------------------------------------------- Fig. 5 (multilevel validation)
+# ---------------------------------------------------------------- Fig. 6 (multilevel validation)
 def _curve(a, b, spec, y, flag, flag_labels, rows, ylab, anchor_col, t):
     s = spec.sort_values(y).reset_index(drop=True)
     x = np.arange(len(s))
@@ -532,8 +614,8 @@ def _curve(a, b, spec, y, flag, flag_labels, rows, ylab, anchor_col, t):
     b.spines["left"].set_visible(False); b.tick_params(axis="y", length=0)
 
 
-def figure5_validation(m1, m2, out_dir, lang):
-    """Fig. 5: two specification curves; only the most influential decisions are displayed."""
+def figure6_validation(m1, m2, out_dir, lang):
+    """Fig. 6: two specification curves; only the most influential decisions are displayed."""
     _style()
     t = L[lang]
     n1, n2 = len(t["m1rows"]), len(t["m2rows"])
@@ -552,11 +634,12 @@ def figure5_validation(m1, m2, out_dir, lang):
     fig.text(0.005, 0.992, t["f5a"], fontsize=FS_T, va="top")
     pos = a2.get_position()
     fig.text(0.005, pos.y1 + 0.032, t["f5b"], fontsize=FS_T, va="bottom")
-    _save(fig, out_dir, f"Fig5_validation_{lang}", 1000)
+    _save(fig, out_dir, f"Fig6_validation_{lang}", 1000)
 
 
-def build_all(tables_dir, units, k_star, out_dir, langs=("es", "en")):
-    """Build Figs. 1-5 in every language from the saved tables; return the list of files."""
+def build_all(tables_dir, units, k_star, out_dir, panel, langs=("es", "en")):
+    """Build Figs. 1-6 in every language from the saved tables and the territory-month panel;
+    return the list of files."""
     tables_dir = Path(tables_dir)
     prio = pd.read_csv(tables_dir / "T14_territorios_prioritarios.csv")
     anual = pd.read_csv(tables_dir / "T14b_razon_tasas_anual.csv")
@@ -568,8 +651,9 @@ def build_all(tables_dir, units, k_star, out_dir, langs=("es", "en")):
     m2 = pd.read_csv(tables_dir / "T13_multiverso_M2_especificaciones.csv")
     for lang in langs:
         figure1_framework(out_dir, lang)
-        figure2_priority(units, prio, out_dir, lang)
-        figure3_persistence(anual, prio, out_dir, lang)
-        figure4_states(ktab, gap, k_star, prof, dist, out_dir, lang)
-        figure5_validation(m1, m2, out_dir, lang)
+        figure2_reports(panel, out_dir, lang)
+        figure3_priority(units, prio, out_dir, lang)
+        figure4_persistence(anual, prio, out_dir, lang)
+        figure5_states(ktab, gap, k_star, prof, dist, out_dir, lang)
+        figure6_validation(m1, m2, out_dir, lang)
     return sorted(p.name for p in Path(out_dir).iterdir())
