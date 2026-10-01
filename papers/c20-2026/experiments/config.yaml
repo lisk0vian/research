@@ -48,6 +48,9 @@ predictors:
   local: [TT_anom_lags_0_6, TT_anom_mean_7_14_30, A0_7d, DTR_anom_7d, TTmax_anom_7d, TTmin_anom_7d,
           HR_anom_7_30, log1p_RR_sum_7_30, PP_anom_7d, PP_tendency_3d, u_mean_7d, v_mean_7d,
           doy_sin_cos_target_midpoint]
+  # Fraccion de una ventana trailing que debe estar valida para usar su media.
+  # Ventanas cortas quedan NaN; nunca se imputa el target ni sus predictores.
+  min_window_coverage: 0.5
   large_scale:
     nino34_weekly: {source: CPC_OISST_weekly, lag_days: 7}
     nino12_weekly: {source: CPC_OISST_weekly, lag_days: 7}
