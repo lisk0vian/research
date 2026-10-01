@@ -5,7 +5,6 @@ format: latex
 extension: "quarto-journals/elsevier-cas"
 quarto_extension: "quarto-journals/elsevier-cas"
 quarto_format: elsevier-cas-pdf
-model: 1p                 # single-column (desk-reject gate #4)
 formatting: doubleblind   # double anonymized: title page separate from manuscript
 cite_style: authoryear    # (Allan, 2020; Allan and Jones, 2019; Kramer et al., 2023)
 url: "https://www.sciencedirect.com/journal/engineering-applications-of-artificial-intelligence/publish/guide-for-authors"
