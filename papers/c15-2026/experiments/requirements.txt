@@ -1,0 +1,13 @@
+pandas
+scikit-learn
+pyyaml
+matplotlib
+seaborn
+python-dotenv
+markitdown[xlsx,docx]==0.1.7
+optuna
+xgboost
+lightgbm
+catboost
+pyarrow
+boruta

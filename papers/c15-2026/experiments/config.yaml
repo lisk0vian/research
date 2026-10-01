@@ -1,0 +1,156 @@
+data:
+  # path relative to DATA_DIR (env DATA_DIR) — subfolder data under GDRIVE_FOLDER_ID, created if missing
+  raw_path: "consolidated.csv"
+  # binary proxy label, thresholds computed only on train
+  target_col: "riesgo_congestion"
+  target:
+    method: backlog_rate_percentiles
+    backlog: "ingresado - atendido"
+    rate: "atendido / ingresado"
+    primary: "P75/P25"  # y=1[s>=q75(s_train) and t<=q25(t_train)]
+    sensitivity: ["P70/P30", "P80/P20", "P85/P15"]  # built only when requested, never as features
+    threshold_window: train_years  # percentiles exclusively from the training block, never global
+  exclude_cols:
+    - "ingresado"  # operand of proxy (leakage)
+    - "atendido"  # operand of proxy (leakage)
+    - "saldo_casos"  # derived from ingresado-atendido (leakage)
+    - "tasa_atencion"  # derived from atendido/ingresado (leakage)
+    - "ratio_saldo"  # derived from saldo/ingresado (leakage)
+    - "anio_centrado"  # collinear with anio
+    - "anio"  # only split key, never feature
+    - "periodo"  # non-predictive temporal metadata
+    - "fecha_descarga"  # non-predictive temporal metadata
+    - "fecha_corte"  # non-predictive temporal metadata
+    - "archivo_fuente"  # admin column from CSV consolidation
+    - "riesgo_proxy_P70_P30"  # alternative scenario
+    - "riesgo_proxy_P80_P20"
+    - "riesgo_proxy_P85_P15"
+  leakage_cols: ["ingresado", "atendido", "saldo_casos", "tasa_atencion", "ratio_saldo"]
+  collinear_exclude: ["anio_centrado"]
+  metadata_exclude: ["periodo", "fecha_descarga", "fecha_corte", "archivo_fuente", "anio"]
+  source_of_truth: "outputs/manifest_index.json#consolidation.manifest"
+
+preprocessing:
+  # imputation and scaling computed only on train to avoid leakage
+  missing_strategy: "median_train_only + flag_nulo"
+  fit_block: train_years  # medians/flags fit here, applied everywhere
+  output: "processed.parquet"  # filename in storage.silver_dir
+  scale_numeric: true
+  encode_categorical: "one_hot + frequency"
+
+feature_engineering:
+  # derived vars decided at runtime by Stage, published to manifest
+  derive: auto
+  output: "engineered.parquet"  # filename in storage.silver_dir
+  group_col: "distrito_fiscal"  # lags aggregate within this column per year
+  # OUR inferred formulas (paper names the vars, not the formulas; auditable here):
+  derived:
+    - {name: saldo_casos, family: pressure, formula: "ingresado - atendido"}
+    - {name: tasa_atencion, family: pressure, formula: "atendido / ingresado (0 if ingresado<=0)"}
+    - {name: ratio_saldo, family: pressure, formula: "saldo_casos / ingresado (0 if ingresado<=0)"}
+    - {name: anio_centrado, family: temporal, formula: "anio - mean(anio over fit_block)", excluded_collinear: true}
+    - {name: post_pandemia, family: temporal, formula: "1[anio >= 2021]"}
+    - {name: periodo_pandemia_2020, family: temporal, formula: "1[anio == 2020]"}
+    - {name: inter_distrito_tipo_caso, family: interaction, formula: "distrito_fiscal + '|' + tipo_caso"}
+    - {name: inter_materia_tipo_fiscalia, family: interaction, formula: "materia + '|' + tipo_fiscalia"}
+    - {name: inter_tipo_fiscalia_especialidad, family: interaction, formula: "tipo_fiscalia + '|' + especialidad"}
+    - {name: hist_ingresado_mean_prev, family: lagged, formula: "expanding mean of yearly group sum(ingresado) over previous years"}
+    - {name: hist_atendido_mean_prev, family: lagged, formula: "expanding mean of yearly group sum(atendido) over previous years"}
+    - {name: hist_saldo_mean_prev, family: lagged, formula: "expanding mean of yearly group sum(saldo_casos) over previous years"}
+    - {name: growth_ingresado_prev, family: lagged, formula: "(sum_year - sum_prev_year) / sum_prev_year of ingresado"}
+    - {name: growth_atendido_prev, family: lagged, formula: "(sum_year - sum_prev_year) / sum_prev_year of atendido"}
+  source_of_truth: "outputs/manifest_index.json#feature_engineering.manifest"
+
+feature_selection:
+  # 6 complementary methods, consensus voting
+  methods: ["mi", "anova", "chi2", "rf", "boruta", "rfecv"]
+  consensus_threshold: 2  # votes >=2/6 per FeatureScore
+  fit_block: feature_selection_years  # methods fit here
+  valid_block: feature_selection_valid_year  # RFECV validates here
+  filters:
+    pearson: 0.90  # |r| on numerics, applied before cramer
+    cramer_v: 0.80  # on categoricals
+  tie_break: target_mi_train  # keep the pair member with higher MI vs target
+  encoding:
+    one_hot_max_cardinality: 20  # train nunique <= 20 -> one-hot, else frequency
+    high_cardinality: frequency
+  top_k_per_method: third  # each method votes its top max(10, n//3); consensus count emergent
+  params: {rf_estimators: 200, boruta_max_iter: 50, rfecv_cv: timeseries_3}
+  source_of_truth: "outputs/manifest_index.json#feature_selection.manifest"
+
+split:
+  method: "temporal"  # year-block walk-forward, no random
+  # NOTE: feature_selection_years [2019-2022] overlap train_years [2019-2023] by design
+  # (selection window is subset of train window); documented as controlled overlap,
+  # years are not trimmed without explicit approval (see diagnostic_log.md)
+  feature_selection_years: [2019, 2020, 2021, 2022]
+  feature_selection_valid_year: 2023
+  train_years: [2019, 2020, 2021, 2022, 2023]
+  calib_valid_year: 2024
+  test_year: 2025
+  external_year: 2026
+
+models:
+  dummy: {optimizer: null}
+  # Scale-up scope: full active set in training.active_models, trials 100.
+  # Optimizers follow the paper: randomized search for base models,
+  # TPE-Optuna for the lightgbm variant.
+  logreg: {optimizer: randomized_search, trials: 100, search_space: {C: {type: loguniform, low: 0.001, high: 10.0}, penalty: [l1, l2]}}
+  svm_linear: {optimizer: randomized_search, trials: 100, calibration: "Platt", search_space: {C: {type: loguniform, low: 0.001, high: 10.0}}}
+  xgboost: {optimizer: randomized_search, trials: 100, search_space: {n_estimators: [100, 500], learning_rate: {type: loguniform, low: 0.01, high: 0.3}, max_depth: [3, 10]}}
+  lightgbm: {optimizer: randomized_search, trials: 100, search_space: {n_estimators: [100, 500], learning_rate: {type: loguniform, low: 0.01, high: 0.3}, num_leaves: [20, 150]}}
+  lightgbm_optuna: {optimizer: optuna_tpe, trials: 100, search_space: {n_estimators: [100, 500], learning_rate: {type: loguniform, low: 0.01, high: 0.3}, num_leaves: [20, 150]}}
+  catboost: {optimizer: randomized_search, trials: 100, search_space: {iterations: [100, 500], learning_rate: {type: loguniform, low: 0.01, high: 0.3}, depth: [4, 10]}}
+  # NOTE: lightgbm_optuna is NOT a duplicate of lightgbm: same space, different
+  # optimizer (TPE vs randomized). Voting selects top-5 by f1_macro.
+  voting: {type: "soft_average_5_best", select_by: "f1_macro"}
+  stacking: {type: "temporal_oof_logreg"}
+
+training:
+  active_models: ["logreg", "svm_linear", "xgboost", "lightgbm", "lightgbm_optuna", "catboost", "voting", "stacking"]  # full scale-up set
+  ensembles: {voting: true, stacking: true, select_top_n: 5, exclude_from_voting: ["svm_linear"]}
+  seeds: {global: 42, sampler: 42}
+  checkpoint: {storage: sqlite_per_model, cadence_trials: 5, per_model_manifests: true}
+  encoding:  # train consumes this; fit blocks are train-only, never global
+    categorical: frequency_train_only
+    numeric: median_train_only
+    scale: standard_scaler_train_only  # standardize matrices; fit block = search_train; none disables
+  compat:  # library-compat switches with dated reason, never silent
+    sklearn_penalty_to_l1_ratio: true  # sklearn>=1.8 deprecates penalty= (saga ignores l1 otherwise)
+  progress:  # cell-output verbosity; run_*.log always records everything
+    print_every_trial: true  # live [progress] per trial; model start/done/summary always print
+
+calibration:
+  valid_year: 2024
+  grid: [0.05, 0.95, 91]
+
+output:
+  # paths relative to OUTPUT_DIR (env OUTPUT_DIR) — subfolders under GDRIVE_FOLDER_ID, created if missing
+  results_path: "tables"  # OUTPUT_DIR/tables/*.csv
+  predictions_path: "predictions"  # OUTPUT_DIR/predictions/*.csv
+  figures_dir: "figures"  # OUTPUT_DIR/figures/*.png
+  checkpoint:
+    enabled: true
+    dir: "checkpoints"  # OUTPUT_DIR/checkpoints
+    manifest: "checkpoint_manifest.json"  # JSON, resume support
+
+storage:
+  # datalake layers, all paths relative to DATA_DIR (env DATA_DIR)
+  raw_dir: "."  # immutable inputs: 20*.csv + dictionary (never overwritten)
+  silver_dir: "silver"  # versioned consolidated parquet (consolidation writes)
+  silver_format: parquet
+  gold_dir: "gold"  # per-split X/y matrices (split writes, phase 2.1)
+  gold_format: parquet
+  dictionary: "dictionary.md"  # versioned dictionary, sha recorded in manifest
+
+quality_gates:
+  # Calibrated 2026-09-16 from the first searched run (Lote-9: lightgbm test
+  # f1_macro 0.6903, roc_auc 0.8330; valid 0.7677/0.8862). Floors sit below
+  # test with margin; never lower a calibrated gate (see diagnostic_log.md).
+  lightgbm:
+    f1_macro:
+      min: 0.60
+      max: 1.0
+    roc_auc:
+      min: 0.75
+      max: 1.0

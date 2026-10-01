@@ -1,0 +1,17 @@
+outputs/
+__pycache__/
+*.pyc
+.env
+.sync_history.json
+.ipynb_checkpoints/
+# MCP Drive - credenciales y tokens (no commitear, OAuth local)
+.gdrive/
+.gdrive-server-credentials.json
+credentials.json
+*mcp-google-gdrive*
+tokens/
+gcp-oauth.keys.json
+# notebooks fuera de git (../notebooks/.gitkeep solo FS), experiments solo python
+*.ipynb
+# backup notebook
+*.bak
