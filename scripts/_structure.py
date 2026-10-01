@@ -35,7 +35,7 @@ REQUIRED_DIRS = ["paper", "data", "experiments", "notebooks", "build"]
 # --- Files -------------------------------------------------------------------
 # main.qmd is required UNLESS a migration is still pending.
 MIGRATION_MARKER = "paper/MIGRATION_PENDING.txt"
-REQUIRED_PAPER_FILES = ["paper/manifest.yaml", "paper/references.bib"]
+REQUIRED_PAPER_FILES = ["manifest.yaml", "paper/references.bib"]
 REVIEW_FILES = ["comments.yaml", "responses.yaml", "ai-review.yaml"]
 
 # Extensions a paper may never keep as a data-of-record artefact. Numbers must

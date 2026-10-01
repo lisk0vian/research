@@ -167,7 +167,7 @@ def main() -> int:
                render((tmpl_dir / "main.qmd.template").read_text(encoding="utf-8"), values))
 
     for tpl, dest in [
-        ("manifest.yaml.template", "paper/manifest.yaml"),
+        ("manifest.yaml.template", "manifest.yaml"),
         ("references.bib.template", "paper/references.bib"),
     ]:
         _write(paper_root / dest,

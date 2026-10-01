@@ -116,7 +116,7 @@ def add_journal(repo: Path, slug: str, meta_path: Path, force: bool) -> int:
 
 
 def update_manifest(repo: Path, slug: str, journal: str) -> None:
-    mp = repo / "papers" / slug / "paper" / "manifest.yaml"
+    mp = repo / "papers" / slug / "manifest.yaml"
     if not mp.is_file():
         raise SystemExit(f"ERROR: manifest not found: {mp}")
     text = mp.read_text(encoding="utf-8")

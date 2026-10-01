@@ -35,7 +35,7 @@ gate.
 ## What it checks
 
 - Paper folder naming and required directories.
-- `paper/manifest.yaml`, `paper/references.bib`, `paper/main.qmd`
+- `manifest.yaml`, `paper/references.bib`, `paper/main.qmd`
   (or `MIGRATION_PENDING.txt`).
 - Manifest fields: `paper` == folder, `journal` in catalog, authors with
   `id`/`role`/`order` and ids present in `authors/`.

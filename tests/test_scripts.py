@@ -31,7 +31,7 @@ def test_paper_new_scaffolds_valid_paper(mini_repo: Path):
     )
     assert proc.returncode == 0, proc.stderr
     assert (mini_repo / "papers" / "c99-2026" / "paper" / "main.qmd").is_file()
-    assert (mini_repo / "papers" / "c99-2026" / "paper" / "manifest.yaml").is_file()
+    assert (mini_repo / "papers" / "c99-2026" / "manifest.yaml").is_file()
     report = paper_validate.validate_repo(mini_repo)
     assert report.ok, report.errors
 
@@ -67,7 +67,7 @@ def test_paper_journal_retarget_updates_manifest_and_qmd(mini_repo: Path):
         "--slug", "c99-2026", "--journal", "test-journal",
     )
     assert proc.returncode == 0, proc.stderr
-    manifest = (mini_repo / "papers" / "c99-2026" / "paper" / "manifest.yaml").read_text(encoding="utf-8")
+    manifest = (mini_repo / "papers" / "c99-2026" / "manifest.yaml").read_text(encoding="utf-8")
     assert "journal: test-journal" in manifest
     qmd = (mini_repo / "papers" / "c99-2026" / "paper" / "main.qmd").read_text(encoding="utf-8")
     assert "format:" in qmd

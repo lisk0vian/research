@@ -24,7 +24,7 @@ def _write_min_paper(repo: Path, slug: str = "c99-2026") -> Path:
     root = repo / "papers" / slug
     for d in ("paper/media", "data", "experiments", "notebooks", "build"):
         (root / d).mkdir(parents=True, exist_ok=True)
-    (root / "paper" / "manifest.yaml").write_text(
+    (root / "manifest.yaml").write_text(
         f"paper: {slug}\njournal: test-journal\nauthors:\n"
         "  - id: moises\n    role: corresponding\n    order: 1\n",
         encoding="utf-8",
@@ -57,7 +57,7 @@ def test_bad_slug_fails(mini_repo: Path):
 
 def test_manifest_paper_field_must_match_folder(mini_repo: Path):
     root = _write_min_paper(mini_repo)
-    (root / "paper" / "manifest.yaml").write_text(
+    (root / "manifest.yaml").write_text(
         "paper: wrong\njournal: test-journal\nauthors:\n  - id: moises\n    role: a\n    order: 1\n",
         encoding="utf-8",
     )
@@ -67,7 +67,7 @@ def test_manifest_paper_field_must_match_folder(mini_repo: Path):
 
 def test_unknown_author_fails(mini_repo: Path):
     root = _write_min_paper(mini_repo)
-    (root / "paper" / "manifest.yaml").write_text(
+    (root / "manifest.yaml").write_text(
         "paper: c99-2026\njournal: test-journal\nauthors:\n  - id: ghost\n    role: a\n    order: 1\n",
         encoding="utf-8",
     )

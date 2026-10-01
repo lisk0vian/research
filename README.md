@@ -40,7 +40,8 @@ rules are enforced in CI (see [`AGENTS.md`](./AGENTS.md)).
 
 ```
 papers/<slug>/
-├── paper/       main.qmd (source), manifest.yaml, references.bib, media/
+├── manifest.yaml paper metadata (title, journal, authors, claims)
+├── paper/       main.qmd (source), references.bib, media/
 ├── data/        raw + processed data (large files stay out of git)
 ├── experiments/ pipeline code that produces the numbers
 ├── notebooks/   exploratory notebooks

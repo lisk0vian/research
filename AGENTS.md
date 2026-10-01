@@ -31,18 +31,17 @@ Every paper lives in `papers/<slug>/` and is born with **exactly** this tree:
 
 ```
 papers/<slug>/
-├── paper/
+├── manifest.yaml           # paper metadata: title, journal, authors, claims, figures
+├── paper/                  # sources only — no build artefacts ever live here
 │   ├── main.qmd            # single source of the manuscript
-│   ├── manifest.yaml       # paper metadata: title, journal, authors, claims, figures
 │   ├── references.bib      # classic BibTeX (what Quarto reads)
-│   ├── media/              # figures (migrated PNGs or generated here)
-│   └── _extensions/        # Quarto extension (regenerated; gitignored)
+│   └── media/              # figures (migrated PNGs or generated here)
 ├── data/                   # raw + processed (large/sensitive files stay out of git)
 ├── experiments/            # pipeline code that produces numbers and figures
 ├── notebooks/              # exploratory notebooks
 ├── outputs/                # machine-readable results (CSV/JSON/PNG/PKL)
 ├── reviews/round-N/        # comments.yaml, responses.yaml, ai-review.yaml
-├── build/                  # rendered output (only the final PDF is committed)
+├── build/                  # rendered output + render/ scratch (only the final PDF committed)
 └── legacy/                 # original .docx/.pdf when migrating an existing paper
 ```
 
@@ -51,6 +50,9 @@ Rules:
 - **`main.qmd` is the only manuscript source.** `.tex`, `.docx`, `.pdf` are
   derived; never edit a derivative and never write paper content in
   `experiments/`.
+- **`paper/` holds sources only.** Every build copies them into
+  `build/render/` (extension sync, flattened format-resources, `.tex`/`.aux`),
+  so the tracked folder never fills with artefacts.
 - **Numbers live in `outputs/` as CSV/JSON.** No `.xlsx`/`.xls` may be an
   artefact of record under `paper/`, `outputs/` or `experiments/`. Every figure
   or table in the manuscript must trace back to a file in `outputs/`.
@@ -78,6 +80,7 @@ that know *when* to call them and interview you for the arguments.
 | Check environment only | `python scripts/paper_build.py --slug <slug> --check-only` |
 | Validate the repo | `python scripts/paper_validate.py` |
 | Sparse clone one paper (Colab) | `python scripts/paper_sparse_clone.py --slug <slug> --dest <dir>` |
+| Sync a paper's Drive folder (in place) | `python scripts/paper_drive_sync.py --slug <slug>` |
 | Check CAS sample fidelity | `python scripts/cas_fidelity.py` (add `--docx` for the Word suite) |
 | Verify Claude skill links | `python scripts/link_skills.py --check` |
 | Link skills for Claude | `python scripts/link_skills.py` |
@@ -87,9 +90,24 @@ A new paper typically follows: `paper_new.py` → literature search
 (`paper-search`) → pipeline in `experiments/` writing to `outputs/` →
 `paper_build.py` → `reviews/round-N/`.
 
+### Drive sync for Colab notebooks — always in place
+
+A paper whose code runs on Colab keeps its notebook and `experiments/` on Drive.
+**Always update them with `fileId`, never recreate them with
+`parentFolderId`.** A new Drive file gets a new id, which produces a new Colab
+URL and a new runtime session, and accounts cap concurrent sessions. Two files
+with the same name in `Drive/<folder>/code/` are worse: the notebook's
+`copytree` then picks one arbitrarily, so the stub can silently shadow the
+implementation.
+
+`scripts/paper_drive_sync.py` enforces this. Drive file ids live in
+`papers/<slug>/.drive_ids.json` (gitignored, see `.drive_ids.json.example`),
+never hardcoded in code or committed. Resolve a new id once with the `gdrive`
+MCP, record it with `--record`, and from then on every sync is in place.
+
 ## 4. Manifest contract
 
-`paper/manifest.yaml` must contain at least:
+`papers/<slug>/manifest.yaml` must contain at least:
 
 ```yaml
 paper: <slug>            # must equal the folder name
@@ -168,7 +186,7 @@ New work always goes under `papers/` with the structure in section 2.
 
 ## 8. How to investigate an existing paper
 
-1. Read `papers/<slug>/paper/manifest.yaml` (metadata + claims/figures).
+1. Read `papers/<slug>/manifest.yaml` (metadata + claims/figures).
 2. Read `papers/<slug>/outputs/manifest_index.json` (the numbers's source).
 3. Read `papers/<slug>/paper/main.qmd` for the narrative.
 4. `papers/<slug>/reviews/round-N/` for reviewer comments and responses.

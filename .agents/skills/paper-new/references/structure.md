@@ -5,9 +5,9 @@ a `.gitkeep` so Git tracks them.
 
 ```
 papers/<slug>/
+├── manifest.yaml              # from templates/paper/manifest.yaml.template
 ├── paper/
 │   ├── main.qmd               # from templates/paper/main.qmd.template (or migrated)
-│   ├── manifest.yaml          # from templates/paper/manifest.yaml.template
 │   ├── references.bib         # from templates/paper/references.bib.template (empty)
 │   ├── references-source.bib  # raw export from the reference manager (biblatex)
 │   ├── media/                 # figures from a migrated Word doc live here

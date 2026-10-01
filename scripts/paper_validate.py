@@ -227,8 +227,8 @@ def check_paper(repo: Path, root: Path, rep: Report) -> None:
 
 def check_manifest(repo: Path, root: Path, rep: Report) -> None:
     slug = root.name
-    where = f"papers/{slug}/paper/manifest.yaml"
-    mp = root / "paper" / "manifest.yaml"
+    where = f"papers/{slug}/manifest.yaml"
+    mp = root / "manifest.yaml"
     if not mp.is_file():
         return
     try:

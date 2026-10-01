@@ -18,7 +18,7 @@ routes everything through it. Never hardcode journal values into a paper.
 
 Changing journals touches three places, and the script does all three:
 
-1. `papers/<slug>/paper/manifest.yaml` — the `journal` field.
+1. `papers/<slug>/manifest.yaml` — the `journal` field.
 2. `papers/<slug>/paper/main.qmd` — the `format:` block.
 3. `papers/<slug>/paper/_extensions/` — the Quarto extension, via `quarto add`.
 
