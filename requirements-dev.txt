@@ -1,4 +1,15 @@
 # Development/test dependencies (CI and local).
-# The paper scripts themselves only need PyYAML.
+# The repository tests are stdlib-only plus pytest; the per-paper suite under
+# papers/*/tests/ (see AGENTS.md §6) imports the pipeline code, which needs
+# numpy and pandas. This is deliberately the test environment, NOT the papers'
+# own requirements-experiments.txt (optuna, lightgbm, catboost and friends).
+#
+# Pillow is the CAS pixel comparison. CI skips that test (no quarto/pdflatex/
+# poppler on the runner) but cas_fidelity.py reports FAIL rather than skipping
+# when it finds the render tools and not Pillow, so a machine with TeX and
+# without Pillow would fail the suite.
 pyyaml>=6.0
 pytest>=7.0
+numpy>=1.26
+pandas>=2.1
+pillow>=10.0
