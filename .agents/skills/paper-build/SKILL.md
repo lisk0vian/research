@@ -11,8 +11,9 @@ description: >
 
 # paper-build
 
-Turn `papers/<slug>/paper/main.qmd` into a submission-ready PDF/DOCX. All the
-logic is in `scripts/paper_build.py`; never render with ad-hoc commands.
+Turn `papers/<slug>/paper/main.qmd` into a submission-ready PDF/DOCX and the
+`<slug>-latex.zip` source package for the journal. All the logic is in
+`scripts/paper_build.py`; never render with ad-hoc commands.
 
 ## Workflow
 
@@ -35,8 +36,11 @@ logic is in `scripts/paper_build.py`; never render with ad-hoc commands.
    python scripts/paper_build.py --slug <slug> --format all
    ```
 
-   Output lands in `papers/<slug>/build/` as `<slug>.pdf` / `<slug>.docx`. Only
-   the final PDF is committed; `.tex`, `.aux`, `.log`, `_files/` are gitignored.
+   Output lands in `papers/<slug>/build/` as `<slug>.pdf`, `<slug>.docx` and
+   `<slug>-latex.zip` (tex + class/style/bst + figures + bib/bbl +
+   highlights.txt, ready to compile standalone). Only the final PDF is
+   committed; `.tex`, `.aux`, `.log`, `_files/`, `.docx` and `.zip` are
+   gitignored.
 
 4. **On render errors**, map the message to the cause using
    `references/common-errors.md` (math trapped in tables, unwrapped inline math,

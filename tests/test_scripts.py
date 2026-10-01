@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import subprocess
 import sys
+import zipfile
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -12,6 +13,7 @@ sys.path.insert(0, str(SCRIPTS))
 
 import paper_validate  # noqa: E402
 from _structure import format_block_from_type  # noqa: E402
+from paper_build import make_latex_zip  # noqa: E402
 
 
 def _run(*args: str, cwd: Path | None = None) -> subprocess.CompletedProcess:
@@ -92,3 +94,35 @@ def test_link_check_reports_missing_links(mini_repo: Path):
     proc = _run("scripts/link_skills.py", "--root", str(mini_repo), "--check")
     assert proc.returncode == 1, proc.stdout
     assert "missing Claude links" in proc.stdout
+
+
+def test_make_latex_zip_packages_submission_sources(tmp_path: Path):
+    """The zip must hold everything needed to compile main.tex standalone."""
+    render = tmp_path / "render"
+    build = tmp_path / "build"
+    (render / "media").mkdir(parents=True)
+    (render / "thumbnails").mkdir()
+    (render / "main.tex").write_text("\\documentclass{cas-sc}\n", encoding="utf-8")
+    (render / "cas-sc.cls").write_text("cls\n", encoding="utf-8")
+    (render / "references.bib").write_text("@article{x, title={x}}\n", encoding="utf-8")
+    (render / "main.bbl").write_text("\\bibitem{x}\n", encoding="utf-8")
+    (render / "main.aux").write_text("junk\n", encoding="utf-8")  # excluded
+    (render / "media" / "fig.pdf").write_bytes(b"%PDF-1.4")
+    (render / "thumbnails" / "cas-email.jpeg").write_bytes(b"icon")
+    (render / "cas-email.jpeg").write_bytes(b"flattened duplicate")  # excluded
+    build.mkdir()
+
+    ok, msg = make_latex_zip(render, build, "c99-2026", ["A bullet"])
+    assert ok, msg
+    with zipfile.ZipFile(build / "c99-2026-latex.zip") as z:
+        assert z.testzip() is None
+        assert set(z.namelist()) == {
+            "main.tex",
+            "cas-sc.cls",
+            "references.bib",
+            "main.bbl",
+            "media/fig.pdf",
+            "thumbnails/cas-email.jpeg",
+            "highlights.txt",
+        }
+        assert z.read("highlights.txt") == b"A bullet\n"

@@ -6,8 +6,11 @@ Two phases, both explicit and re-runnable:
   1. check  — verify quarto, the LaTeX engine (for PDF), the journal's Quarto
               extension and the bibliography. Never installs anything; reports
               the exact command to run when something is missing.
-  2. render — `quarto render` to PDF and/or DOCX into papers/<slug>/build/, then
-              rename the output to <slug>.pdf / <slug>.docx.
+  2. render — `quarto render` to PDF and/or DOCX from a scratch copy in
+              papers/<slug>/build/render/, rename the output to
+              <slug>.pdf / <slug>.docx, and package the LaTeX submission
+              source (tex + class/style/bst + figures + bib/bbl +
+              highlights.txt) as <slug>-latex.zip next to the pdf.
 
 Usage:
     python scripts/paper_build.py --slug c15-2026 --format all
@@ -20,6 +23,7 @@ import argparse
 import shutil
 import subprocess
 import sys
+import zipfile
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -142,29 +146,33 @@ def docx_target(repo: Path, paper_dir: Path) -> str:
     return "docx"
 
 
+def qmd_front_matter(paper_dir: Path) -> dict:
+    """Parsed YAML front matter of paper/main.qmd ({} when absent/invalid)."""
+    qmd = paper_dir / "main.qmd"
+    if not qmd.is_file():
+        return {}
+    text = qmd.read_text(encoding="utf-8", errors="replace")
+    if not text.startswith("---") or text.count("---") < 2:
+        return {}
+    try:
+        import yaml  # PyYAML is a repo dependency (see scripts/_repo.py)
+
+        data = yaml.safe_load(text.split("---", 2)[1]) or {}
+        return data if isinstance(data, dict) else {}
+    except Exception:
+        return {}
+
+
 def running_heads(repo: Path, paper_dir: Path) -> tuple[str, str]:
     """(short title, first author full name) for the docx header/footer.
 
     short-title: main.qmd top-level journal.short-title (fallback: title,
     truncated). first author: manifest authors[0] -> authors/<id>.yaml name.
     """
-    short = ""
-    title = ""
-    qmd = paper_dir / "main.qmd"
-    if qmd.is_file():
-        text = qmd.read_text(encoding="utf-8", errors="replace")
-        if text.startswith("---"):
-            front = text.split("---", 2)[1] if text.count("---") >= 2 else ""
-            try:
-                import yaml  # PyYAML is a repo dependency (see scripts/_repo.py)
-
-                data = yaml.safe_load(front) or {}
-                journal = data.get("journal") or {}
-                if isinstance(journal, dict):
-                    short = str(journal.get("short-title") or "")
-                title = str(data.get("title") or "")
-            except Exception:
-                short = ""
+    data = qmd_front_matter(paper_dir)
+    journal = data.get("journal")
+    short = str(journal.get("short-title") or "") if isinstance(journal, dict) else ""
+    title = str(data.get("title") or "")
     if not short:
         short = (title[:60] + "…") if len(title) > 60 else title
     first = "Author"
@@ -175,6 +183,73 @@ def running_heads(repo: Path, paper_dir: Path) -> tuple[str, str]:
             person = load_yaml(repo / "authors" / f"{authors[0]['id']}.yaml")
             first = str(person.get("name") or first)
     return short or "Short title", first
+
+
+def submission_highlights(paper_dir: Path) -> list[str]:
+    """journal.highlights from main.qmd, for the submission zip.
+
+    EAAI asks for highlights as a separate file whose name contains
+    "highlights" (3-5 bullets, each <= 85 characters).
+    """
+    journal = qmd_front_matter(paper_dir).get("journal")
+    items = journal.get("highlights") if isinstance(journal, dict) else None
+    out = [str(item) for item in items or []]
+    long = [h for h in out if len(h) > 85]
+    if long:
+        print(f"  [warn] {len(long)} highlight(s) exceed 85 chars (EAAI limit)")
+    return out
+
+
+def make_latex_zip(render_dir: Path, build_dir: Path, slug: str,
+                   highlights: list[str] | None = None) -> tuple[bool, str]:
+    """Package the LaTeX submission source as build/<slug>-latex.zip.
+
+    EAAI takes editable sources only (.tex, not PDF), so the zip carries
+    everything needed to compile main.tex standalone: the class/style/bst
+    files quarto flattened, the figures, the icon thumbnails the class
+    includes, the .bib and the compiled .bbl — plus highlights.txt written
+    from journal.highlights (the guide wants it as a separate file).
+    Aux/log files and the flattened root-level icon duplicates stay out.
+    """
+    if not (render_dir / "main.tex").is_file():
+        return False, "main.tex missing in render dir (render the pdf first)"
+    # quarto deletes the aux files after a successful render; rebuild the
+    # minimal set (one latex pass + bibtex) to ship the compiled .bbl that
+    # Elsevier expects alongside the .bib. Non-fatal: if anything fails the
+    # zip still goes out and the reviewer can run bibtex on references.bib.
+    if not (render_dir / "main.bbl").is_file():
+        engine = next(
+            (e for e in ("pdflatex", "xelatex", "lualatex") if shutil.which(e)),
+            None,
+        )
+        if engine:
+            run([engine, "-interaction=nonstopmode", "main.tex"],
+                cwd=render_dir)
+            if (render_dir / "main.aux").is_file():
+                run(["bibtex", "main"], cwd=render_dir)
+    entries: list[Path] = [Path("main.tex")]
+    for pattern in ("*.cls", "*.sty", "*.bst", "*.bib", "*.bbl"):
+        entries += sorted(
+            p.relative_to(render_dir) for p in render_dir.glob(pattern))
+    for folder in ("media", "thumbnails"):
+        base = render_dir / folder
+        if base.is_dir():
+            entries += sorted(
+                p.relative_to(render_dir) for p in base.rglob("*")
+                if p.is_file())
+    zip_path = build_dir / f"{slug}-latex.zip"
+    if zip_path.exists():
+        zip_path.unlink()
+    with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as z:
+        for rel in entries:
+            z.write(render_dir / rel, rel.as_posix())
+        if highlights:
+            z.writestr("highlights.txt", "".join(f"{h}\n" for h in highlights))
+    size_kb = zip_path.stat().st_size // 1024
+    extra = 1 if highlights else 0
+    note = "" if (render_dir / "main.bbl").is_file() else " — no .bbl (bibtex did not run)"
+    return True, (f"zip {zip_path.name}: {len(entries) + extra} files, "
+                  f"{size_kb} KB{note}")
 
 
 def patch_docx_heads(repo: Path, paper_dir: Path, docx: Path) -> None:
@@ -284,10 +359,18 @@ def render(repo: Path, slug: str, fmt: str, quarto_format: str, extension: str) 
                 final.unlink()
             produced.rename(final)
             print(f"  rendered {final}")
+            if kind == "pdf":
+                zip_ok, zip_msg = make_latex_zip(
+                    render_dir, build_dir, slug, submission_highlights(paper_dir))
+                print(f"  {zip_msg}" if zip_ok else f"  [warn] {zip_msg}")
             if kind == "docx":
                 patch_docx_heads(repo, paper_dir, final)
         elif rc == 0 and final.is_file():
             print(f"  rendered {final} (already named)")
+            if kind == "pdf":
+                zip_ok, zip_msg = make_latex_zip(
+                    render_dir, build_dir, slug, submission_highlights(paper_dir))
+                print(f"  {zip_msg}" if zip_ok else f"  [warn] {zip_msg}")
             if kind == "docx":
                 patch_docx_heads(repo, paper_dir, final)
         else:

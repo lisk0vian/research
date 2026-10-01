@@ -41,7 +41,7 @@ papers/<slug>/
 ├── notebooks/              # exploratory notebooks
 ├── outputs/                # machine-readable results (CSV/JSON/PNG/PKL)
 ├── reviews/round-N/        # comments.yaml, responses.yaml, ai-review.yaml
-├── build/                  # rendered output + render/ scratch (only the final PDF committed)
+├── build/                  # <slug>.pdf/.docx/-latex.zip + render/ scratch (only the PDF committed)
 └── legacy/                 # original .docx/.pdf when migrating an existing paper
 ```
 
@@ -76,7 +76,7 @@ that know *when* to call them and interview you for the arguments.
 | Create a paper | `python scripts/paper_new.py --slug <slug> --journal <journal> --author id:role:order ...` |
 | Change journal | `python scripts/paper_journal.py --slug <slug> --journal <journal>` |
 | Add a journal from a link | `python scripts/paper_journal.py --add-journal <slug> --meta meta.json` |
-| Build PDF/DOCX | `python scripts/paper_build.py --slug <slug> --format all` |
+| Build PDF, DOCX and LaTeX zip | `python scripts/paper_build.py --slug <slug> --format all` |
 | Check environment only | `python scripts/paper_build.py --slug <slug> --check-only` |
 | Validate the repo | `python scripts/paper_validate.py` |
 | Sparse clone one paper (Colab) | `python scripts/paper_sparse_clone.py --slug <slug> --dest <dir>` |

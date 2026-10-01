@@ -59,7 +59,7 @@ python scripts/paper_new.py --slug c22-2026 --title "My paper" \
     --journal machine-learning-with-applications \
     --author moises:corresponding:1 --author jeremi:author:2
 
-# Build PDF and Word
+# Build PDF, Word and the LaTeX submission zip
 python scripts/paper_build.py --slug c22-2026 --format all
 
 # Fidelity of the renders against the official Elsevier CAS sample:
