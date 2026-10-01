@@ -48,8 +48,9 @@ jobs:
         run: python scripts/paper_validate.py
 
       - name: Run tests
-        # Per-paper suites (papers/*/tests) are marked slow by
-        # papers/conftest.py and skipped here: a pull request is checked against
-        # the repository contract in seconds. They are still collected locally
-        # by plain `pytest -q` and must pass before a release.
+        # Two suites are marked slow and skipped here: papers/*/tests (~35s,
+        # each case refits climatologies) and tests/test_cas_fidelity.py
+        # (~29s, compiles LaTeX against a committed reference PDF). Measured:
+        # this gate runs 51 tests in ~5s against ~66s for plain `pytest -q`.
+        # Both stay collected locally and must pass before a release.
         run: pytest -q -m "not slow"

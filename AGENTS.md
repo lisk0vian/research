@@ -200,12 +200,14 @@ Run it locally before pushing: `python scripts/paper_validate.py`.
 A paper may also carry an optional `tests/` folder holding a synthetic-fixture
 suite (tests never read `data/` or `outputs/` for real). `pytest` only collects
 what `pytest.ini` lists in `testpaths`, so a new folder must be added there or
-it is never collected at all. `papers/conftest.py` then marks everything under
-`papers/` as `slow`, and the gate runs `pytest -m "not slow"` so a pull request
-is checked against the repository contract in seconds; plain `pytest -q` still
-runs the whole thing locally, and the per-paper suites must pass before a
-release. The suite must not import the paper's `requirements-experiments.txt`
-environment: `pytest` runs the repository's own dependencies only.
+it is never collected at all. Two suites are marked `slow` and the gate runs
+`pytest -m "not slow"`: the per-paper suites under `papers/` (`papers/conftest.py`)
+and `tests/test_cas_fidelity.py`, which compiles LaTeX against a committed
+reference (`tests/conftest.py`). Measured: the gate runs 51 tests in ~5 s,
+plain `pytest -q` runs all 169 in ~66 s. Everything marked `slow` must still
+pass locally and before a release. The suite must not import the paper's
+`requirements-experiments.txt` environment: `pytest` runs the repository's own
+dependencies only.
 
 ## 7. Legacy projects (pre-standardization)
 

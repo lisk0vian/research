@@ -1,9 +1,9 @@
 """Mark every per-paper test suite as slow.
 
 A paper's suite synthesises frames and refits climatologies for each case, which
-is worth running before a release but not on every push. The structure gate in
-CI therefore runs ``pytest -m "not slow"`` and checks a pull request against the
-repository contract in seconds; plain ``pytest -q`` still runs everything.
+is worth running before a release but not on every push. The gate in CI
+therefore runs ``pytest -m "not slow"``: measured, that is 51 tests in ~5 s
+against ~66 s for plain ``pytest -q``.
 
 Marking them here rather than decorating a hundred-odd test functions means a
 new paper suite is slow by default. The failure mode we care about is a suite
