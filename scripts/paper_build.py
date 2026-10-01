@@ -42,7 +42,7 @@ def resolve_format(repo: Path, slug: str, paper_dir: Path) -> tuple[str, str, li
     extension = ""
     quarto_format = "pdf"
 
-    manifest = paper_dir / "manifest.yaml"
+    manifest = paper_dir.parent / "manifest.yaml"
     journal = ""
     if manifest.is_file():
         journal = str(load_yaml(manifest).get("journal") or "")
@@ -67,7 +67,7 @@ def extension_source(repo: Path, paper_dir: Path) -> tuple[Path | None, str]:
     Returns (None, "") when the journal or its extension is not set up yet.
     """
     journal = ""
-    manifest = paper_dir / "manifest.yaml"
+    manifest = paper_dir.parent / "manifest.yaml"
     if manifest.is_file():
         journal = str(load_yaml(manifest).get("journal") or "")
     if not journal:
@@ -76,29 +76,56 @@ def extension_source(repo: Path, paper_dir: Path) -> tuple[Path | None, str]:
     return (src if src.is_dir() else None), journal
 
 
-def sync_extension(repo: Path, paper_dir: Path) -> tuple[bool, str]:
-    """Copy the journal's canonical extension into papers/<slug>/paper/_extensions.
+def prepare_render_dir(paper_dir: Path, build_dir: Path) -> Path:
+    """Copy the paper sources into a fresh build/render/ (scratch render dir).
 
-    The paper copy is regenerated on every build (gitignored), so the single
-    source of truth stays under templates/journals/. Returns (synced, message).
+    Rendering from there keeps paper/ pristine: Quarto flattens the
+    extension's format-resources (cls/sty/bst/jpg), copies _extensions/ and
+    writes the LaTeX intermediates next to the *input* document, so the
+    input must be this copy rather than the tracked source folder.
+    """
+    render_dir = build_dir / "render"
+    if render_dir.exists():
+        shutil.rmtree(render_dir, ignore_errors=True)
+    render_dir.mkdir(parents=True, exist_ok=True)
+    for pattern in ("*.qmd", "*.bib"):
+        for file in sorted(paper_dir.glob(pattern)):
+            shutil.copy2(file, render_dir / file.name)
+    media = paper_dir / "media"
+    if media.is_dir():
+        shutil.copytree(media, render_dir / "media", dirs_exist_ok=True)
+    return render_dir
+
+
+def sync_extension(repo: Path, paper_dir: Path, dest: Path) -> tuple[bool, str]:
+    """Copy the journal's canonical extension into dest/_extensions.
+
+    paper_dir is only used to resolve the journal (manifest.yaml); the copy
+    goes to dest, which is build/render/ during a build, so the tracked
+    paper/ folder never holds build-time copies. The single source of truth
+    stays under templates/journals/. Returns (synced, message).
     """
     src, journal = extension_source(repo, paper_dir)
     if src is None:
         return False, "no canonical extension under templates/journals/ for this journal"
-    dst = paper_dir / "_extensions"
+    dst = dest / "_extensions"
     try:
         shutil.copytree(src, dst, dirs_exist_ok=True)
         # cas-common.sty includes the 8pt footnote icons as
-        # thumbnails/<file>.jpeg. Quarto's own format-resources copy flattens
-        # the subdirectory into the working directory, while pdflatex runs
-        # with cwd = paper/; restore the layout the class expects.
-        icons = src / "thumbnails"
-        if icons.is_dir():
-            shutil.copytree(icons, paper_dir / "thumbnails", dirs_exist_ok=True)
+        # thumbnails/<file>.jpeg, but quarto's format-resources copy
+        # FLATTENS that subdirectory into the working directory. The class
+        # runs with cwd = the render dir and expects the layout restored
+        # there: copy them from <ext>/thumbnails (namespace/<name>/thumbnails).
+        icon_dirs = sorted(src.glob("*/*/thumbnails"))
+        for icons in icon_dirs:
+            shutil.copytree(icons, dest / "thumbnails", dirs_exist_ok=True)
     except Exception as exc:
         return False, f"extension sync failed: {exc}"
     n_ext = len(list(dst.rglob("_extension.yml")))
-    return True, f"synced from templates/journals/{journal}/quarto-extension ({n_ext} extension(s))"
+    msg = f"synced from templates/journals/{journal}/quarto-extension ({n_ext} extension(s))"
+    if not icon_dirs:
+        msg += " [warn] no <ext>/thumbnails found — icons will be missing"
+    return True, msg
 
 
 def docx_target(repo: Path, paper_dir: Path) -> str:
@@ -141,7 +168,7 @@ def running_heads(repo: Path, paper_dir: Path) -> tuple[str, str]:
     if not short:
         short = (title[:60] + "…") if len(title) > 60 else title
     first = "Author"
-    manifest = paper_dir / "manifest.yaml"
+    manifest = paper_dir.parent / "manifest.yaml"
     if manifest.is_file():
         authors = load_yaml(manifest).get("authors") or []
         if authors and isinstance(authors[0], dict) and authors[0].get("id"):
@@ -237,7 +264,8 @@ def render(repo: Path, slug: str, fmt: str, quarto_format: str, extension: str) 
     paper_dir = repo / "papers" / slug / "paper"
     build_dir = repo / "papers" / slug / "build"
     build_dir.mkdir(parents=True, exist_ok=True)
-    synced, msg = sync_extension(repo, paper_dir)
+    render_dir = prepare_render_dir(paper_dir, build_dir)
+    synced, msg = sync_extension(repo, paper_dir, render_dir)
     print(f"  extension: {msg}" if synced else f"  extension: [warn] {msg}")
     wants = ["pdf", "docx"] if fmt == "all" else [fmt]
     rc_total = 0
@@ -246,8 +274,8 @@ def render(repo: Path, slug: str, fmt: str, quarto_format: str, extension: str) 
         if kind == "pdf" and not extension:
             target = "pdf"
         rc, out = run(
-            ["quarto", "render", "main.qmd", "--to", target, "--output-dir", "../build"],
-            cwd=paper_dir,
+            ["quarto", "render", "main.qmd", "--to", target, "--output-dir", ".."],
+            cwd=render_dir,
         )
         produced = build_dir / f"main.{kind}"
         final = build_dir / f"{slug}.{kind}"
