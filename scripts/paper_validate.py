@@ -398,7 +398,15 @@ def validate_repo(root: str | Path | None = None) -> Report:
     check_no_tracked_secrets(repo, rep)
 
     papers_dir = repo / "papers"
-    for root_dir in sorted(p for p in papers_dir.iterdir() if p.is_dir()):
+    for root_dir in sorted(papers_dir.iterdir()):
+        # Only paper folders. A stray __pycache__ appears here the moment any
+        # module is imported from under papers/ (papers/conftest.py does, on
+        # every test run), and reporting it as a malformed paper turns the
+        # structure gate red for a reason unrelated to any paper.
+        if not root_dir.is_dir():
+            continue
+        if root_dir.name.startswith((".", "_")):
+            continue
         check_paper(repo, root_dir, rep)
 
     return rep

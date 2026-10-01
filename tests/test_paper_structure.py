@@ -111,3 +111,27 @@ def test_absent_claude_dir_is_silent_on_ci(mini_repo: Path, monkeypatch):
     monkeypatch.setenv("CI", "true")
     report = paper_validate.validate_repo(mini_repo)
     assert not any(".claude/skills" in w for w in report.warnings), report.warnings
+
+
+def test_stray_directory_under_papers_is_not_a_paper(mini_repo: Path):
+    """A __pycache__ under papers/ must not be reported as a malformed paper.
+
+    It appears the moment any module is imported from under papers/, which
+    papers/conftest.py does on every test run, so this used to turn the
+    structure gate red for a reason unrelated to any paper.
+    """
+    _write_min_paper(mini_repo)
+    cache = mini_repo / "papers" / "__pycache__"
+    cache.mkdir()
+    (cache / "conftest.cpython-312.pyc").write_bytes(b"\x00")
+    report = paper_validate.validate_repo(mini_repo)
+    assert report.ok, report.errors
+    assert "__pycache__" not in report.checked
+
+
+def test_dot_directory_under_papers_is_not_a_paper(mini_repo: Path):
+    _write_min_paper(mini_repo)
+    (mini_repo / "papers" / ".scratch").mkdir()
+    report = paper_validate.validate_repo(mini_repo)
+    assert report.ok, report.errors
+    assert ".scratch" not in report.checked
