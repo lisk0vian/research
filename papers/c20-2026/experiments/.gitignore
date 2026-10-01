@@ -1,0 +1,15 @@
+__pycache__/
+*.pyc
+.env
+.sync_history.json
+.ipynb_checkpoints/
+# Drive file-id manifest: machine-local, like .env (never committed)
+.drive_ids.json
+# MCP Drive — credentials and tokens never committed (OAuth stays local)
+.gdrive/
+.gdrive-server-credentials.json
+credentials.json
+*mcp-google-gdrive*
+tokens/
+gcp-oauth.keys.json
+*.bak

@@ -1,0 +1,22 @@
+{
+  "_comment": "Map of local repo paths to Google Drive file ids for the Colab assets of this paper. Copy to .drive_ids.json and fill in the ids resolved through the gdrive MCP. Never commit real ids: keep .drive_ids.json out of git. Update in place (fileId), never recreate: a new Drive file means a new Colab url and a new runtime session, and Colab accounts cap concurrent sessions.",
+  "_format": "{\"<remote path relative to the Drive folder>\": \"<drive file id>\"}",
+  "experiments.ipynb": "PASTE_FILE_ID",
+  "code/00_verify_source.py": "PASTE_FILE_ID",
+  "code/01_qc_hourly.py": "PASTE_FILE_ID",
+  "code/02_aggregate_daily.py": "PASTE_FILE_ID",
+  "code/03_climatology.py": "PASTE_FILE_ID",
+  "code/04_make_issuances.py": "PASTE_FILE_ID",
+  "code/05_features_local.py": "PASTE_FILE_ID",
+  "code/06_features_largescale.py": "PASTE_FILE_ID",
+  "code/07_models.py": "PASTE_FILE_ID",
+  "code/08_metrics.py": "PASTE_FILE_ID",
+  "code/09_inference.py": "PASTE_FILE_ID",
+  "code/10_tables_figures.py": "PASTE_FILE_ID",
+  "code/_common.py": "PASTE_FILE_ID",
+  "code/_harmonic.py": "PASTE_FILE_ID",
+  "code/config.yaml": "PASTE_FILE_ID",
+  "code/requirements-experiments.txt": "PASTE_FILE_ID",
+  "code/run_all.py": "PASTE_FILE_ID",
+  "code/README.md": "PASTE_FILE_ID"
+}
