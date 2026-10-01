@@ -40,6 +40,7 @@ papers/<slug>/
 ├── experiments/            # pipeline code that produces numbers and figures
 ├── notebooks/              # exploratory notebooks
 ├── outputs/                # machine-readable results (CSV/JSON/PNG/PKL)
+├── tests/                  # optional: per-paper suite (see section 6)
 ├── reviews/round-N/        # comments.yaml, responses.yaml, ai-review.yaml
 ├── build/                  # <slug>.pdf/.docx/-latex.zip + render/ scratch (only the PDF committed)
 └── legacy/                 # original .docx/.pdf when migrating an existing paper
@@ -169,6 +170,13 @@ on every PR that touches `papers/`, `authors/`, `templates/`, `scripts/`,
 - every skill folder has a `SKILL.md` whose `name` matches the folder.
 
 Run it locally before pushing: `python scripts/paper_validate.py`.
+
+A paper may also carry an optional `tests/` folder holding a synthetic-fixture
+suite (tests never read `data/` or `outputs/` for real). `pytest` only collects
+what `pytest.ini` lists in `testpaths`, so a new folder must be added there or
+CI stays green without ever running it. The suite must not import the paper's
+`requirements-experiments.txt` environment: `pytest` runs the repository's own
+dependencies only.
 
 ## 7. Legacy projects (pre-standardization)
 
