@@ -1,5 +1,22 @@
 # Methodology — C20-2026 (design v2.0)
 
+> **SUPERSEDED IN PART — revision pending.** This document still describes the
+> single-station Huancayo design (2018–2025). That design has been replaced. The
+> study of record is **five SENAMHI GBON/RBON stations over a 2054 m altitude
+> gradient, 2015–2024**, with cross-station generalisation (leave-one-station-out)
+> as the engineering contribution. `E2_multistation` is no longer disabled.
+>
+> What changes: §1 question and scope, §4 predictors (wind and accumulated rain
+> unavailable; large-scale set is Niño 3.4, Niño 1+2 and RMM; ERA5 deferred), §6
+> validation (fold window 2015–2024, plus a separate LOSO experiment), §10
+> extensions (E2 reopened), §11 open decisions (D1 reversed, D5 no longer
+> pending). What does not: §2 notation, §3 temporal design, §5 models, §7 metrics,
+> §8 inference.
+>
+> Do not implement from this file as it stands. The evidence behind each change,
+> the rejected alternatives, and the full revision checklist are in
+> [`DESIGN_DECISIONS.md`](DESIGN_DECISIONS.md).
+
 English methodology extract. The Spanish original (full design, v2.0, 2026-09-28)
 lives outside the repo at `C:\Users\Aron\Downloads\README.md` and remains the
 source of truth for the design. This file states the concept and methods only.
