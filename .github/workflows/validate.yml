@@ -14,6 +14,10 @@ on:
       - "tests/**"
       - ".agents/skills/**"
       - ".github/workflows/validate.yml"
+      # The gate itself depends on these: a dependency or a testpaths change
+      # is exactly what would break collection without touching any of the above.
+      - "requirements-dev.txt"
+      - "pytest.ini"
   push:
     branches: [main, master]
     paths:
@@ -23,6 +27,8 @@ on:
       - "scripts/**"
       - "tests/**"
       - ".agents/skills/**"
+      - "requirements-dev.txt"
+      - "pytest.ini"
   workflow_dispatch:
 
 jobs:
