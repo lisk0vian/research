@@ -1,0 +1,54 @@
+// opencode.jsonc.example — committed template for the machine-local
+// opencode.jsonc. `__REPO_ROOT__` is replaced with the repository root by
+// scripts/setup_mcp.py; never write a literal absolute path in this file.
+//
+//     python scripts/setup_mcp.py     # generates opencode.jsonc from this
+//
+// Why a generated file? OpenCode resolves a *relative* MCP `cwd` against the
+// session directory, not the config file or the git root, so a repo-relative
+// path only works while you sit at the repository root and fails from anywhere
+// else (e.g. a session rooted at papers/<slug>/). The academic-search server
+// needs no `cwd` at all, so we give it an absolute script path instead and it
+// works from any subdirectory, on any platform.
+//
+// MCP servers you add directly to opencode.jsonc are preserved across runs.
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "gdrive": {
+      "type": "local",
+      "command": ["npx", "-y", "@piotr-agier/google-drive-mcp"],
+      "timeout": 120000,
+      "environment": {
+        "GDRIVE_FOLDER_ID": "{env:GDRIVE_FOLDER_ID}",
+        "GDRIVE_NOTEBOOK_ID": "{env:GDRIVE_NOTEBOOK_ID}",
+        "GDRIVE_NOTEBOOK_NAME": "{env:GDRIVE_NOTEBOOK_NAME}",
+        "GDRIVE_PROJECT_ID": "{env:GDRIVE_PROJECT_ID}"
+      }
+    },
+
+    "academic-search": {
+      "type": "local",
+      "command": [
+        "uv",
+        "run",
+        "--no-project",
+        "--python",
+        "3.12",
+        "--with",
+        "mcp>=1.0.0,<2.0.0",
+        "--with",
+        "requests>=2.28.0,<3.0.0",
+        "--with",
+        "toml>=0.10.2,<2.0.0",
+        "--with",
+        "lxml>=4.9.0,<6.0.0",
+        "--with",
+        "pybliometrics>=4.4.1,<5.0.0",
+        "python",
+        "__REPO_ROOT__/.agents/skills/paper-search/mcp-server/academic_search_server.py"
+      ],
+      "timeout": 120000
+    }
+  }
+}

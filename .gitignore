@@ -104,6 +104,10 @@ papers/*/notebooks/.ipynb_checkpoints/
 .opencode/cache/
 .opencode/logs/
 .opencode/*.local.json
+# opencode.jsonc carries a machine-specific absolute path to the MCP servers, so
+# it is generated, not committed. opencode.jsonc.example IS committed and is the
+# template; recreate the config on a fresh clone with: python scripts/setup_mcp.py
+opencode.jsonc
 
 # ---- Claude skill links (machine-local) ----
 # .claude/skills/* are links to the canonical .agents/skills/*. They are OS
@@ -122,6 +126,9 @@ papers/*/notebooks/.ipynb_checkpoints/
 .env
 .env.*
 !.env.example
+# Drive file-id manifest (machine-local): ids are environment state, not code
+.drive_ids.json
+!.drive_ids.json.example
 *.key
 *.pem
 credentials.json
@@ -181,3 +188,12 @@ templates/journals/*/tests/specimen/*.cls
 templates/journals/*/tests/specimen/*.sty
 templates/journals/*/tests/specimen/*.bst
 templates/journals/*/tests/specimen/cas-*.jpeg
+
+# ---- Per-paper nested tooling (machine-local) ----
+# A paper may carry its own agent skills and editor mirrors under
+# experiments/.agents, .claude and .opencode. They are local tooling, not
+# pipeline code, so they stay out of the hub repo.
+papers/*/experiments/.agents/
+papers/*/experiments/.claude/
+papers/*/experiments/.opencode/
+papers/*/experiments/skills-lock.json

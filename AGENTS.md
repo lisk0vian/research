@@ -85,6 +85,7 @@ that know *when* to call them and interview you for the arguments.
 | Check CAS sample fidelity | `python scripts/cas_fidelity.py` (add `--docx` for the Word suite) |
 | Verify Claude skill links | `python scripts/link_skills.py --check` |
 | Link skills for Claude | `python scripts/link_skills.py` |
+| Generate `opencode.jsonc` (MCP) | `python scripts/setup_mcp.py` |
 | Run tests | `pytest -q` |
 
 A new paper typically follows: `paper_new.py` → literature search
@@ -126,7 +127,32 @@ Optional but encouraged: `title`, `internal_code`, `institution`, `funding`,
 
 Canonical skills live in `.agents/skills/` (committed). Agent paths:
 
-- **OpenCode** reads `.agents/skills/` directly — no setup needed.
+- **OpenCode** reads `.agents/skills/` directly — no setup needed. Its MCP
+  servers do need one step, though: `opencode.jsonc` is **generated**, not
+  committed, because it holds an absolute path to the MCP server. Run this once
+  after cloning:
+
+  ```bash
+  python scripts/setup_mcp.py            # writes opencode.jsonc
+  python scripts/setup_mcp.py --check    # exit 1 if missing/stale
+  ```
+
+  `opencode.jsonc.example` is the committed template; edit it to change which
+  servers are configured, then re-run the script. MCP servers added by hand to
+  `opencode.jsonc` are preserved across runs.
+
+  Do **not** hand-write a relative `cwd` there. OpenCode resolves a relative MCP
+  `cwd` against the *session* directory, not the config file or the git root,
+  so it silently breaks whenever a session is rooted anywhere else
+  (`papers/<slug>/`, a legacy folder, a subagent):
+
+  ```
+  NotFound: FileSystem.access (D:\...\papers\c20-2026\.agents\skills\...)
+  ```
+
+  The academic-search server needs no `cwd` at all — it imports `sources`/
+  `utils` as top-level modules and loads `config.toml` through `Path(__file__)`,
+  both independent of the working directory. Hence the generated absolute path.
 - **Claude Code** reads only `.claude/skills/`, so each skill there is a link to
   its `.agents/skills/` twin (a junction on Windows, a relative symlink
   elsewhere). `.claude/settings.json` carries a `SessionStart` hook that runs
