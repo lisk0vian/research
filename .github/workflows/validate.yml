@@ -48,4 +48,8 @@ jobs:
         run: python scripts/paper_validate.py
 
       - name: Run tests
-        run: pytest -q
+        # Per-paper suites (papers/*/tests) are marked slow by
+        # papers/conftest.py and skipped here: a pull request is checked against
+        # the repository contract in seconds. They are still collected locally
+        # by plain `pytest -q` and must pass before a release.
+        run: pytest -q -m "not slow"
