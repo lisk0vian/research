@@ -1,0 +1,7 @@
+check,detail,verdict,value
+V1_timezone,"TT diurnal cycle: max 14:00, min 05:00, amplitude 12.97 degC",local_civil,peak=14;trough=5
+V2_hour_convention,"hours present: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23]",ok,n_hours=24
+V3_missing_codes,TT: empty=700 sentinel=0; HR: empty=700 sentinel=0; RR: empty=700 sentinel=0; PP: empty=700 sentinel=0; FF: empty=700 sentinel=0; DD: empty=700 sentinel=0 | row-wise pattern: True,ok,rows=70128;all_vars_missing=700
+V4_coverage,"2018-01-01 00:00:00 -> 2025-12-31 23:00:00 | days=2922 | days with <24h=0 | declared=[2018, 2025] | blind years fully present=[2024, 2025]",ok,first=2018-01-01 00:00:00;last=2025-12-31 23:00:00;days=2922
+V5_ubigeo_constancy,unique UBIGEO: ['120904'] (n_stations expected: 1),ok,nunique=1
+V6_timestamp_duplicates,duplicated timestamps: 0,ok,duplicates=0
