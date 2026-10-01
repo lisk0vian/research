@@ -1,8 +1,0 @@
----
-title: test
-format:
-  elsevier-cas:
-    keep-tex: true
----
-
-hi

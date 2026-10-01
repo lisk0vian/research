@@ -20,11 +20,13 @@ journal:
   corresponding:
     - mark: cor1
       text: "Corresponding author"
-  # TODO: fill the three highlights before submission (journal requirement).
+  # Journal requirement: 3-5 highlights (absorbed from the former highlights.txt).
   highlights:
-    - "TODO: benchmark headline result on the 2025 test set"
-    - "TODO: effect of anomaly decomposition per model family"
-    - "TODO: compute cost per model at the station network scale"
+    - "Zero-leakage climatology isolates thermal anomaly signal"
+    - "Sliding 2025 windows benchmark ensembles vs LSTM vs TFT"
+    - "Public IGP Huayao hourly data enables full replication"
+    - "Ablation quantifies physical feature group contributions"
+    - "Probabilistic skill supports subseasonal planning use"
 author:
   - name: Moisés Evangelista Gamarra
     email: mevangelistag@senati.pe
