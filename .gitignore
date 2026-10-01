@@ -151,3 +151,33 @@ scratch/
 
 # ---- Pipeline run logs (verbose, regenerable) ----
 papers/*/outputs/logs/
+
+# ---- Build-time copies of the journal extension ----
+# papers/<slug>/paper: Quarto's format-resources for the CAS extension are
+# copied (flattened) next to main.qmd, and scripts/paper_build.py syncs the
+# thumbnail icons the class includes as \includegraphics{thumbnails/...}.
+papers/*/paper/thumbnails/
+papers/*/paper/*.cls
+papers/*/paper/*.sty
+papers/*/paper/*.bst
+papers/*/paper/cas-*.jpeg
+# ...and the Elsevier sidecar/intermediate files the class emits.
+papers/*/paper/*.abs
+papers/*/paper/*.spl
+
+# ---- CAS fidelity fixture (tests/specimen) ----
+# scripts/cas_fidelity.py regenerates _extensions/, build/ and every LaTeX
+# intermediate on each run; the fixture sources themselves stay tracked.
+templates/journals/*/tests/specimen/_extensions/
+templates/journals/*/tests/specimen/build/
+templates/journals/*/tests/specimen/*.tex
+templates/journals/*/tests/specimen/specimen.abs
+templates/journals/*/tests/specimen/*.log
+templates/journals/*/tests/specimen/*.aux
+templates/journals/*/tests/specimen/*.bbl
+templates/journals/*/tests/specimen/*.blg
+templates/journals/*/tests/specimen/*.out
+templates/journals/*/tests/specimen/*.cls
+templates/journals/*/tests/specimen/*.sty
+templates/journals/*/tests/specimen/*.bst
+templates/journals/*/tests/specimen/cas-*.jpeg

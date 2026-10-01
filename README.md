@@ -61,6 +61,15 @@ python scripts/paper_new.py --slug c22-2026 --title "My paper" \
 # Build PDF and Word
 python scripts/paper_build.py --slug c22-2026 --format all
 
+# Fidelity of the renders against the official Elsevier CAS sample:
+python scripts/cas_fidelity.py          # PDF: text, fonts, layout, pixels
+python scripts/cas_fidelity.py --docx   # Word: fonts, geometry, styles, notes
+
+# One-time, per machine: install the STIX fonts (shipped with TeX) so Word
+# shows the docx with the same typeface as the PDF. Without them Word falls
+# back to Times New Roman (declared as the alternate name).
+powershell -ExecutionPolicy Bypass -File scripts/install_stix_fonts.ps1
+
 # Validate the repository structure (also runs in CI on every PR)
 python scripts/paper_validate.py
 

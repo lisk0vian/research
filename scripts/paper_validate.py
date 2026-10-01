@@ -316,6 +316,70 @@ def check_reviews(root: Path, rep: Report) -> None:
 # --------------------------------------------------------------------------- #
 # Entry point
 # --------------------------------------------------------------------------- #
+def check_cas_fixture(repo: Path, rep: Report) -> None:
+    """TeX-free checks for the CAS fidelity fixture and its canonical
+    extension. The actual render comparison against cas-sc-sample needs
+    quarto/pdflatex and lives in scripts/cas_fidelity.py +
+    tests/test_cas_fidelity.py; here we only ensure the pieces exist.
+    """
+    journal = (
+        repo / "templates" / "journals"
+        / "engineering-applications-of-artificial-intelligence"
+    )
+    if not journal.is_dir():
+        return
+    specimen = journal / "tests" / "specimen"
+    for rel in (
+        "specimen.qmd",
+        "cas-refs.bib",
+        "reference/cas-sc-sample.tex",
+        "reference/cas-sc-sample.pdf",
+        "figs/cas-grabs.pdf",
+        "figs/cas-munnar-2024.jpg",
+        "figs/cas-pic1.pdf",
+        "thumbnails/cas-email.jpeg",
+        "thumbnails/cas-url.jpeg",
+    ):
+        if not (specimen / rel).is_file():
+            rep.error(
+                f"templates/journals/{journal.name}/tests/specimen/{rel}",
+                "missing CAS fidelity fixture file",
+            )
+    ext = (
+        journal / "quarto-extension" / "_extensions"
+        / "quarto-journals" / "elsevier-cas"
+    )
+    for rel in (
+        "_extension.yml",
+        "cas.lua",
+        "cas-pre-ast.lua",
+        "cas-docx.lua",
+        "nologo.tex",
+        "elsevier-harvard.csl",
+        "reference.docx",
+        "partials/before-body.tex",
+        "partials/after-body.tex",
+        "partials/hypersetup.latex",
+        "partials/fonts.latex",
+        "partials/font-settings.latex",
+    ):
+        if not (ext / rel).is_file():
+            rep.error(
+                f"templates/journals/{journal.name}/quarto-extension/"
+                f"_extensions/quarto-journals/elsevier-cas/{rel}",
+                "missing canonical extension file",
+            )
+    tool = journal / "quarto-extension" / "tools" / "make_reference_docx.py"
+    if not tool.is_file():
+        rep.error(
+            f"templates/journals/{journal.name}/quarto-extension/tools/"
+            "make_reference_docx.py",
+            "missing the docx reference-doc generator",
+        )
+    if not (repo / "scripts" / "cas_fidelity.py").is_file():
+        rep.error("scripts/cas_fidelity.py", "missing the CAS fidelity harness")
+
+
 def validate_repo(root: str | Path | None = None) -> Report:
     repo = Path(root).resolve() if root else find_repo_root()
     rep = Report()
@@ -328,6 +392,7 @@ def validate_repo(root: str | Path | None = None) -> Report:
 
     check_authors(repo, rep)
     check_journals(repo, rep)
+    check_cas_fixture(repo, rep)
     check_skills(repo, rep)
     check_claude_links(repo, rep)
     check_no_tracked_secrets(repo, rep)

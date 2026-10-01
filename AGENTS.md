@@ -77,6 +77,8 @@ that know *when* to call them and interview you for the arguments.
 | Build PDF/DOCX | `python scripts/paper_build.py --slug <slug> --format all` |
 | Check environment only | `python scripts/paper_build.py --slug <slug> --check-only` |
 | Validate the repo | `python scripts/paper_validate.py` |
+| Sparse clone one paper (Colab) | `python scripts/paper_sparse_clone.py --slug <slug> --dest <dir>` |
+| Check CAS sample fidelity | `python scripts/cas_fidelity.py` (add `--docx` for the Word suite) |
 | Verify Claude skill links | `python scripts/link_skills.py --check` |
 | Link skills for Claude | `python scripts/link_skills.py` |
 | Run tests | `pytest -q` |
