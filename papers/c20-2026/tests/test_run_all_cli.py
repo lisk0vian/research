@@ -212,3 +212,13 @@ def test_missing_config_exits_two_without_running(tmp_path, monkeypatch, capsys)
     monkeypatch.setattr(sys, "argv", ["run_all.py", "--config", str(tmp_path / "nope.yaml")])
     assert run_all.main() == 2
     assert "--config not found" in capsys.readouterr().err
+
+def test_default_config_path_has_no_doubled_directory(tmp_path, monkeypatch):
+    """Regression: rel_path on a cwd-relative default produced
+    experiments/experiments/config.yaml when run from experiments/."""
+    import json
+
+    monkeypatch.setattr(run_all, "OUTPUTS", tmp_path)
+    out = run_all.write_run_meta(["00"], None, {})
+    assert json.loads(out.read_text(encoding="utf-8"))["config"] == \
+        "experiments/config.yaml"

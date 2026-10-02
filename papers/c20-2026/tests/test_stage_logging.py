@@ -194,28 +194,46 @@ def test_logs_manifest_names_every_path_and_exit_code(routed, tmp_path):
     assert entry["log"].endswith("00_ok.log")
 
 
-def test_progress_is_transparent_whether_or_not_tqdm_exists(monkeypatch):
-    """A missing tqdm must not take a stage down."""
-    monkeypatch.setattr(_common, "_tqdm", None)
-    assert list(_common.progress([1, 2, 3])) == [1, 2, 3]
-    assert _common.has_tqdm() is False
+def test_progress_is_silent_when_switched_off(monkeypatch, capsys):
+    """EXP_PROGRESS=off: no events, no bars, just the items."""
+    import _progress
+
+    monkeypatch.setenv("EXP_PROGRESS", "off")
+    monkeypatch.setenv("EXP_PROGRESS_PARENT", "1")
+    _progress.reset_state()
+    assert list(_common.progress([1, 2, 3], desc="stage", level="stage")) == [1, 2, 3]
+    assert capsys.readouterr().out == ""
 
 
-def test_progress_passes_through_when_tqdm_present(monkeypatch):
-    seen = {}
+def test_progress_emits_parseable_events_for_a_parent(monkeypatch, capsys):
+    """Under a rendering parent the child emits `#PROG` JSON lines."""
+    import _progress
+    import json
 
-    class FakeTqdm:
-        def __init__(self, iterable, **kwargs):
-            seen.update(kwargs)
-            self._it = iterable
+    monkeypatch.delenv("EXP_PROGRESS", raising=False)
+    monkeypatch.setenv("EXP_PROGRESS_PARENT", "1")
+    _progress.reset_state()
+    assert list(_common.progress([1, 2], desc="stage", unit="st",
+                                 level="stage")) == [1, 2]
+    out = capsys.readouterr().out
+    events = [_progress.parse_line(l) for l in out.splitlines()]
+    events = [e for e in events if e is not None]
+    assert len(events) == 2, out
+    assert events[0]["level"] == "stage" and events[-1]["n"] == 2
+    assert events[-1]["total"] == 2
+    # The raw line round-trips through json, so any reader can parse it.
+    json.loads(out.splitlines()[0].removeprefix(_progress.PROG_PREFIX))
 
-        def __iter__(self):
-            return iter(self._it)
 
-    monkeypatch.setattr(_common, "_tqdm", FakeTqdm)
-    assert list(_common.progress([1, 2], desc="stage", unit="h")) == [1, 2]
-    assert seen["desc"] == "stage" and seen["unit"] == "h"
-    assert _common.has_tqdm() is True
+def test_progress_is_silent_without_parent_or_tty(monkeypatch, capsys):
+    """Piped output with no parent: no JSON noise on stdout."""
+    import _progress
+
+    monkeypatch.delenv("EXP_PROGRESS", raising=False)
+    monkeypatch.delenv("EXP_PROGRESS_PARENT", raising=False)
+    _progress.reset_state()
+    assert list(_common.progress([1, 2, 3], desc="x")) == [1, 2, 3]
+    assert capsys.readouterr().out == ""
 
 
 def test_header_reports_drive_mode_from_env(routed, tmp_path):
