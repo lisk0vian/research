@@ -246,7 +246,8 @@ def main() -> None:
     if not folds:
         raise SystemExit("ERROR: config.validation.folds is empty")
 
-    frames = [compute_fold_issuances(daily, f, cfg) for f in folds]
+    frames = [compute_fold_issuances(daily, f, cfg)
+              for f in progress(folds, desc="issuances fold", unit="fold", level="fold")]
     issuances = pd.concat([f for f in frames if not f.empty], ignore_index=True)
     out_path = PROCESSED / "issuances.csv"
     atomic_write_csv(issuances, out_path)
@@ -254,7 +255,7 @@ def main() -> None:
     weekday_name = cfg.get("issuance", {}).get("weekday", "monday")
     embargo = cfg.get("validation", {}).get("embargo_days", 28)
     print(f"issuances: {len(issuances)} rows | weekday={weekday_name} embargo={embargo}d")
-    for fold in progress(folds, desc="issuances fold", unit="fold"):
+    for fold in folds:
         sub = issuances[issuances["fold"] == fold["id"]]
         if sub.empty:
             print(f"[{fold['id']}] no issuances")

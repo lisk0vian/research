@@ -118,3 +118,15 @@ sample_data:
   schema: huancayo
   seed: 42
   years: 2
+
+# Progress display (see experiments/_progress.py). Stages emit `#PROG` event
+# lines; whoever reads draws. These flags decide which levels get a bar. Phase
+# markers still reach the log for every level, so hiding a bar never hides the
+# diagnosis. `EXP_PROGRESS=off` silences the whole protocol (tests, CI);
+# `TQDM_*` stays as the fine aesthetic override below it.
+progress:
+  mininterval_s: 0.1
+  show_stage_bar: true
+  show_fold_bar: true
+  show_step_bar: true
+  log_phase_markers: true

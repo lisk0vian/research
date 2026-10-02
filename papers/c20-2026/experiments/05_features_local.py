@@ -215,7 +215,7 @@ def main() -> None:
     feature_cols: list[str] = []
     summary: dict[str, dict] = {}
 
-    for fold in progress(folds, desc="features fold", unit="fold"):
+    for fold in progress(folds, desc="features fold", unit="fold", level="fold"):
         out = compute_fold_features(daily, issuances, fold, cfg)
         if out.empty:
             print(f"[{fold['id']}] no issuances")

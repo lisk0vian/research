@@ -28,6 +28,7 @@ from _common import (
     LOG_SUMMARY,
     OUTPUTS,
     atomic_write_json,
+    progress,
     rel_path,
     run_all_log_path,
     run_stage,
@@ -117,7 +118,7 @@ def write_run_meta(stages: list[str], config: Path | None, entries: dict[str, di
         "stages_run": stages,
         "python": sys.version.split()[0],
         "python_executable": sys.executable,
-        "config": rel_path(config) if config else rel_path(Path("experiments/config.yaml")),
+        "config": rel_path(config) if config else "experiments/config.yaml",
         "git_commit": _git("rev-parse", "--short", "HEAD"),
         "git_dirty": bool(_git("status", "--porcelain", "--", "experiments")),
         "versions": _installed_versions(),
@@ -195,7 +196,7 @@ def main() -> int:
     entries: dict[str, dict] = {}
     failed: list[tuple[str, int]] = []
 
-    for stage in stages:
+    for stage in progress(stages, desc="pipeline", unit="stage", level="stage"):
         info = run_stage(stage, aggregate=aggregate)
         entries[stage] = info
         if info["exit_code"] != 0:

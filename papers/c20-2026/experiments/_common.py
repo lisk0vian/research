@@ -233,9 +233,13 @@ def paths_report() -> str:
 
 
 # --- progress ---------------------------------------------------------------
-# tqdm is declared in requirements-experiments.txt but is optional here: a
-# missing progress bar must never take a stage down, so the fallback is the
-# bare iterable and the only difference is the bar on screen.
+# The child never draws a bar: it emits `#PROG` event lines (see
+# `_progress.py`) and whoever reads draws. `tqdm` stays optional and is only
+# ever used by a *reader* (this module's `run_stage`, the notebook runner, or
+# a direct terminal run), so a missing bar can never take a stage down.
+#
+# `has_tqdm` reports whether any bar can be drawn here; it is what the stage
+# log header records.
 
 try:  # pragma: no cover - exercised by whichever branch the env provides
     from tqdm.auto import tqdm as _tqdm
@@ -243,19 +247,27 @@ except ImportError:  # pragma: no cover
     _tqdm = None
 
 
-def progress(iterable, **kwargs):
-    """Wrap `iterable` in a tqdm bar when available, else pass it through.
+def progress(iterable, desc: str = "", unit: str = "it",
+               total: int | None = None, level: str = "fold",
+               mininterval: float | None = None, **_ignored) -> object:
+    """Yield items, emitting `#PROG` events when a rendering parent listens.
 
-    `kwargs` are tqdm's (desc, unit, total, leave). Callers never branch on
-    whether tqdm exists, which is what keeps the stages readable.
+    The child never draws: whoever reads draws (notebook widgets, terminal
+    bars, log markers). See `_progress.iter_progress` for the three cases
+    (parent present, interactive terminal, silent). Extra keywords are ignored
+    so older call sites keep working.
     """
-    if _tqdm is None:
-        return iterable
-    return _tqdm(iterable, leave=False, **kwargs)
+    import _progress
+
+    return _progress.iter_progress(iterable, level=level, desc=desc,
+                                   unit=unit, total=total,
+                                   mininterval=mininterval)
 
 
 def has_tqdm() -> bool:
-    return _tqdm is not None
+    import _progress
+
+    return _progress.has_tqdm()
 
 
 # --- stage logging ----------------------------------------------------------
@@ -424,12 +436,22 @@ def run_stage(stage: str, argv: list[str] | None = None, cwd: Path | None = None
         aggregate.parent.mkdir(parents=True, exist_ok=True)
 
     started = time.perf_counter()
+    import _progress as _prog
+
+    # The child always sees a rendering parent (us), so it emits `#PROG`
+    # events instead of drawing its own bar. What we do with them depends on
+    # where *we* are: under a notebook runner we forward them raw so the
+    # kernel draws; in a terminal we draw fixed bars here; otherwise the log
+    # and the console get plain phase markers.
+    child_env = dict(os.environ)
+    child_env[_prog.PARENT_FLAG] = "1"
     proc = subprocess.Popen(
         [sys.executable, *argv],
         cwd=str(work),
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
         bufsize=0,
+        env=child_env,
     )
     splitter = _TerminalLineSplitter()
     # Read raw bytes, not text. With text=True the pipe runs in universal
@@ -439,6 +461,47 @@ def run_stage(stage: str, argv: list[str] | None = None, cwd: Path | None = None
     # handles a multi-byte character split across two reads.
     decoder = codecs.getincrementaldecoder("utf-8")(errors="replace")
     out = sys.stdout.buffer if hasattr(sys.stdout, "buffer") else None
+
+    def _console_write(text: str) -> None:
+        if out is not None:
+            out.write(text.encode("utf-8", errors="replace"))
+            out.flush()
+        else:  # pragma: no cover - a stdout without a buffer
+            sys.stdout.write(text)
+            sys.stdout.flush()
+
+    forward_prog = _prog.parent_present() and _prog.is_enabled()
+    display = None
+    if _prog.is_enabled() and not forward_prog:
+        if sys.stderr.isatty() and _prog.has_tqdm():
+            from tqdm.std import tqdm as _std_tqdm
+
+            display = _prog.TqdmDisplay(_std_tqdm)
+    mark_state: dict = {}
+
+    def _handle_line(line: str) -> None:
+        """Route one complete output line to console and/or log."""
+        event = _prog.parse_line(line) if _prog.is_enabled() else None
+        if event is None:
+            _console_write(line)
+            append_stage_log(path, line)
+            return
+        # A progress event: the raw JSON never reaches the log. The log keeps
+        # a phase marker (`# progress <desc>: n/total`), which says which
+        # phase was running without burying the diagnosis in redraws.
+        phase = _prog.is_phase_change(event, mark_state)
+        marker = _prog.format_marker(event) + "\n"
+        if phase:
+            append_stage_log(path, marker)
+        if forward_prog:
+            # Our own reader draws; hand it the untouched event line.
+            _console_write(line if line.endswith("\n") else line + "\n")
+        elif display is not None:
+            display.update(event)
+        elif phase:
+            # No bars here (piped output, CI): the marker is the display.
+            _console_write(marker)
+
     try:
         assert proc.stdout is not None
         fd = proc.stdout.fileno()
@@ -447,19 +510,17 @@ def run_stage(stage: str, argv: list[str] | None = None, cwd: Path | None = None
             if not chunk:
                 break
             text = decoder.decode(chunk)
-            if out is not None:
-                out.write(text.encode("utf-8", errors="replace"))
-                out.flush()
-            else:  # pragma: no cover - a stdout without a buffer
-                sys.stdout.write(text)
-                sys.stdout.flush()
-            append_stage_log(path, splitter.feed(text))
-        append_stage_log(path, splitter.feed(decoder.decode(b"", True)))
+            for cooked in splitter.feed(text).splitlines(keepends=True):
+                _handle_line(cooked)
+        for cooked in splitter.feed(decoder.decode(b"", True)).splitlines(keepends=True):
+            _handle_line(cooked)
         tail = splitter.flush()
         if tail:
-            append_stage_log(path, tail)
+            _handle_line(tail)
         proc.wait()
     finally:
+        if display is not None:
+            display.close()
         if proc.stdout is not None:
             proc.stdout.close()
 

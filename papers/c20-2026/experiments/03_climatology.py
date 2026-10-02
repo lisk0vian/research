@@ -118,12 +118,12 @@ def seasonal_sigma_hq(resid_dates, residuals: np.ndarray, horizon: tuple[int, in
     # A day t belongs to this horizon's window when (t - issuance) in [lag0, lag1].
     in_window = np.zeros(len(idx), dtype=bool)
     # One pass per offset day, and each pass formats the whole index to
-    # strings. For W3_4 that is 28 string formats of every day in the training
+    # strings. For W3_4 that is 14 string formats of every day in the training
     # window, which is the slowest thing this stage does, so it gets the bar.
     keys = pd.Index(idx.strftime("%Y-%m-%d"))
     offsets = range(lag0, lag1 + 1)
     for offset in progress(offsets, desc=f"sigma {label or horizon[0]}",
-                           unit="d", total=lag1 - lag0 + 1):
+                           unit="d", total=lag1 - lag0 + 1, level="step"):
         shifted = idx - pd.Timedelta(days=offset)
         in_window |= pd.Index(shifted.strftime("%Y-%m-%d")).isin(keys)
 
@@ -263,7 +263,7 @@ def main() -> None:
     merged: pd.DataFrame | None = None
     summaries: dict[str, dict] = {}
 
-    for fold in progress(folds, desc="climatology fold", unit="fold"):
+    for fold in progress(folds, desc="climatology fold", unit="fold", level="fold"):
         out, meta = compute_fold_climatology(daily, fold, cfg)
         path = OUTPUTS / "climatology" / f"{fold['id']}.json"
         atomic_write_json(meta, path)
