@@ -1,0 +1,15 @@
+{
+  "generated_utc": "2026-10-02T13:26:26.808396+00:00",
+  "source_file": "data/external/population.xlsx",
+  "source_note": "INEI, Peru: total population projected at 30 June of each year, by department, province and district, 2018-2026 (Table No. 01); preliminary and reference projections.",
+  "source_url": "https://www.gob.pe/institucion/inei/informes-publicaciones/6894980",
+  "derived_by": "experiments/export_population.py",
+  "files": {
+    "population-provinces.csv": "province-level projections as published (UBIGEO, name, 2018-2026)",
+    "population-units.csv": "the 26 territorial units used by the analysis (2019-2025)"
+  },
+  "rows": {
+    "provinces": 2114,
+    "units": 182
+  }
+}
