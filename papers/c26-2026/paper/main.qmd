@@ -1,26 +1,58 @@
 ---
+# papers/c26-2026/paper/main.qmd
+# Single source of the manuscript. Render with:
+#   python scripts/paper_build.py --slug c26-2026 --format all
 title: "A reproducible GeoAI framework for explainable spatiotemporal analysis of national missing-person registers: multi-algorithm clustering and multilevel validation (Peru, 2019-2025)"
 format:
-  elsevier-pdf:
-    keep-tex: true
-    journal:
-      name: "Information Sciences"
-      cite-style: numbername
-      model: 1p
-  docx: default
+  elsevier-cas-pdf: {}
+  elsevier-cas-docx: {}
+# journal.* lives at the top level (not under a single format) so that BOTH
+# targets see it: the PDF template reads $journal.*$, and cas-docx.lua builds
+# the Word front matter (highlights, corresponding/author notes) from it.
+journal:
+  name: "Information Sciences"
+  issn: 0020-0255
+  publisher: "Elsevier"
+  short-title: "A reproducible GeoAI framework for missing-person registers"
+  cite-style: authoryear
+  corresponding:
+    - mark: cor1
+      text: "Corresponding author"
+  # Journal requirement: 3-5 highlights x 85 characters.
+  highlights:
+    - "Ten of 26 Peruvian territories have report rates above the rest of the country"
+    - "Metropolitan Lima holds a third of all reports and ranks ninth by rate"
+    - "Evidence of spatial association depends on how neighbors are defined"
+    - "Four descriptive states summarize monthly profiles"
+    - "A specification multiverse quantifies how findings depend on analytical choices"
 author:
-  - name: "Moisés Evangelista Gamarra"
-    affiliation: "SENATI, Perú"
-    email: "mevangelistag@senati.pe"
+  - name: Moisés Evangelista Gamarra
+    email: mevangelistag@senati.pe
     orcid: "0009-0002-5382-1390"
-  - name: "Edwar Abrahan Alama Carreño"
-    affiliation: "SENATI, Perú"
-    email: "1634030@senati.pe"
+    affiliation: [{ref: aff-1}]
+    cas:
+      cormark: 1
+      # TODO: confirm the CRediT roles with the authors before submission.
+      credit: "Conceptualization, Methodology, Software, Formal analysis, Data curation, Writing - original draft, Visualization"
+  - name: Edwar Abrahan Alama Carreño
+    email: 1634030@senati.pe
     orcid: "0009-0006-8029-4302"
-  - name: "Pamela Estefani Figueroa Rosas"
-    affiliation: "SENATI, Perú"
-    email: "1546935@senati.pe"
+    affiliation: [{ref: aff-1}]
+    cas:
+      # TODO: confirm the CRediT roles with the authors before submission.
+      credit: "Validation, Investigation, Writing - review & editing"
+  - name: Pamela Estefani Figueroa Rosas
+    email: 1546935@senati.pe
     orcid: "0009-0007-6100-9382"
+    affiliation: [{ref: aff-1}]
+    cas:
+      # TODO: confirm the CRediT roles with the authors before submission.
+      credit: "Supervision, Project administration, Writing - review & editing"
+affiliations:
+  - id: aff-1
+    name: Servicio Nacional de Adiestramiento en Trabajo Industrial (SENATI)
+    city: Lima
+    country: Perú
 abstract: |
   Missing-person report registers describe territorial and temporal patterns whose interpretation must distinguish recorded volume from population frequency. This study develops and applies a reproducible GeoAI framework to the 142,374 reports of Peru's National Registry of Information on Missing Persons (RENIPED, 2019--2025), organized as a panel of 26 territories by 84 months. The framework integrates rates with official denominators, multi-algorithm clustering, spatial association and multilevel validation. Rates ranged from 2.84 to 9.96 reports per 10,000 person-years; ten territories, led by Tacna, Apurímac, Huánuco, Cusco and Junín, had rates above the rest of the country after false discovery rate control, and the classification held in two sensitivity analyses. Metropolitan Lima accounted for a third of the reports, with a rate 14% above the rest of the country. Spatial autocorrelation was significant with the four nearest neighbors (Moran's I = 0.288; p = 0.018) but not with contiguity; after Benjamini--Hochberg adjustment, cold spots were identified in the north and no hot spots. The gap statistic favored a single cluster; four states descriptively summarize monthly profiles. A specification multiverse showed that the clusters and the initial hot-spot corridor depended on specific analytical decisions. The framework provides reproducible quantitative information for institutional search and prevention.
 keywords:
@@ -33,18 +65,6 @@ keywords:
   - Administrative records
 bibliography: references.bib
 ---
-
-# Highlights {.unnumbered}
-
-- Ten of 26 Peruvian territories have report rates above the rest of the country
-
-- Metropolitan Lima holds a third of all reports and ranks ninth by rate
-
-- Evidence of spatial association depends on how neighbors are defined
-
-- Four descriptive states summarize monthly profiles
-
-- A specification multiverse quantifies how findings depend on analytical choices
 
 # Introduction
 
@@ -120,7 +140,7 @@ For the spatial analysis we started from a simplified layer of 197 provinces, de
 
 The framework comprises five stages that address objectives (i)--(v): rates and priority territories, spatiotemporal states, spatial structure, temporal dynamics and multilevel validation (Fig. 1). The first four stages start from the same territory-month panel, and the results of stages (ii)--(iv) are tested in the fifth stage through a set of checks and specification curves, so that every finding is accompanied by an assessment of its robustness against reasonable alternatives. To limit analytical flexibility, all parameters are fixed in version 3.3.3 of an analysis plan whose SHA-256 fingerprint is checked at the start of every run, and the plan\'s history documents each change and its rationale, including the addition of the first stage after intermediate results had been reviewed.
 
-We understand the explainability of the framework in an operational sense, as interpretability by design [@rudin2019stopexpl], in contrast to post hoc explanation of black-box models. It rests on three properties: (a) every output is a quantity with a direct meaning, such as a rate ratio with its interval or a state described by its standardized features and its mean rate (Fig. 5d); (b) every analytical decision is explicit, and its influence is quantified in the multiverse through η²~p~; and (c) every result can be traced to the results file and the code that produces it. User studies and feature-attribution methods lie outside its scope.
+We understand the explainability of the framework in an operational sense, as interpretability by design [@rudin2019stopexpl], in contrast to post hoc explanation of black-box models. It rests on three properties: (a) every output is a quantity with a direct meaning, such as a rate ratio with its interval or a state described by its standardized features and its mean rate (Fig. 5d); (b) every analytical decision is explicit, and its influence is quantified in the multiverse through $\eta^2_p$; and (c) every result can be traced to the results file and the code that produces it. User studies and feature-attribution methods lie outside its scope.
 
 ![Architecture of the GeoAI framework: sources, territory-month panel, analytical stages and validation. Italic arrows indicate the section where each result is reported.](media/Fig1_framework_en.png){#fig-1}
 
@@ -136,7 +156,7 @@ A rate ratio of 1.5 means that the recorded rate of the territory is 50% higher 
 
 The uncertainty of *RR*~u~ was estimated with a moving-block bootstrap [@kunsch1989thejackk; @efron1979bootstra] with 9,999 replicates. In each replicate, blocks of 12 consecutive months were drawn with replacement (seven for 2019--2025 and six for 2019--2024), the same for all 26 territories, and the reports and exposure of those months were used to recompute each territory\'s rate, the rate of the rest of the country and their ratio. Each block spans a full annual cycle, and joint resampling preserves the temporal dependence within each block and the correspondence between territories. The 95% confidence intervals are the 2.5th and 97.5th percentiles of the replicates and are individual intervals; multiplicity is controlled in the test described next.
 
-To test *RR*~u~ = 1, we computed approximate two-sided p-values from the bootstrap distribution: we doubled the smaller of two proportions---replicates with a ratio ≤ 1 and replicates with a ratio ≥ 1---each computed as (count + 1)/(9,999 + 1), with a maximum of 1. We then applied the Benjamini--Hochberg procedure to the 26 comparisons [@benjamini1995controll]. A territory was classified as having a **higher** or **lower** rate than the rest when its adjusted p-value (q-value) was below 0.05, according to the direction of the estimated ratio, and as **not distinguishable** when the q-value was 0.05 or higher. As a complementary persistence criterion, we counted in how many of the seven years its annual rate exceeded that of the rest, and we repeated the analysis, as a sensitivity check, for the consolidated period 2019--2024 and with total exposure.
+To test *RR*~u~ = 1, we computed approximate two-sided p-values from the bootstrap distribution: we doubled the smaller of two proportions---replicates with a ratio $\le$ 1 and replicates with a ratio $\ge$ 1---each computed as (count + 1)/(9,999 + 1), with a maximum of 1. We then applied the Benjamini--Hochberg procedure to the 26 comparisons [@benjamini1995controll]. A territory was classified as having a **higher** or **lower** rate than the rest when its adjusted p-value (q-value) was below 0.05, according to the direction of the estimated ratio, and as **not distinguishable** when the q-value was 0.05 or higher. As a complementary persistence criterion, we counted in how many of the seven years its annual rate exceeded that of the rest, and we repeated the analysis, as a sensitivity check, for the consolidated period 2019--2024 and with total exposure.
 
 ## Features and feature spaces
 
@@ -152,7 +172,7 @@ $$
 N_{u,t} = \frac{1}{|M_{u,t}|}\sum_{i \in M_{u,t}}^{}y_{u,t - i}
 $$ {#eq-3}
 
-where *M*~u,t~ = {*i* : 1 ≤ *i* ≤ 12 and *y*~u,t−i~ observed} is the set of previous months with coverage, and \|*M*~u,t~\| ≥ 6 is required. The **change from prior level** *C* is the difference between *y* in the current month and that level: a positive value places the month above its recent history and a negative value below it, both on the transformed scale:
+where *M*~u,t~ = {*i* : 1 $\le$ *i* $\le$ 12 and *y*~u,t-i~ observed} is the set of previous months with coverage, and \|*M*~u,t~\| $\ge$ 6 is required. The **change from prior level** *C* is the difference between *y* in the current month and that level: a positive value places the month above its recent history and a negative value below it, both on the transformed scale:
 
 $$
 C_{u,t} = y_{u,t} - N_{u,t}
@@ -164,7 +184,7 @@ $$
 A_{u,t} = \frac{y_{u,t} - \mu_{u,m(t)}}{\sigma_{u}}
 $$ {#eq-5}
 
-where μ~u,m(t)~ is the mean of *y* in the same calendar month and territory (for example, all Januaries) and σ~u~ is the standard deviation of the residuals from those seasonal means, both estimated only with the training years so as not to use information from the future. *A* thus expresses how far a month departs from its seasonal reference in units of the territory\'s residual variability; it is a descriptive measure of seasonal deviation.
+where $\mu_{u,m(t)}$ is the mean of *y* in the same calendar month and territory (for example, all Januaries) and $\sigma_u$ is the standard deviation of the residuals from those seasonal means, both estimated only with the training years so as not to use information from the future. *A* thus expresses how far a month departs from its seasonal reference in units of the territory\'s residual variability; it is a descriptive measure of seasonal deviation.
 
 With these features we defined three spaces that differ in how much territorial level they contain: the **relative space (E1)**, with *A* and *C*; the **mixed space (E2)**, which is the main space and adds *N*; and the **level space (E3)**, with *y* and *N*. The features of each space were standardized with the mean and standard deviation of the training set, and the same parameters were applied to the evaluation observations. This scaling, independent of the territorial normalization of *A*, places the standardized profiles relative to the training distribution.
 
@@ -214,15 +234,15 @@ $$
 U = 1 - \frac{H(G \mid T)}{H(G)}
 $$ {#eq-7}
 
-where *H*(*G* \| *T*) is the entropy of the states conditional on the territory and *H*(*G*) is the entropy of the partition. A value of *U* = 0.25 means that knowing the territory removes a quarter of the uncertainty about the state; it is a measure of shared information. The observed NMI was compared with a reference distribution of 999 permutations that, within each year, randomly reassign territorial identities using the same reassignment for all months of each territory, which preserves the sequences within each year but breaks the territorial correspondence across years. We call **identity leakage** the operational signal defined by p \< 0.05 and *U* ≥ 0.25, an operational criterion defined in the analysis plan to compare specifications.
+where *H*(*G* \| *T*) is the entropy of the states conditional on the territory and *H*(*G*) is the entropy of the partition. A value of *U* = 0.25 means that knowing the territory removes a quarter of the uncertainty about the state; it is a measure of shared information. The observed NMI was compared with a reference distribution of 999 permutations that, within each year, randomly reassign territorial identities using the same reassignment for all months of each territory, which preserves the sequences within each year but breaks the territorial correspondence across years. We call **identity leakage** the operational signal defined by p \< 0.05 and *U* $\ge$ 0.25, an operational criterion defined in the analysis plan to compare specifications.
 
 **Reproduction of the initial analysis (baseline).** To obtain a reference point, we reproduced an initial analysis of these data conducted by the authors in a conventional way. That analysis clustered the register cells into three states with nine features, robust scaling and the maximum-silhouette rule, and it reported a southern Andean corridor of hot spots using five nearest neighbors on hand-digitized centroids, one-sided p-values and no multiple-comparison correction.
 
-**Multiverse.** To examine the sensitivity of the conclusions to analytical decisions, we evaluated a set of specifications defined in the analysis plan [@steegen2016increasi; @simonsohn2020specific]. The clustering multiverse (M1) crossed the unit of analysis (panel or cell), the trimming of extreme values, the feature space (E1, E2, E3, E2 plus territory share and, for cells, the nine initial features), the scaling and the rule for choosing *K*, for a total of 108 specifications. To keep execution feasible, M1 used a reduced budget: 20 resamples, five initializations, *K* between 2 and 6, 199 permutations for the null distribution, silhouettes on 5,000 rows and, as in the initial analysis, a subsample of 20,000 cells. The spatial multiverse (M2) crossed the trimming of extremes, the period, the variable (two rates or the count), five neighborhood matrices (including the two of the initial analysis), the p-value type (one- or two-sided) and the multiple-comparison correction, for a total of 240 specifications. In each specification we evaluated claims defined in the plan, such as "there is structure according to the silhouette (≥ 0.50)", "there is identity leakage" or "there is a southern Andean hot spot", the latter met when at least one of the five territories of the initial corridor (Arequipa, Ayacucho, Cusco, Moquegua and Tacna) is a hot spot (Puno, a sixth hot spot in the reproduction, lies outside that definition). The support of each claim is the proportion of specifications that meet it, and partial eta squared (η²~p~) ranks the relative importance of each decision within the design.
+**Multiverse.** To examine the sensitivity of the conclusions to analytical decisions, we evaluated a set of specifications defined in the analysis plan [@steegen2016increasi; @simonsohn2020specific]. The clustering multiverse (M1) crossed the unit of analysis (panel or cell), the trimming of extreme values, the feature space (E1, E2, E3, E2 plus territory share and, for cells, the nine initial features), the scaling and the rule for choosing *K*, for a total of 108 specifications. To keep execution feasible, M1 used a reduced budget: 20 resamples, five initializations, *K* between 2 and 6, 199 permutations for the null distribution, silhouettes on 5,000 rows and, as in the initial analysis, a subsample of 20,000 cells. The spatial multiverse (M2) crossed the trimming of extremes, the period, the variable (two rates or the count), five neighborhood matrices (including the two of the initial analysis), the p-value type (one- or two-sided) and the multiple-comparison correction, for a total of 240 specifications. In each specification we evaluated claims defined in the plan, such as "there is structure according to the silhouette ($\ge$ 0.50)", "there is identity leakage" or "there is a southern Andean hot spot", the latter met when at least one of the five territories of the initial corridor (Arequipa, Ayacucho, Cusco, Moquegua and Tacna) is a hot spot (Puno, a sixth hot spot in the reproduction, lies outside that definition). The support of each claim is the proportion of specifications that meet it, and partial eta squared ($\eta^2_p$) ranks the relative importance of each decision within the design.
 
 ## Reproducibility
 
-The procedure was implemented in Python as a modular package, accompanied by a Google Colab notebook and ten automated tests of its critical components. The version analyzed (3.3.3) fixes all decisions in a versioned analysis plan whose history documents each change and its rationale. All random operations use seed 42, each input file is identified by its SHA-256 hash, and every analytical result is read from a single results file, from which the figures are also generated. The reference run on Google Colab (two processors; Python 3.13, NumPy 2.1.3, scikit-learn 1.6.1 and esda 2.9.0) took 30 minutes. A new full run on another computer, from the same input files and with the same versions, reproduced 34 of the 35 tables with relative differences below 10^−10^; the remaining table differed only in internal HDBSCAN indices outside the results of the article.
+The procedure was implemented in Python as a modular package, accompanied by a Google Colab notebook and ten automated tests of its critical components. The version analyzed (3.3.3) fixes all decisions in a versioned analysis plan whose history documents each change and its rationale. All random operations use seed 42, each input file is identified by its SHA-256 hash, and every analytical result is read from a single results file, from which the figures are also generated. The reference run on Google Colab (two processors; Python 3.13, NumPy 2.1.3, scikit-learn 1.6.1 and esda 2.9.0) took 30 minutes. A new full run on another computer, from the same input files and with the same versions, reproduced 34 of the 35 tables with relative differences below $10^{-10}$; the remaining table differed only in internal HDBSCAN indices outside the results of the article.
 
 # Results
 
@@ -248,13 +268,13 @@ Fig. 4 breaks the classification down by year, which makes it possible to distin
 
 In the mixed space E2, the three diagnostics agreed on weak separation between clusters (Fig. 5a--c). The gap statistic peaked at *K* = 1 (1.851, compared with 1.380--1.432 for *K* = 2--8), the silhouette remained between 0.28 and 0.29, and minimum stability stayed below 0.80 for all partitions. The fallback rule selected *K* = 4, the partition with the highest minimum stability (0.63), which we use to summarize monthly profiles. Agreement with other algorithms was low: the ARI with respect to k-means was 0.31 for Ward and 0.23 for the Gaussian mixture, and HDBSCAN labeled 70% of the observations as noise.
 
-The profile of the four states reveals that they combine two types of difference (Fig. 5d). Two of them describe the dynamics of the month and appear in all 26 territories: state 0 gathers 163 months well below the usual level, with a mean seasonal anomaly of −1.40 residual standard deviations of the territory (SD = 0.64) and a mean monthly rate of 0.31 per 10,000 inhabitants (SD = 0.16), and state 3 gathers 294 months above the usual level, with an anomaly of +1.21 (SD = 0.55) and a rate of 0.78 (SD = 0.29). The other two group months with anomalies close to zero (−0.38 and −0.11) and differ mainly in the level of the territory: state 1 (500 months from 19 territories) corresponds to territories with a low prior level, with a standardized median of −1.00, and state 2 (439 months from 20 territories) to territories with a high level, with a median of 0.59. This composition explains why, as shown in Section 5.5, the states share information with territorial identity.
+The profile of the four states reveals that they combine two types of difference (Fig. 5d). Two of them describe the dynamics of the month and appear in all 26 territories: state 0 gathers 163 months well below the usual level, with a mean seasonal anomaly of -1.40 residual standard deviations of the territory (SD = 0.64) and a mean monthly rate of 0.31 per 10,000 inhabitants (SD = 0.16), and state 3 gathers 294 months above the usual level, with an anomaly of +1.21 (SD = 0.55) and a rate of 0.78 (SD = 0.29). The other two group months with anomalies close to zero (-0.38 and -0.11) and differ mainly in the level of the territory: state 1 (500 months from 19 territories) corresponds to territories with a low prior level, with a standardized median of -1.00, and state 2 (439 months from 20 territories) to territories with a high level, with a median of 0.59. This composition explains why, as shown in Section 5.5, the states share information with territorial identity.
 
 ![Diagnostics and state profiles in E2, 2019--2023 (n = 1,396 territory-months). (a) Gap statistic. (b) ARI stability. (c) Silhouette. (d) Standardized features.](media/Fig5_states_en.png){#fig-5}
 
 ## Autocorrelation and local concentrations
 
-Global spatial autocorrelation of the rates was positive, and its significance depended on the neighborhood definition (Table 2). With the four nearest neighbors, Moran\'s I was 0.288 (p = 0.018) for 2019--2025 and 0.245 (p = 0.032) for 2019--2024; under contiguity it was 0.122 (p = 0.244), against an expected value of −0.04 in the absence of autocorrelation, and the empirical Bayes adjustment reproduced these values. The positive association therefore holds under nearest-neighbor proximity. Counts and the proportion of months in the highest-rate state had I values between −0.10 and 0.01, not significant with either matrix. When each territory was removed in turn (24 computable exclusions), Moran\'s I under contiguity ranged from 0.029 to 0.289 and was significant only when Huánuco was excluded, which indicates sensitivity to the territorial composition.
+Global spatial autocorrelation of the rates was positive, and its significance depended on the neighborhood definition (Table 2). With the four nearest neighbors, Moran\'s I was 0.288 (p = 0.018) for 2019--2025 and 0.245 (p = 0.032) for 2019--2024; under contiguity it was 0.122 (p = 0.244), against an expected value of -0.04 in the absence of autocorrelation, and the empirical Bayes adjustment reproduced these values. The positive association therefore holds under nearest-neighbor proximity. Counts and the proportion of months in the highest-rate state had I values between -0.10 and 0.01, not significant with either matrix. When each territory was removed in turn (24 computable exclusions), Moran\'s I under contiguity ranged from 0.029 to 0.289 and was significant only when Huánuco was excluded, which indicates sensitivity to the territorial composition.
 
 In the local Gi\* analysis, Benjamini--Hochberg adjustment identified cold spots in Amazonas and Lambayeque under contiguity, and in Lambayeque and San Martín with four neighbors; under the more conservative Benjamini--Yekutieli adjustment, Amazonas remained significant (q = 0.032). After adjustment, no territory was a hot spot with either main matrix. The highest positive Gi\* values corresponded to Apurímac, Cusco and Ayacucho under contiguity (*z* between 2.13 and 2.43; two-sided p between 0.057 and 0.064), and Metropolitan Lima had a value close to zero (*z* = 0.07; p = 0.97).
 
@@ -264,17 +284,17 @@ The local classification differs from the comparison of each territory with the 
 
 | **Panel A. Variable and period** | **I (contiguity)** | **p** | **I (4 neighbors)** | **p** |
 | --- | --- | --- | --- | --- |
-| Rate, observed exposure, 2019–2025 | 0.122 | 0.244 | 0.288 | 0.018 |
-| Rate, total exposure, 2019–2025 | 0.116 | 0.260 | 0.282 | 0.020 |
-| Empirical Bayes rate, 2019–2025 | 0.122 | 0.244 | 0.288 | 0.018 |
-| Rate, observed exposure, 2019–2024 | 0.094 | 0.325 | 0.245 | 0.032 |
-| Report count, 2019–2025 | −0.008 | 0.537 | −0.004 | 0.451 |
-| Proportion of months in the high state, 2019–2023 | −0.104 | 0.663 | 0.014 | 0.589 |
+| Rate, observed exposure, 2019--2025 | 0.122 | 0.244 | 0.288 | 0.018 |
+| Rate, total exposure, 2019--2025 | 0.116 | 0.260 | 0.282 | 0.020 |
+| Empirical Bayes rate, 2019--2025 | 0.122 | 0.244 | 0.288 | 0.018 |
+| Rate, observed exposure, 2019--2024 | 0.094 | 0.325 | 0.245 | 0.032 |
+| Report count, 2019--2025 | -0.008 | 0.537 | -0.004 | 0.451 |
+| Proportion of months in the high state, 2019--2023 | -0.104 | 0.663 | 0.014 | 0.589 |
 | **Panel B. Territory (matrix)** | **Gi\* z** | **Exact p** | **q (FDR)** | **LISA type** |
-| Amazonas (contiguity) | −3.01 | 0.0003 | 0.008 | Low-low |
-| Lambayeque (contiguity) | −1.95 | 0.002 | 0.023 | High-low |
-| Lambayeque (4 neighbors) | −2.12 | 0.002 | 0.037 | High-low |
-| San Martín (4 neighbors) | −2.84 | 0.003 | 0.037 | Low-low |
+| Amazonas (contiguity) | -3.01 | 0.0003 | 0.008 | Low-low |
+| Lambayeque (contiguity) | -1.95 | 0.002 | 0.023 | High-low |
+| Lambayeque (4 neighbors) | -2.12 | 0.002 | 0.037 | High-low |
+| San Martín (4 neighbors) | -2.84 | 0.003 | 0.037 | Low-low |
 I: global Moran\'s I; Gi\* z: standardized Getis--Ord statistic; q: Benjamini--Hochberg adjusted p-value. LISA: value of the territory relative to its neighbors.
 
 ## Changes in the states across years
@@ -287,11 +307,11 @@ In 2024, the partition transferred from the 2019--2023 fit had an ARI of 0.41 wi
 
 **Reproduction of the initial analysis.** The framework reproduced the initial analysis: with register cells, nine features, robust scaling and the maximum-silhouette rule, it selected three clusters with a silhouette of 0.559 (0.550 in the initial report), and with its weights matrix it obtained a Moran\'s I of 0.330 and six hot spots (Arequipa, Ayacucho, Cusco, Moquegua, Puno and Tacna). That partition shared a great deal of information with territory (NMI of 0.330; in 12 of the 26 territories, at least 95% of the cells fell in a single cluster), and with standard scaling the same specification selected two clusters, with each territory falling entirely in one of them. The three initial clusters thus described mainly differences in territorial size and identity.
 
-**Multiverse.** Across the 108 clustering specifications, row resampling indicated stability in 97% of cases, compared with 31% when territories and blocks were resampled; the silhouette exceeded 0.50 in 34%, and 62% showed identity leakage according to the operational criterion of Section 4.6 (Table 3, panel B; Fig. 6a). Within the set evaluated, the feature space was the decision most associated with differences in NMI (η²~p~ = 0.60), and scaling and the unit of analysis were the most associated with differences in silhouette (η²~p~ = 0.37 each).
+**Multiverse.** Across the 108 clustering specifications, row resampling indicated stability in 97% of cases, compared with 31% when territories and blocks were resampled; the silhouette exceeded 0.50 in 34%, and 62% showed identity leakage according to the operational criterion of Section 4.6 (Table 3, panel B; Fig. 6a). Within the set evaluated, the feature space was the decision most associated with differences in NMI ($\eta^2_p$ = 0.60), and scaling and the unit of analysis were the most associated with differences in silhouette ($\eta^2_p$ = 0.37 each).
 
 In the 160 spatial rate specifications, Moran\'s I was significant in 72.5% (65% with two-sided p-values), never under contiguity and, with two-sided p-values, in 50--100% of the specifications with the other four matrices (Fig. 6b). The southern Andean hot spot appeared in all specifications with uncorrected one-sided p-values, and in 0% with two-sided p-values and FDR control. In the latter scenario, only the inverse-distance matrix of the initial analysis flagged hot spots (8 of 40 specifications: Apurímac, Madre de Dios and Puno), with local p-values obtained by random draws because that matrix assigns each territory between 6 and 18 neighbors. Metropolitan Lima was not a hot spot in any of the 240 spatial specifications.
 
-Fig. 6 summarizes both validations through specification curves. Each point represents a specification, ordered by the value of the metric, and the lower marks identify the options used; their concentration in one sector of the curve signals an association between the decision and the result. In panel (a), 39 of the 41 specifications without identity leakage use relative (E1) or mixed (E2) features, and the remaining two use the mixed space with territory share; the specifications with the nine features of the initial analysis are among those with the highest NMI (0.26--0.33). In panel (b), contiguity occupies the eight lowest positions, whereas the five-neighbor matrix of the initial analysis sits at the top. The figure shows the most influential decisions; the others have a smaller effect (in panel a, the rule for choosing *K*, η²~p~ = 0.10, and winsorization, η²~p~ \< 0.01; in panel b, exposure and winsorization, which change the mean Moran\'s I by less than 0.01).
+Fig. 6 summarizes both validations through specification curves. Each point represents a specification, ordered by the value of the metric, and the lower marks identify the options used; their concentration in one sector of the curve signals an association between the decision and the result. In panel (a), 39 of the 41 specifications without identity leakage use relative (E1) or mixed (E2) features, and the remaining two use the mixed space with territory share; the specifications with the nine features of the initial analysis are among those with the highest NMI (0.26--0.33). In panel (b), contiguity occupies the eight lowest positions, whereas the five-neighbor matrix of the initial analysis sits at the top. The figure shows the most influential decisions; the others have a smaller effect (in panel a, the rule for choosing *K*, $\eta^2_p$ = 0.10, and winsorization, $\eta^2_p$ \< 0.01; in panel b, exposure and winsorization, which change the mean Moran\'s I by less than 0.01).
 
 : Territorial association and analytical sensitivity. {#tbl-3}
 
@@ -301,7 +321,7 @@ Fig. 6 summarizes both validations through specification curves. Each point repr
 | Mixed (E2) | 0.138 | 0.065 | 0.001 | 0.240 |
 | Level (E3) | 0.252 | 0.116 | 0.001 | 0.453 |
 | **Panel B. Claim** | **Specifications** | **Support** |  |  |
-| Structure according to the silhouette (≥ 0.50) | 108 | 34.3% |  |  |
+| Structure according to the silhouette ($\ge$ 0.50) | 108 | 34.3% |  |  |
 | Structure stable under row resampling | 108 | 97.2% |  |  |
 | Structure stable under territory and block resampling | 108 | 30.6% |  |  |
 | Territorial identity leakage | 108 | 62.0% |  |  |
@@ -354,12 +374,6 @@ This study integrated population rates, clustering and spatial analysis to chara
 Spatial evidence depended on the neighborhood definition: global autocorrelation was significant with the four nearest neighbors and, after Benjamini--Hochberg adjustment, the main matrices identified cold spots in the north and no hot spots. In the clustering component, the diagnostics showed weak separation between clusters, and the four selected states summarize monthly profiles whose interpretation takes into account territorial association and the partial agreement between periods.
 
 The contribution of the framework lies in articulating these perspectives and pairing them with checks that delimit the interpretation of the results. The findings provide quantitative information for assessing institutional needs, in combination with the status of cases and the available response capacity. The code, the analysis plan and the results are published to facilitate their verification; their extension to other registers requires validating the conditions of application and the behavior of the procedures used.
-
-# CRediT authorship contribution statement
-
-<!-- TODO: confirm the CRediT roles with the authors before submission.
-     Draft based on the contribution visible in the reproducibility package. -->
-Moisés Evangelista Gamarra: Conceptualization, Methodology, Software, Formal analysis, Data curation, Writing -- original draft, Visualization. Edwar Abrahan Alama Carreño: Validation, Investigation, Writing -- review & editing. Pamela Estefani Figueroa Rosas: Supervision, Project administration, Writing -- review & editing.
 
 # Data availability
 
