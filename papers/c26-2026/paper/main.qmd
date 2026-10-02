@@ -377,7 +377,7 @@ The contribution of the framework lies in articulating these perspectives and pa
 
 # Data availability
 
-The data and code that support the findings of this study are openly available in Zenodo at https://doi.org/10.5281/zenodo.23066963, which includes the input files as downloaded, the analysis package, the frozen analysis plan and every reported result. The RENIPED extract is redistributed under the terms of the Peruvian National Open Data Platform (ODC-By), the INEI population projections under their source terms and the provincial boundary layer under MPL-2.0.
+The data and code that support the findings of this study are openly available in Zenodo [@evangelista2026data], which includes the input files as downloaded, the analysis package, the frozen analysis plan and every reported result. The RENIPED extract is redistributed under the terms of the Peruvian National Open Data Platform (ODC-By), the INEI population projections under their source terms and the provincial boundary layer under MPL-2.0.
 
 # Declaration of competing interest
 

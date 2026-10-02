@@ -107,6 +107,30 @@ added: **Data availability** (Zenodo DOI), **Declaration of competing interest**
 and **Funding** (TODO — confirm with the authors). The CRediT statement moved
 into the author metadata.
 
+## Rendered layout (verified with scripts/paper_layout_check.py)
+
+`paper_layout_check.py --slug c26-2026` proves the render respects the column
+in three layers: the engine's own `Overfull \hbox` report in
+`build/render/main.log` (fails above 5 pt), the ink bounding box of every
+rasterized page against the template's text block (fails outside ~2 mm), and
+source assertions (no `fleqn` class option, bibliography entries with at most
+10 authors, every entry cited, none rendered over 900 characters). The layouts
+it guards were fixed as follows:
+
+- **Centered equations.** The CAS bundle ships `classoption: [a4paper, fleqn]`
+  and `cas.lua` forces the same base options; with them amsmath left-aligns
+  every display. Both are removed for this journal only (EAAI's bundle keeps
+  them), so the equations center as amsmath does by default.
+- **Wrapping table columns.** `cas-common.sty` defines the bundle columns as
+  `\extracolsep{\fill}` + `l/c/r`, and `l` never wraps: prose cells made the
+  tables run 12-117 pt out of the column. The journal's copy of the two table
+  filters (`cas-pre-ast.lua` + its mirror in `cas.lua`) now emits `p{}`
+  columns of an equal share of `\tblwidth`, keeping pandoc's alignment.
+- **Readable references.** The Crossref import of the many-author paper listed
+  all 166 authors (a 6,400-character wall); entries with more than 10 authors
+  are truncated to the first three + `others`, as the Word original wrote
+  "et al.".
+
 ## TODO before submission
 
 1. Confirm the CRediT roles and the funding statement (both marked in `main.qmd`).
