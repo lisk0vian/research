@@ -22,7 +22,9 @@ contributes:
       documentclass: cas-sc
       classoption:
         - a4paper
-        - fleqn
+      # No `fleqn`: cas-common sets \mathindent 0 with it, which leaves every
+      # display equation flush against the column margin. Centered is amsmath's
+      # default, and the manuscript numbers its equations.
       # Fonts are owned by cas-sc.cls (T1 + stix); the template partials below
       # stop pandoc from injecting lmodern/microtype/upquote, which would break
       # the typography of els-cas-templates/cas-sc-sample.pdf.

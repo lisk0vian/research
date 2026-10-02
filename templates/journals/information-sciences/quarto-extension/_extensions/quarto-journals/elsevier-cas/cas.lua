@@ -36,7 +36,9 @@ local stringify = pandoc.utils.stringify
 -- --------------------------------------------------------------------------
 
 -- Options the official sample always uses (\documentclass[a4paper,fleqn]{cas-sc}).
-local CAS_BASE_OPTIONS = { 'a4paper', 'fleqn' }
+-- `fleqn` is deliberately left out: with it amsmath left-aligns every display
+-- equation at the column margin, and this journal's articles center them.
+local CAS_BASE_OPTIONS = { 'a4paper' }
 
 -- natbib options used by cas-sc-sample.tex: author-year plus longnamesfirst
 -- (first citation of a work prints the full author list).
@@ -384,15 +386,13 @@ local function caption_and_label(blocks, attr_id)
   return text, id
 end
 
-local function align_to_column(alignment)
-  if alignment == pandoc.AlignLeft then
-    return 'L'
-  elseif alignment == pandoc.AlignRight then
-    return 'R'
-  elseif alignment == pandoc.AlignCenter then
-    return 'C'
-  end
-  return 'L' -- the sample writes L for every column
+-- Mirror of cas-pre-ast.lua's column_spec: cas-common.sty's L/C/R do not wrap,
+-- so prose cells would overflow the column.
+local function column_spec(alignment, ncols)
+  local decl = alignment == pandoc.AlignRight and '\\raggedleft'
+    or alignment == pandoc.AlignCenter and '\\centering' or '\\raggedright'
+  local share = '\\dimexpr(\\tblwidth-' .. 2 * (ncols - 1) .. '\\tabcolsep)/' .. ncols .. '\\relax'
+  return '>{' .. decl .. '\\arraybackslash}p{' .. share .. '}'
 end
 
 local function to_latex_row(row)
@@ -426,7 +426,7 @@ local function table_filter(tbl)
 
   local columns = {}
   for _, colspec in ipairs(tbl.colspecs) do
-    columns[#columns + 1] = align_to_column(colspec[1])
+    columns[#columns + 1] = column_spec(colspec[1], #tbl.colspecs)
   end
   if #columns == 0 then
     return nil

@@ -86,15 +86,16 @@ local function caption_and_label(blocks, attr_id)
   return text, id
 end
 
-local function align_to_column(alignment)
-  if alignment == pandoc.AlignLeft then
-    return 'L'
-  elseif alignment == pandoc.AlignRight then
-    return 'R'
-  elseif alignment == pandoc.AlignCenter then
-    return 'C'
-  end
-  return 'L' -- the sample writes L for every column
+-- cas-common.sty defines L/C/R as `\extracolsep{\fill}` + l/c/r, and `l` does
+-- NOT wrap: a cell of prose is one long line and the table runs out of the
+-- column (Elsevier's own sample fits because its cells are short). Emit
+-- `p{}` columns of an equal share of \tblwidth so long cells wrap, keeping the
+-- alignment pandoc inferred from the pipe table.
+local function column_spec(alignment, ncols)
+  local decl = alignment == pandoc.AlignRight and '\\raggedleft'
+    or alignment == pandoc.AlignCenter and '\\centering' or '\\raggedright'
+  local share = '\\dimexpr(\\tblwidth-' .. 2 * (ncols - 1) .. '\\tabcolsep)/' .. ncols .. '\\relax'
+  return '>{' .. decl .. '\\arraybackslash}p{' .. share .. '}'
 end
 
 local function to_latex_row(row)
@@ -136,7 +137,7 @@ local function table_filter(tbl)
 
   local columns = {}
   for _, colspec in ipairs(tbl.colspecs) do
-    columns[#columns + 1] = align_to_column(colspec[1])
+    columns[#columns + 1] = column_spec(colspec[1], #tbl.colspecs)
   end
   if #columns == 0 then
     return nil
