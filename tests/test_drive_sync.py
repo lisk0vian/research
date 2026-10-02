@@ -8,6 +8,7 @@ changes the Colab url and burns one of the account's concurrent runtime sessions
 from __future__ import annotations
 
 import json
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -199,3 +200,110 @@ def test_real_paper_manifest_is_in_place():
     assert clashes == []
     assert updates, "expected targets"
     assert all(u["file_id"] for u in updates), "every target must be in place"
+
+def test_stage_logs_are_synced_once_they_exist(paper):
+    """A log is the only durable record of a run; it has to reach Drive."""
+    logs = paper / "outputs" / "logs"
+    logs.mkdir(parents=True)
+    (logs / "00_verify_source.log").write_text("log\n", encoding="utf-8")
+    (logs / "run_all.log").write_text("log\n", encoding="utf-8")
+    specs = sync.target_specs(paper)
+    remotes = {s["remote"] for s in specs}
+    assert "outputs/logs/00_verify_source.log" in remotes
+    assert "outputs/logs/run_all.log" in remotes
+
+
+def test_no_log_targets_before_the_first_run(paper):
+    """A fresh clone is code-only: no phantom placeholders, no clash."""
+    specs = sync.target_specs(paper)
+    assert not [s for s in specs if s["remote"].startswith("outputs/logs/")]
+
+
+def test_only_present_logs_are_listed(paper):
+    """A partly-run pipeline syncs what it produced, not all eleven stages."""
+    logs = paper / "outputs" / "logs"
+    logs.mkdir(parents=True)
+    (logs / "03_climatology.log").write_text("log\n", encoding="utf-8")
+    specs = sync.target_specs(paper)
+    log_remotes = {s["remote"] for s in specs if s["remote"].startswith("outputs/logs/")}
+    assert log_remotes == {"outputs/logs/03_climatology.log"}
+
+
+def test_log_names_never_carry_a_timestamp(paper):
+    """A timestamped filename would mint a new Drive id every run."""
+    logs = paper / "outputs" / "logs"
+    logs.mkdir(parents=True)
+    (logs / "05_features_local.log").write_text("log\n", encoding="utf-8")
+    specs = sync.target_specs(paper)
+    for s in specs:
+        assert not re.search(r"\d{8}-\d{6}|\d{4}-\d{2}-\d{2}T", s["remote"]), s["remote"]
+
+
+# --- content hashing: upload only what changed -----------------------------
+
+def test_hashes_manifest_roundtrip(paper):
+    sync.save_hashes(paper, {"code/a.py": "abc"})
+    assert sync.load_hashes(paper) == {"code/a.py": "abc"}
+
+
+def test_absent_hash_manifest_means_everything_changed(paper):
+    """A lost manifest costs one full upload; a wrong one hides a missing file."""
+    assert sync.load_hashes(paper) == {}
+
+
+def test_corrupt_hash_manifest_is_treated_as_absent(paper):
+    sync.hashes_path(paper).write_text("{not json", encoding="utf-8")
+    assert sync.load_hashes(paper) == {}
+
+
+def test_hash_manifest_non_string_values_are_dropped(paper):
+    sync.hashes_path(paper).write_text('{"a": 1, "b": "x"}', encoding="utf-8")
+    assert sync.load_hashes(paper) == {"b": "x"}
+
+
+def _one_target(paper):
+    exp = paper / "experiments"
+    exp.mkdir(parents=True, exist_ok=True)
+    f = exp / "00_a.py"
+    f.write_text("def main():\n    pass\n", encoding="utf-8")
+    return next(s for s in sync.target_specs(paper) if s["remote"] == "code/00_a.py")
+
+
+def test_unchanged_file_with_a_drive_id_is_skipped(paper):
+    spec = _one_target(paper)
+    spec["file_id"] = "LIVE"
+    changed, unchanged = sync.split_by_change(paper, [spec], {"code/00_a.py": sync.file_sha256(spec["local"])})
+    assert [s["remote"] for s in unchanged] == ["code/00_a.py"] and changed == []
+
+
+def test_changed_content_is_uploaded_even_with_a_matching_id(paper):
+    spec = _one_target(paper)
+    spec["file_id"] = "LIVE"
+    changed, unchanged = sync.split_by_change(paper, [spec], {"code/00_a.py": "stale-hash"})
+    assert [s["remote"] for s in changed] == ["code/00_a.py"] and unchanged == []
+
+
+def test_matching_hash_without_a_drive_id_is_still_uploaded(paper):
+    """The exact bug class that produced two copies of 05_features_local.py."""
+    spec = _one_target(paper)
+    spec["file_id"] = None
+    changed, unchanged = sync.split_by_change(paper, [spec], {"code/00_a.py": sync.file_sha256(spec["local"])})
+    assert [s["remote"] for s in changed] == ["code/00_a.py"] and unchanged == []
+
+
+def test_mark_uploaded_rejects_a_path_that_is_not_a_target(paper):
+    _one_target(paper)
+    proc = _run("--slug", "c99-2026", "--root", str(paper.parents[1]),
+                "--mark-uploaded", "code/nope.py")
+    assert proc.returncode == 2
+    assert "not a sync target" in proc.stderr
+
+
+def test_missing_folder_id_refuses_instead_of_emitting_an_empty_one(paper):
+    """parentFolderId:"" is a malformed call, and its natural fix duplicates files."""
+    _one_target(paper)
+    proc = _run("--slug", "c99-2026", "--root", str(paper.parents[1]),
+                "--print-calls", "--folder-id", "")
+    assert proc.returncode == 1
+    assert "would be created" in proc.stderr
+    assert "uploadFile" not in proc.stdout

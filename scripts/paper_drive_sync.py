@@ -26,6 +26,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import sys
 from pathlib import Path
@@ -49,10 +50,73 @@ SKIP_PREFIXES = (".env", ".gitignore", "opencode.jsonc")
 
 NB_REMOTE_NAME = "experiments.ipynb"
 NB_REMOTE_DIR = ""  # notebook sits at the Drive folder root
+LOGS_REMOTE_DIR = "outputs/logs"  # matches outputs/logs/ in the paper layout
 
 
 def ids_path(paper: Path) -> Path:
     return paper / ".drive_ids.json"
+
+
+def hashes_path(paper: Path) -> Path:
+    return paper / ".sync_manifest.json"
+
+
+def file_sha256(path: Path) -> str:
+    """Content hash of a file. Whole file, because these are all small.
+
+    Streaming rather than read_bytes so a large log does not have to fit in
+    memory to be compared.
+    """
+    h = hashlib.sha256()
+    with path.open("rb") as fh:
+        for chunk in iter(lambda: fh.read(1 << 20), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+
+def load_hashes(paper: Path) -> dict[str, str]:
+    """Recorded hash per remote path, i.e. what Drive is believed to hold.
+
+    Absent file means "nothing confirmed uploaded yet", so every target counts
+    as changed. That is the safe default: a lost manifest costs one full
+    upload, whereas a wrong manifest would skip a file that never landed.
+    """
+    path = hashes_path(paper)
+    if not path.is_file():
+        return {}
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        return {}
+    if not isinstance(data, dict):
+        return {}
+    return {k: v for k, v in data.items() if isinstance(v, str)}
+
+
+def save_hashes(paper: Path, hashes: dict[str, str]) -> None:
+    hashes_path(paper).write_text(
+        json.dumps(hashes, indent=2, ensure_ascii=False, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+
+
+def split_by_change(paper: Path, updates: list[dict],
+                    hashes: dict[str, str]) -> tuple[list[dict], list[dict]]:
+    """Partition targets into (needs upload, already current on Drive).
+
+    A target is only skippable when the recorded hash matches *and* a Drive id
+    exists. Requiring the id is deliberate: a hash recorded for a file whose
+    upload then failed, or whose id was never resolved, would otherwise make it
+    look synced forever.
+    """
+    changed, unchanged = [], []
+    for spec in updates:
+        want = file_sha256(spec["local"])
+        if spec["file_id"] and hashes.get(spec["remote"]) == want:
+            unchanged.append(spec)
+        else:
+            changed.append(spec)
+    return changed, unchanged
 
 
 def load_ids(paper: Path) -> dict:
@@ -111,6 +175,33 @@ def target_specs(paper: Path) -> list[dict]:
             "mime_type": None,
             "is_notebook": False,
         })
+    specs.extend(log_specs(paper))
+    return specs
+
+
+def log_specs(paper: Path) -> list[dict]:
+    """Stage logs, uploaded only when they exist.
+
+    They do not exist before the first Colab run, so a sync on a fresh clone is
+    code-only. Once a run has happened they are pulled back to Drive, where they
+    are the durable record of what the run did: a recycled runtime takes the
+    console output with it, but not the file.
+
+    Only files that are present are listed, so a partly-run pipeline syncs the
+    logs it produced and no phantom placeholders are created for the rest.
+    """
+    specs: list[dict] = []
+    logs = paper / "outputs" / "logs"
+    if not logs.is_dir():
+        return specs
+    for p in sorted(logs.glob("*.log")):
+        specs.append({
+            "remote": f"{LOGS_REMOTE_DIR}/{p.name}",
+            "remote_dir": LOGS_REMOTE_DIR,
+            "local": p,
+            "mime_type": None,
+            "is_notebook": False,
+        })
     return specs
 
 
@@ -157,19 +248,27 @@ def plan(paper: Path, remote_names: set[str] | None = None) -> tuple[list[dict],
     return updates, clashes + stale
 
 
-def print_calls(paper: Path, updates: list[dict], folder_id: str | None) -> None:
-    """Emit the literal uploadFile arguments, one JSON object per target."""
+def print_calls(paper: Path, updates: list[dict], folder_id: str | None) -> int:
+    """Emit the literal uploadFile arguments, one JSON object per target.
+
+    Returns the number of targets that would be created rather than updated.
+    A create needs a real folder id; an empty `parentFolderId` is not a
+    default, it is a malformed call, so the caller refuses before reaching here.
+    """
+    created = 0
     for spec in updates:
         args: dict = {"localPath": str(spec["local"])}
         if spec["file_id"]:
             # In place: keeps the Drive ID, hence the Colab session.
             args["fileId"] = spec["file_id"]
         else:
+            created += 1
             args["parentFolderId"] = spec.get("parent_override") or folder_id
             args["name"] = spec["remote"].rsplit("/", 1)[-1]
             if spec["mime_type"]:
                 args["mimeType"] = spec["mime_type"]
         print(json.dumps({"tool": "uploadFile", "arguments": args}))
+    return created
 
 
 def main() -> int:
@@ -186,6 +285,11 @@ def main() -> int:
                     help='JSON object of remote path -> file id as Drive holds it '
                          '(from listFolder), used to refuse duplicates and to '
                          'detect stale ids in the manifest')
+    ap.add_argument("--all", action="store_true",
+                    help="upload every target, ignoring recorded content hashes")
+    ap.add_argument("--mark-uploaded", nargs="+", metavar="REMOTE", default=None,
+                    help="record these remote paths as uploaded with their current "
+                         "hash; run it after the agent actually uploaded them")
     args = ap.parse_args()
 
     repo = Path(args.root).resolve() if args.root else (
@@ -202,6 +306,24 @@ def main() -> int:
         print(f"recorded {remote} -> {file_id} ({len(ids)} entries)")
         return 0
 
+    if args.mark_uploaded:
+        # Two-phase on purpose. This script cannot call the MCP, so it never
+        # learns whether an upload succeeded; only the agent that ran the calls
+        # knows. Recording optimistically would let one failed upload mark a
+        # stale file as current forever.
+        wanted = set(args.mark_uploaded)
+        hashes = load_hashes(paper)
+        known = {spec["remote"]: spec for spec in target_specs(paper)}
+        unknown = sorted(wanted - set(known))
+        if unknown:
+            print(f"ERROR: not a sync target: {', '.join(unknown)}", file=sys.stderr)
+            return 2
+        for remote in sorted(wanted):
+            hashes[remote] = file_sha256(known[remote]["local"])
+        save_hashes(paper, hashes)
+        print(f"marked {len(wanted)} file(s) uploaded ({len(hashes)} tracked)")
+        return 0
+
     folder_id = args.folder_id
     if not folder_id:
         import os
@@ -216,11 +338,20 @@ def main() -> int:
     updates, clashes = plan(paper, remote_names)
     print(f"paper: {paper}")
     print(f"manifest: {ids_path(paper)} ({len(load_ids(paper))} entries)")
-    print(f"targets: {len(updates)} to sync")
 
-    in_place = sum(1 for u in updates if u["file_id"])
+    hashes = load_hashes(paper)
+    if args.all:
+        changed, unchanged = updates, []
+    else:
+        changed, unchanged = split_by_change(paper, updates, hashes)
+    print(f"targets: {len(updates)} known, {len(changed)} to upload, "
+          f"{len(unchanged)} already current on Drive")
+
+    in_place = sum(1 for u in changed if u["file_id"])
     print(f"  in place (fileId): {in_place}")
-    print(f"  new files:         {len(updates) - in_place}")
+    print(f"  new files:         {len(changed) - in_place}")
+    if unchanged:
+        print("  unchanged: " + ", ".join(sorted(u["remote"] for u in unchanged)))
 
     if clashes:
         print("\nRefusing to proceed:")
@@ -239,12 +370,36 @@ def main() -> int:
         print("or delete the Drive copy first if it is genuinely obsolete.")
         return 1
 
+    needs_create = [u["remote"] for u in changed if not u["file_id"]]
+    if needs_create and not folder_id:
+        sys.stdout.flush()  # keep the agent's read of this ordered as printed
+        # Emitting parentFolderId:"" would hand the MCP a malformed call, and the
+        # natural "fix" for that failure is to recreate files that already exist.
+        print("\nRefusing to print calls:", file=sys.stderr)
+        print(f"  {len(needs_create)} target(s) have no Drive id and would be created:",
+              file=sys.stderr)
+        for r in needs_create[:8]:
+            print(f"    {r}", file=sys.stderr)
+        print("  creating one needs --folder-id or $GDRIVE_FOLDER_ID.", file=sys.stderr)
+        print("  if these files already exist on Drive, record their ids instead:",
+              file=sys.stderr)
+        print("    python scripts/paper_drive_sync.py --slug %s --record <remote> <file-id>"
+              % args.slug, file=sys.stderr)
+        return 1
+
     if args.print_calls:
         print()
-        print_calls(paper, updates, folder_id)
+        print_calls(paper, changed, folder_id)
+        if not changed:
+            print("  (nothing to upload; Drive already holds these bytes)")
     else:
         print("\nre-run with --print-calls to emit the uploadFile arguments")
         print("(MCP tools are called by the agent, not from Python)")
+        if changed:
+            print("after uploading, record the hashes with:")
+            print("  python scripts/paper_drive_sync.py --slug %s --mark-uploaded %s"
+                  % (args.slug, " ".join(sorted(u["remote"] for u in changed)[:3])
+                     + (" ..." if len(changed) > 3 else "")))
     return 0
 
 
