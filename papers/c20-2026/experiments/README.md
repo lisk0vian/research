@@ -273,15 +273,25 @@ The stage log is the one to trust later. It has a header (stage, command, start 
 
 The obvious design is `python stage.py 2>&1 | tee outputs/logs/stage.log`, then an `echo "exit=$?"` footer. That does not work. The footer is written to the shell's stdout, which sits *downstream* of `tee`, so it never reaches the file; a footer written before the pipeline runs cannot know the exit code; and bash reports only the last command in a pipe unless `pipefail` is set.
 
-So `_common.run_stage` owns the whole file. It streams the child's merged output, forwarding it to the terminal verbatim and to the log with carriage returns collapsed and ANSI stripped. That split is what lets a `tqdm` bar animate in the notebook while the file on Drive stays clean text.
+So `_common.run_stage` owns the whole file. It streams the child's merged output line by line: ordinary lines go to the terminal verbatim and to the log with carriage returns collapsed and ANSI stripped; `#PROG` event lines are routed instead (below). That split is what keeps the file on Drive clean text while the console stays live.
 
 Windows makes this non-obvious: the child's stdout is in text mode, so every newline arrives as `\r\n`, and a bare `\r` looks identical until you read the next byte. `_TerminalLineSplitter` treats `\r\n` as one terminator and a bare `\r` as a redraw, holding an unclassifiable trailing `\r` until the next chunk decides it. Getting this backwards does not error — it silently empties the log.
 
-### Progress bars
+### Progress: children emit, readers draw
 
-`tqdm` is declared in `requirements-experiments.txt` and reached through `_common.progress`, which passes the iterable through untouched when tqdm is absent, so a missing bar can never take a stage down.
+Every stage runs as a subprocess, and a pipe is not a TTY, so a `tqdm` bar drawn by the child cannot stay fixed in Colab's captured output: each `\r` refresh lands as its own line. Tuning bar arguments cannot fix that; the bytes are fine, the renderer is not.
 
-Bars are on the folds in `03`, `04` and `05`, and on the offset-day loop inside `seasonal_sigma_hq` (`03`), which formats the whole index to strings once per day and is the slowest thing that stage does. Stages `01` and `02` are vectorised pandas with no long loop, so they carry no bar: a progress indicator over an operation that takes no time is decoration, not feedback.
+The child therefore never draws. It emits machine-readable lines on stdout:
+
+```
+#PROG {"level": "fold", "n": 3, "total": 5, "desc": "D2", "unit": "fold"}
+```
+
+and whoever reads draws: the notebook cell with `tqdm.notebook` (fixed widgets), a local terminal with `tqdm.std`, the log with plain phase markers (`# progress D2: 3/5`). One protocol, three backends; `tqdm` is only ever a drawing library, never the source of truth. The contract lives in `experiments/_progress.py` and its tests in `tests/test_progress.py`.
+
+Levels are `stage` (run_all over stages), `fold` (a stage over folds) and `step` (sub-fold work such as the sigma offset loop). The reader keeps one widget per level and reuses it across phases with a live `desc`, so fifteen 7-item sigma bars become one bar that says which fold and horizon it is on. Emission is throttled like `tqdm`'s `mininterval`: first event, `desc` changes and completion always go through.
+
+`EXP_PROGRESS=off` silences the whole protocol (tests, CI). `config.progress` selects which levels get a bar; phase markers still reach the log for every level, so hiding a bar never hides the diagnosis.
 
 ### Alternative: code by git sparse clone
 

@@ -395,15 +395,10 @@
     "dir": "outputs/logs",
     "run_all": "outputs/logs/run_all.log",
     "stages": {
-      "03_climatology": {
-        "log": "outputs/logs/03_climatology.log",
+      "00_verify_source": {
+        "log": "outputs/logs/00_verify_source.log",
         "exit_code": 0,
-        "elapsed_s": 4.15
-      },
-      "04_make_issuances": {
-        "log": "outputs/logs/04_make_issuances.log",
-        "exit_code": 0,
-        "elapsed_s": 2.34
+        "elapsed_s": 1.24
       }
     }
   }
