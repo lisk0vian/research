@@ -82,6 +82,19 @@ def test_format_block_with_extension():
     )
     assert "elsevier-pdf:" in block
     assert "docx: default" in block
+    assert "model:" not in block
+    assert "formatting:" not in block
+
+
+def test_format_block_passes_model_and_formatting():
+    block = format_block_from_type(
+        {"journal": "Information Sciences", "extension": "quarto-journals/elsevier",
+         "quarto_format": "elsevier-pdf", "cite_style": "numbername",
+         "model": "1p", "formatting": "review"}
+    )
+    assert "cite-style: numbername" in block
+    assert "model: 1p" in block
+    assert "formatting: review" in block
 
 
 def test_format_block_without_extension():
