@@ -1,0 +1,104 @@
+# papers/c26-2026/manifest.yaml
+# Single source of truth for this paper's metadata. Does NOT duplicate author
+# data: it references authors/<id>.yaml by id only.
+
+paper: c26-2026
+title: "A reproducible GeoAI framework for explainable spatiotemporal analysis of national missing-person registers: multi-algorithm clustering and multilevel validation (Peru, 2019-2025)"
+
+# --- Editorial target ---
+journal: information-sciences          # must exist under templates/journals/<journal>/
+internal_code: "C26-2026" # institutional code (empty "" if none)
+
+# --- Funding / institution ---
+institution: "SENATI"
+funding: "This work was funded by SENATI, Peru (Project C26-2026)."
+# TODO: confirm the funding statement with the authors before submission.
+
+# --- Authors (id + role + order for THIS paper only) ---
+# Full details (name, orcid, email, affiliation) live in authors/<id>.yaml
+authors:
+  - id: moises
+    role: corresponding
+    order: 1
+  - id: edwar
+    role: author
+    order: 2
+  - id: pamela
+    role: author
+    order: 3
+
+# --- Claims: verifiable statements made by the paper ---
+# Each claim anchors a number/result in the text to its origin in the pipeline,
+# so paper-refs and the reviewers can audit that nothing was fabricated.
+claims:
+  - id: claim-reports
+    text: "The register records 142,374 reports between January 2019 and December 2025, organized as a panel of 26 territories x 84 months."
+    source: "outputs/results.json (datos, panel)"
+    status: verified
+  - id: claim-rates-range
+    text: "Report rates range from 2.84 (Cajamarca) to 9.96 (Tacna) reports per 10,000 person-years."
+    source: "outputs/tables/T14_territorios_prioritarios.csv"
+    status: verified
+  - id: claim-priority
+    text: "Ten territories have rates above the rest of the country after FDR control; the classification is identical in both sensitivity analyses (2019-2024, total exposure)."
+    source: "outputs/tables/T14_territorios_prioritarios.csv; outputs/tables/T14_territorios_prioritarios_consolidado_2019_2024.csv; outputs/tables/T14_territorios_prioritarios_exposicion_total.csv"
+    status: verified
+  - id: claim-lima
+    text: "Metropolitan Lima concentrates 46,848 reports (33% of the national total) and its rate exceeds the rest of the country by 14% (RR = 1.14, 95% CI 1.05-1.19)."
+    source: "outputs/tables/T14_territorios_prioritarios.csv; outputs/tables/T14b_razon_tasas_anual.csv"
+    status: verified
+  - id: claim-moran
+    text: "Global spatial autocorrelation is significant with the four nearest neighbors (Moran's I = 0.288, p = 0.018) and not under contiguity (0.122, p = 0.244)."
+    source: "outputs/tables/T09_moran_global.csv"
+    status: verified
+  - id: claim-local
+    text: "After Benjamini-Hochberg adjustment there are cold spots in the north (Amazonas, Lambayeque, San Martin) and no hot spots."
+    source: "outputs/tables/T10_local_queen.csv; outputs/tables/T10_local_knn4_geodesico.csv"
+    status: verified
+  - id: claim-gap
+    text: "The gap statistic peaks at K = 1, i.e. no evidence of cluster structure; the fallback rule selects K = 4 as a descriptive summary."
+    source: "outputs/tables/T02_seleccion_K.csv; outputs/tables/T02b_gap_desde_K1.csv"
+    status: verified
+  - id: claim-algorithms
+    text: "Agreement between clustering algorithms is low (ARI 0.31 Ward, 0.23 Gaussian mixture vs k-means) and HDBSCAN labels 70% of observations as noise."
+    source: "outputs/tables/T03_multialgoritmo.csv"
+    status: verified
+  - id: claim-identity
+    text: "Normalized mutual information with territorial identity grows with the level content of the feature space: 0.015 (E1, p = 0.81), 0.138 (E2, p = 0.001), 0.252 (E3)."
+    source: "outputs/tables/T05_auditoria_proxy.csv"
+    status: verified
+  - id: claim-multiverse
+    text: "In the multiverse, 97.2% of specifications are stable under row resampling against 30.6% under territory and block resampling, 34.3% reach silhouette >= 0.50 and 62.0% show identity leakage."
+    source: "outputs/tables/T12d_M1_soporte_afirmaciones.csv; outputs/tables/T13b_M2_soporte_afirmaciones.csv"
+    status: verified
+  - id: claim-reproducible
+    text: "A full rerun on another machine reproduces 34 of the 35 tables with relative differences below 1e-10; the remaining table differs only in internal HDBSCAN indices not reported in the article."
+    source: "outputs/environment.json"
+    status: verified
+
+# --- Figures: registry of each figure and its origin ---
+figures:
+  - id: fig-1
+    caption: "Architecture of the GeoAI framework: sources, territory-month panel, analytical stages and validation."
+    file: "media/Fig1_framework_en.png"
+    source: "outputs/figures_article/Fig1_framework_en.png"
+  - id: fig-2
+    caption: "Reports recorded, 2019-2025. (a) Annual total and change from the previous year. (b) Monthly total."
+    file: "media/Fig2_reports_en.png"
+    source: "outputs/figures_article/Fig2_reports_en.png"
+  - id: fig-3
+    caption: "Territorial comparison of rates, 2019-2025. (a) Classification with FDR control. (b) Rate ratios and 95% CIs."
+    file: "media/Fig3_priority_en.png"
+    source: "outputs/figures_article/Fig3_priority_en.png"
+  - id: fig-4
+    caption: "Annual rate ratios relative to the rest of the country, 2019-2025."
+    file: "media/Fig4_persistence_en.png"
+    source: "outputs/figures_article/Fig4_persistence_en.png"
+  - id: fig-5
+    caption: "Diagnostics and state profiles in E2, 2019-2023. (a) Gap statistic. (b) ARI stability. (c) Silhouette. (d) Standardized features."
+    file: "media/Fig5_states_en.png"
+    source: "outputs/figures_article/Fig5_states_en.png"
+  - id: fig-6
+    caption: "Specification curves. (a) Territorial association. (b) Global spatial autocorrelation."
+    file: "media/Fig6_validation_en.png"
+    source: "outputs/figures_article/Fig6_validation_en.png"
