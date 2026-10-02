@@ -1,0 +1,30 @@
+{
+  "finished_at": "2026-10-02T13:39:58+00:00",
+  "stages_run": [
+    "03_climatology",
+    "04_make_issuances"
+  ],
+  "python": "3.14.7",
+  "python_executable": "C:\\Users\\Aron\\AppData\\Local\\Programs\\Python\\Python314\\python.exe",
+  "config": "experiments\\config.yaml",
+  "git_commit": "afbfbef",
+  "git_dirty": true,
+  "versions": {
+    "pandas": "3.0.5",
+    "numpy": "2.5.3",
+    "yaml": "6.0.3",
+    "sklearn": "1.9.1",
+    "lightgbm": "4.7.0"
+  },
+  "results": {
+    "03_climatology": {
+      "exit_code": 0,
+      "elapsed_s": 4.150416600001336
+    },
+    "04_make_issuances": {
+      "exit_code": 0,
+      "elapsed_s": 2.344366999999693
+    }
+  },
+  "note": "Fixed filename by design: a timestamped name would mint a new Drive file per run, and a new Drive file means a new Colab url."
+}
