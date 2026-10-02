@@ -1,0 +1,25 @@
+{
+  "finished_at": "2026-10-02T15:42:18+00:00",
+  "stages_run": [
+    "00_verify_source"
+  ],
+  "python": "3.14.7",
+  "python_executable": "C:\\Users\\Aron\\AppData\\Local\\Programs\\Python\\Python314\\python.exe",
+  "config": "experiments/config.yaml",
+  "git_commit": "29115f1",
+  "git_dirty": true,
+  "versions": {
+    "pandas": "3.0.5",
+    "numpy": "2.5.3",
+    "yaml": "6.0.3",
+    "sklearn": "1.9.1",
+    "lightgbm": "4.7.0"
+  },
+  "results": {
+    "00_verify_source": {
+      "exit_code": 0,
+      "elapsed_s": 1.24
+    }
+  },
+  "note": "Fixed filename by design: a timestamped name would mint a new Drive file per run, and a new Drive file means a new Colab url."
+}

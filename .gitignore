@@ -205,3 +205,4 @@ papers/*/experiments/.agents/
 papers/*/experiments/.claude/
 papers/*/experiments/.opencode/
 papers/*/experiments/skills-lock.json
+.sync_manifest.json

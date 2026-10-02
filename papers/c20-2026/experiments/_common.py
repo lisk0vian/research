@@ -15,19 +15,39 @@ Paths resolve in two modes, mirroring `papers/c15-2026/experiments/src/paths.py`
 
 The env vars are read once at import time, so the notebook must set them before
 running any stage.
+
+`EXP_CONFIG` optionally overrides which `config.yaml` is read; `run_all.py`
+exports it so a `--config` on the orchestrator reaches the stages it spawns,
+since a subprocess inherits the environment but not the parent's argv.
+
+`EXP_ENV` is a check, never a switch. The notebook keeps exporting the paths
+explicitly; `EXP_ENV` only asserts that what those paths resolved to matches
+what the caller believes, so a misconfigured run fails at import instead of
+writing to the runtime's ephemeral disk and disappearing on recycle.
+
+Every artefact write goes through `_atomic_write`: a temporary sibling plus
+`os.replace`. A disconnect or crash mid-write then leaves the previous file or
+nothing, never half a CSV that the next stage would read as complete.
 """
 
 from __future__ import annotations
 
+import codecs
 import json
 import os
+import re
+import subprocess
+import sys
+import tempfile
+import time
+from datetime import datetime, timezone
 from pathlib import Path
 
 import pandas as pd
 import yaml
 
 BASE = Path(__file__).resolve().parents[1]
-CONFIG_PATH = BASE / "experiments" / "config.yaml"
+CONFIG_PATH = Path(os.environ.get("EXP_CONFIG") or BASE / "experiments" / "config.yaml")
 
 DATA_DIR = Path(os.environ.get("DATA_DIR", BASE / "data"))
 OUTPUTS = Path(os.environ.get("OUTPUT_DIR", BASE / "outputs"))
@@ -36,8 +56,116 @@ PROCESSED = DATA_DIR / "processed"
 TABLES = OUTPUTS / "tables"
 FIGURES = OUTPUTS / "figures"
 LOGS = OUTPUTS / "logs"
+INSPECT = OUTPUTS / "_inspect"
 
 NUMERIC_VARS = ("TT", "HR", "RR", "PP", "FF", "DD")
+
+# Environment names this pipeline knows. EXP_ENV is a *check*, not a switch:
+# the notebook still exports DATA_DIR/OUTPUT_DIR explicitly, and EXP_ENV only
+# asserts that what they resolved to matches what the caller believes.
+KNOWN_ENVS = ("local", "colab")
+
+
+def _validate_environment() -> None:
+    """Fail loudly if EXP_ENV disagrees with where the paths actually point.
+
+    The failure this prevents is quiet and expensive: with EXP_ENV=colab and
+    paths under /content, a Colab recycle deletes the run's outputs and nothing
+    says so until someone goes looking for them.
+    """
+    declared = os.environ.get("EXP_ENV")
+    if declared is None:
+        return
+    if declared not in KNOWN_ENVS:
+        raise SystemExit(
+            f"ERROR: EXP_ENV={declared!r} is not one of {KNOWN_ENVS}"
+        )
+    on_drive = "drive" in str(OUTPUTS).replace("\\", "/").lower()
+    if declared == "colab" and not on_drive:
+        raise SystemExit(
+            f"ERROR: EXP_ENV=colab but OUTPUTS={OUTPUTS} is not on Drive.\n"
+            "Outputs would be written to the runtime's ephemeral disk and lost on "
+            "recycle. Export OUTPUT_DIR (and DATA_DIR) pointing into the mounted "
+            "Drive before running a stage, or set EXP_ENV=local."
+        )
+    if declared == "local" and on_drive:
+        raise SystemExit(
+            f"ERROR: EXP_ENV=local but OUTPUTS={OUTPUTS} is on Drive.\n"
+            "Refusing to write: unset the exported OUTPUT_DIR, or set EXP_ENV=colab."
+        )
+
+
+_validate_environment()
+
+
+def _atomic_write(path: Path, write_fn) -> Path:
+    """Write through a temp sibling, then `os.replace` onto the target.
+
+    `os.replace` is only atomic within a filesystem, so the temporary file has
+    to be a sibling of the target rather than in the system temp dir. A Colab
+    disconnect or a crash mid-write then leaves either the previous file or
+    nothing - never half a CSV that the next stage reads as complete, which is
+    the failure mode that costs a full re-run.
+    """
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fd, tmp_name = tempfile.mkstemp(
+        dir=path.parent, prefix=f".{path.name}.", suffix=".tmp"
+    )
+    os.close(fd)
+    tmp = Path(tmp_name)
+    try:
+        write_fn(tmp)
+        os.replace(tmp, path)
+    finally:
+        tmp.unlink(missing_ok=True)
+    return path
+
+
+def atomic_write_text(path: Path, text: str, encoding: str = "utf-8") -> Path:
+    """Atomically write text. For JSON payloads prefer `atomic_write_json`."""
+    return _atomic_write(path, lambda p: p.write_text(text, encoding=encoding))
+
+
+def atomic_write_csv(df: pd.DataFrame, path: Path, index: bool = False) -> Path:
+    """Atomically write a DataFrame to CSV."""
+    return _atomic_write(path, lambda p: df.to_csv(p, index=index, encoding="utf-8"))
+
+
+def atomic_write_json(payload: dict, path: Path) -> Path:
+    """Atomically write a JSON object with the repo's usual formatting."""
+    text = json.dumps(payload, indent=2, ensure_ascii=False)
+    return _atomic_write(path, lambda p: p.write_text(text, encoding="utf-8"))
+
+
+def rel_path(path: Path) -> str:
+    """Path relative to the paper root, with forward slashes.
+
+    Manifests record paths, and the repo convention is forward slashes so a
+    manifest written on Windows cites the same string a reader on Linux sees.
+    A path outside the paper root (a temp dir in a test, say) is returned
+    absolute rather than mangled by a failed relativisation.
+    """
+    try:
+        return str(Path(path).resolve().relative_to(BASE)).replace("\\", "/")
+    except ValueError:
+        return str(path).replace("\\", "/")
+
+
+def inspect_write(name: str, df: pd.DataFrame) -> Path:
+    """Persist a DataFrame for notebook exploration only. Not a pipeline output.
+
+    Most things worth exploring are already a stage output and should be read
+    from there. This exists for the intermediates that are useful to look at and
+    do not deserve to be a declared output - the anomaly panels, a joined frame
+    kept only for a diagnostic.
+
+    Opt-in per call, and the name records which stage asked for it, so this
+    cannot silently become a second, undocumented `outputs/` tree. Written under
+    `outputs/_inspect/`, which the Drive sync does not pick up: it is a local
+    cache that is cheap to rebuild.
+    """
+    return atomic_write_csv(df, INSPECT / f"{name}.csv")
 
 
 def load_config(path: Path | None = None) -> dict:
@@ -63,15 +191,11 @@ def read_hourly(path: Path | None = None) -> pd.DataFrame:
 
 def write_table(df: pd.DataFrame, name: str) -> Path:
     """Write a contract table to outputs/tables/, creating the folder."""
-    TABLES.mkdir(parents=True, exist_ok=True)
-    path = TABLES / name
-    df.to_csv(path, index=False, encoding="utf-8")
-    return path
+    return atomic_write_csv(df, TABLES / name)
 
 
 def write_manifest(payload: dict, name: str = "manifest_index.json") -> Path:
     """Update outputs/manifest_index.json, keeping the declared contract intact."""
-    OUTPUTS.mkdir(parents=True, exist_ok=True)
     path = OUTPUTS / name
     data: dict = {}
     if path.exists():
@@ -85,8 +209,7 @@ def write_manifest(payload: dict, name: str = "manifest_index.json") -> Path:
     data.setdefault("paper", "c20-2026")
     data.setdefault("design_version", "2.0")
     data["status"] = "partial"
-    path.write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")
-    return path
+    return atomic_write_json(data, path)
 
 
 def ensure_dirs() -> None:
@@ -107,3 +230,336 @@ def paths_report() -> str:
         f"[{mode}] PROCESSED = {PROCESSED}",
         f"[{mode}] OUTPUTS   = {OUTPUTS}",
     ])
+
+
+# --- progress ---------------------------------------------------------------
+# The child never draws a bar: it emits `#PROG` event lines (see
+# `_progress.py`) and whoever reads draws. `tqdm` stays optional and is only
+# ever used by a *reader* (this module's `run_stage`, the notebook runner, or
+# a direct terminal run), so a missing bar can never take a stage down.
+#
+# `has_tqdm` reports whether any bar can be drawn here; it is what the stage
+# log header records.
+
+try:  # pragma: no cover - exercised by whichever branch the env provides
+    from tqdm.auto import tqdm as _tqdm
+except ImportError:  # pragma: no cover
+    _tqdm = None
+
+
+def progress(iterable, desc: str = "", unit: str = "it",
+               total: int | None = None, level: str = "fold",
+               mininterval: float | None = None, **_ignored) -> object:
+    """Yield items, emitting `#PROG` events when a rendering parent listens.
+
+    The child never draws: whoever reads draws (notebook widgets, terminal
+    bars, log markers). See `_progress.iter_progress` for the three cases
+    (parent present, interactive terminal, silent). Extra keywords are ignored
+    so older call sites keep working.
+    """
+    import _progress
+
+    return _progress.iter_progress(iterable, level=level, desc=desc,
+                                   unit=unit, total=total,
+                                   mininterval=mininterval)
+
+
+def has_tqdm() -> bool:
+    import _progress
+
+    return _progress.has_tqdm()
+
+
+# --- stage logging ----------------------------------------------------------
+# Why the runner is Python and not a shell `tee`
+# ---------------------------------------------
+# The obvious design is `python stage.py | tee outputs/logs/stage.log` and then
+# an `echo "exit=$?"` footer. That does not work: the footer is written to the
+# shell's stdout, which is downstream of `tee`, so it never reaches the file. A
+# footer written before the pipeline runs cannot know the exit code, and bash
+# only reports the *last* command in a pipe unless `pipefail` is set.
+#
+# So the runner owns the whole file. It streams the child's merged output,
+# passing it through to the terminal verbatim and to the log with carriage
+# returns collapsed and ANSI stripped. That is what lets a tqdm bar animate in
+# the notebook while the file on Drive stays clean text.
+#
+# Logs are named after the stage, fixed, and rewritten every run: one Drive
+# fileId per stage that never changes. A timestamped filename would mint a new
+# file per run, and each new Drive file needs a new Colab URL and a new runtime
+# session, which the account caps.
+
+LOG_START = "STAGE-START"
+LOG_EXIT = "STAGE-EXIT"
+LOG_SUMMARY = "STAGE-SUMMARY"
+_ANSI = re.compile(r"\x1b\[[0-9;?]*[ -/]*[@-~]")
+
+
+def log_dir() -> Path:
+    """outputs/logs, created on demand."""
+    LOGS.mkdir(parents=True, exist_ok=True)
+    return LOGS
+
+
+def stage_log_path(stage: str) -> Path:
+    return log_dir() / f"{stage}.log"
+
+
+def run_all_log_path() -> Path:
+    return log_dir() / "run_all.log"
+
+
+def _now() -> str:
+    return datetime.now(timezone.utc).astimezone().isoformat(timespec="seconds")
+
+
+def write_stage_log_header(stage: str, argv: list[str], extra: dict | None = None,
+                           log_path: Path | None = None) -> Path:
+    """Open a fresh log for `stage` and write its header.
+
+    Truncating here (rather than appending at the end) means a crash still
+    leaves a readable log on Drive: the header and whatever the child managed to
+    print are already there.
+    """
+    path = log_path or stage_log_path(stage)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    lines = [
+        f"# {LOG_START} {stage}",
+        f"# started        : {_now()}",
+        f"# command        : {' '.join(argv)}",
+        f"# cwd            : {Path.cwd()}",
+        f"# python         : {sys.version.split()[0]} ({sys.executable})",
+        f"# tqdm available : {has_tqdm()}",
+        f"# log            : {path}",
+        "#",
+        *paths_report().splitlines(),
+    ]
+    for key, value in (extra or {}).items():
+        lines.append(f"# {key:<16}: {value}")
+    lines.append("#" + "-" * 78)
+    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    return path
+
+
+def append_stage_log(path: Path, text: str) -> None:
+    with path.open("a", encoding="utf-8") as fh:
+        fh.write(text)
+
+
+def write_stage_log_footer(stage: str, exit_code: int, elapsed_s: float,
+                           log_path: Path, extra: dict | None = None) -> None:
+    """Close the log with the exit code and elapsed time.
+
+    These two lines are what make a log self-describing: read off Drive
+    through the MCP, with no notebook and no stdout, you can tell which stage
+    failed, why it failed, and whether it was slow or fast.
+    """
+    status = "ok" if exit_code == 0 else "FAILED"
+    lines = [
+        "",
+        "#" + "-" * 78,
+        f"# {LOG_SUMMARY} {stage}: {status}",
+        f"# {LOG_EXIT} {stage} exit_code={exit_code} elapsed_s={elapsed_s:.2f}",
+    ]
+    for key, value in (extra or {}).items():
+        lines.append(f"# {key:<16}: {value}")
+    lines.append(f"# finished       : {_now()}")
+    lines.append(f"# row counts, if any, are in outputs/manifest_index.json")
+    append_stage_log(log_path, "\n".join(lines) + "\n")
+
+
+class _TerminalLineSplitter:
+    """Collapse carriage-return redraws into plain lines.
+
+    tqdm redraws a bar in place with a bare `\\r`. Forwarding that raw gives a
+    correct terminal but a log full of redraw fragments, so the file keeps only
+    the state before each newline.
+
+    The trap is that a bare `\\r` and a CRLF pair look alike until you look at
+    the next byte. On Windows the child's stdout is in text mode, so every
+    newline it writes arrives as `\\r\\n`; treating those as redraw-then-newline
+    discards the whole line and silently empties the log.
+    """
+
+    def __init__(self) -> None:
+        self._pending = ""
+
+    def feed(self, chunk: str) -> str:
+        out: list[str] = []
+        self._pending += chunk
+        while True:
+            nl = self._pending.find("\n")
+            cr = self._pending.find("\r")
+            if nl == -1 and cr == -1:
+                break
+            if cr != -1 and (nl == -1 or cr < nl):
+                if cr + 1 == len(self._pending):
+                    # A trailing \r cannot be classified yet: the next chunk may
+                    # start with \n and make this a CRLF. Wait for it.
+                    break
+                if self._pending[cr + 1] == "\n":
+                    out.append(_ANSI.sub("", self._pending[:cr]))
+                    self._pending = self._pending[cr + 2:]
+                else:
+                    self._pending = self._pending[cr + 1:]  # redraw: discard
+                continue
+            out.append(_ANSI.sub("", self._pending[:nl]))
+            self._pending = self._pending[nl + 1:]
+        return "".join(line + "\n" for line in out)
+
+    def flush(self) -> str:
+        if not self._pending:
+            return ""
+        tail = _ANSI.sub("", self._pending)
+        self._pending = ""
+        return tail + "\n" if tail.strip() else ""
+
+
+def run_stage(stage: str, argv: list[str] | None = None, cwd: Path | None = None,
+              log_path: Path | None = None, header_extra: dict | None = None,
+              footer_extra: dict | None = None,
+              aggregate: Path | None = None) -> dict:
+    """Run one stage as a subprocess, logging it.
+
+    Returns {"stage", "exit_code", "elapsed_s", "log"} so the caller never has
+    to parse its own log back. The child inherits stdout and stderr merged, so a
+    tqdm bar on stderr still reaches the notebook. This wrapper is the single
+    writer of the log, which is why the footer can carry a real exit code (see
+    the note above).
+    """
+    argv = list(argv or [f"{stage}.py"])
+    work = Path(cwd) if cwd else Path(__file__).resolve().parent
+    LOGS.mkdir(parents=True, exist_ok=True)
+    path = write_stage_log_header(stage, argv, header_extra, log_path)
+    append_stage_log(path, f"$ {' '.join(argv)}\n")
+    if aggregate is not None:
+        aggregate.parent.mkdir(parents=True, exist_ok=True)
+
+    started = time.perf_counter()
+    import _progress as _prog
+
+    # The child always sees a rendering parent (us), so it emits `#PROG`
+    # events instead of drawing its own bar. What we do with them depends on
+    # where *we* are: under a notebook runner we forward them raw so the
+    # kernel draws; in a terminal we draw fixed bars here; otherwise the log
+    # and the console get plain phase markers.
+    child_env = dict(os.environ)
+    child_env[_prog.PARENT_FLAG] = "1"
+    proc = subprocess.Popen(
+        [sys.executable, *argv],
+        cwd=str(work),
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        bufsize=0,
+        env=child_env,
+    )
+    splitter = _TerminalLineSplitter()
+    # Read raw bytes, not text. With text=True the pipe runs in universal
+    # newlines mode, which rewrites \r as \n before the splitter can see it -
+    # so every tqdm redraw would land in the log as its own line. Binary reads
+    # keep \r intact and let the splitter collapse it. The incremental decoder
+    # handles a multi-byte character split across two reads.
+    decoder = codecs.getincrementaldecoder("utf-8")(errors="replace")
+    out = sys.stdout.buffer if hasattr(sys.stdout, "buffer") else None
+
+    def _console_write(text: str) -> None:
+        if out is not None:
+            out.write(text.encode("utf-8", errors="replace"))
+            out.flush()
+        else:  # pragma: no cover - a stdout without a buffer
+            sys.stdout.write(text)
+            sys.stdout.flush()
+
+    forward_prog = _prog.parent_present() and _prog.is_enabled()
+    display = None
+    if _prog.is_enabled() and not forward_prog:
+        if sys.stderr.isatty() and _prog.has_tqdm():
+            from tqdm.std import tqdm as _std_tqdm
+
+            display = _prog.TqdmDisplay(_std_tqdm)
+    mark_state: dict = {}
+
+    def _handle_line(line: str) -> None:
+        """Route one complete output line to console and/or log."""
+        event = _prog.parse_line(line) if _prog.is_enabled() else None
+        if event is None:
+            _console_write(line)
+            append_stage_log(path, line)
+            return
+        # A progress event: the raw JSON never reaches the log. The log keeps
+        # a phase marker (`# progress <desc>: n/total`), which says which
+        # phase was running without burying the diagnosis in redraws.
+        phase = _prog.is_phase_change(event, mark_state)
+        marker = _prog.format_marker(event) + "\n"
+        if phase:
+            append_stage_log(path, marker)
+        if forward_prog:
+            # Our own reader draws; hand it the untouched event line.
+            _console_write(line if line.endswith("\n") else line + "\n")
+        elif display is not None:
+            display.update(event)
+        elif phase:
+            # No bars here (piped output, CI): the marker is the display.
+            _console_write(marker)
+
+    try:
+        assert proc.stdout is not None
+        fd = proc.stdout.fileno()
+        while True:
+            chunk = os.read(fd, 65536)
+            if not chunk:
+                break
+            text = decoder.decode(chunk)
+            for cooked in splitter.feed(text).splitlines(keepends=True):
+                _handle_line(cooked)
+        for cooked in splitter.feed(decoder.decode(b"", True)).splitlines(keepends=True):
+            _handle_line(cooked)
+        tail = splitter.flush()
+        if tail:
+            _handle_line(tail)
+        proc.wait()
+    finally:
+        if display is not None:
+            display.close()
+        if proc.stdout is not None:
+            proc.stdout.close()
+
+    exit_code = proc.returncode
+    elapsed = time.perf_counter() - started
+    write_stage_log_footer(stage, exit_code, elapsed, path, footer_extra)
+    if aggregate is not None:
+        with aggregate.open("a", encoding="utf-8") as fh:
+            fh.write(f"\n{'=' * 80}\n== {stage}  exit={exit_code}  {elapsed:.2f}s\n{'=' * 80}\n")
+            fh.write(path.read_text(encoding="utf-8", errors="replace"))
+            fh.write("\n")
+    print(f"[{stage}] exit={exit_code} elapsed={elapsed:.2f}s -> {path}")
+    return {
+        "stage": stage,
+        "exit_code": exit_code,
+        "elapsed_s": elapsed,
+        "log": str(path),
+    }
+
+
+def write_logs_manifest(entries: dict[str, dict], name: str = "manifest_index.json") -> Path:
+    """Publish the log index so a reader can find each log without listing Drive.
+
+    `entries` maps stage -> {"exit_code", "elapsed_s", "log"}. The log files live
+    on Drive, so without an index there is no way to locate them from a
+    manifest read; with one, `manifest_index.json` names every path and every
+    exit code.
+    """
+    stages = {}
+    for stage, info in entries.items():
+        stages[stage] = {
+            "log": rel_path(info["log"]),
+            "exit_code": info.get("exit_code"),
+            "elapsed_s": round(float(info.get("elapsed_s", 0.0)), 2),
+        }
+    return write_manifest({
+        "logs": {
+            "dir": rel_path(LOGS),
+            "run_all": rel_path(LOGS / "run_all.log"),
+            "stages": stages,
+        }
+    }, name=name)

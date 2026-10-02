@@ -300,3 +300,41 @@ decision 13 prefers the loop.
    publishable result, but it is a skill paper rather than an AI paper, and
    EAAI is a harder sell for it. The floor is Q1; a Q2/Q3 outcome is the more
    likely one.
+## 8. Run observability
+
+Two decisions were taken because the compute runs in Colab and the runtime is
+disposable: a run that cannot be inspected after the fact is a run that has to
+be babysited, and that does not scale past a handful of stages.
+
+**A stage log that stands on its own.** `run_all.py` writes
+`outputs/logs/<stage>.log` with a header (stage, command, start timestamp,
+`paths_report()`, which mode is active), the child's merged output, and a footer
+with the real exit code and elapsed time. Read through the Drive MCP with no
+notebook and no console, that file answers which stage failed, why, and how long
+it took.
+
+**The footer has to be written by Python.** The obvious shell design —
+`python stage.py 2>&1 | tee log`, then `echo "exit=$?"` — silently fails: the
+footer goes to the shell's stdout, which is downstream of `tee`, so it never
+reaches the file, and a footer written earlier cannot know the exit code. Hence
+`_common.run_stage` owns the whole file and streams it itself.
+
+That split is also what makes `tqdm` usable in both places at once: raw bytes go
+to the terminal so the bar animates, and the same bytes go to the log with
+carriage returns collapsed and ANSI stripped, so the file is plain text. On
+Windows the child's text-mode stdout delivers every newline as `\r\n`, and a
+bare `\r` is indistinguishable from it until you read the next byte. Reading the
+child in text mode instead of binary is not a style choice: universal newlines
+rewrites `\r` to `\n` before the splitter can see it, and the log comes out
+empty while the terminal looks perfect. That is what the regression tests in
+`tests/test_stage_logging.py` pin down.
+
+**Fixed filenames, overwritten each run.** A timestamped log name would mint a
+new Drive file per run, and a new Drive file means a new Colab URL and a new
+runtime session. `paper_drive_sync.py` lists only logs that exist, so a fresh
+clone syncs code alone and a half-finished run syncs exactly what it produced.
+
+**Bars only where there is time.** `tqdm` sits on the fold loops in `03`, `04`
+and `05` and on the offset-day loop in `seasonal_sigma_hq`, which is the slowest
+operation in `03`. Stages `01` and `02` are vectorised pandas and carry no bar:
+a progress indicator over an instant operation is decoration.

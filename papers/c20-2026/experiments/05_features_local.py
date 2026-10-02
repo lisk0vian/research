@@ -29,7 +29,17 @@ import json
 import numpy as np
 import pandas as pd
 
-from _common import OUTPUTS, PROCESSED, ensure_dirs, load_config, paths_report, write_manifest
+from _common import (
+    OUTPUTS,
+    PROCESSED,
+    atomic_write_csv,
+    ensure_dirs,
+    load_config,
+    paths_report,
+    progress,
+    rel_path,
+    write_manifest,
+)
 from _harmonic import doy_fractional, eval_harmonic, fit_harmonic
 
 DAILY_CSV = PROCESSED / "daily.csv"
@@ -205,13 +215,13 @@ def main() -> None:
     feature_cols: list[str] = []
     summary: dict[str, dict] = {}
 
-    for fold in folds:
+    for fold in progress(folds, desc="features fold", unit="fold", level="fold"):
         out = compute_fold_features(daily, issuances, fold, cfg)
         if out.empty:
             print(f"[{fold['id']}] no issuances")
             continue
         path = PROCESSED / f"features_{fold['id']}.csv"
-        out.to_csv(path, index=False, encoding="utf-8")
+        atomic_write_csv(out, path)
 
         if not feature_cols:
             feature_cols = [c for c in out.columns
@@ -226,7 +236,7 @@ def main() -> None:
             "rows": int(len(out)),
             "n_features": len(feature_cols),
             "missing_pct": {k: float(v) for k, v in missing.items()},
-            "file": f"data/processed/features_{fold['id']}.csv",
+            "file": rel_path(path),
         }
 
     print(f"\nfeature columns ({len(feature_cols)}): {', '.join(feature_cols)}")

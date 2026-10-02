@@ -40,9 +40,13 @@ import pandas as pd
 from _common import (
     OUTPUTS,
     PROCESSED,
+    atomic_write_csv,
+    atomic_write_json,
     ensure_dirs,
     load_config,
     paths_report,
+    progress,
+    rel_path,
     write_manifest,
 )
 from _harmonic import (
@@ -101,7 +105,7 @@ def horizon_windows(horizons: dict) -> dict[str, tuple[int, int]]:
 
 
 def seasonal_sigma_hq(resid_dates, residuals: np.ndarray, horizon: tuple[int, int],
-                      quarters=range(4)) -> dict[str, float]:
+                      quarters=range(4), label: str = "") -> dict[str, float]:
     """Residual SD per quarter, using only residuals from that horizon's window.
 
     `residuals` are the anomaly residuals of the days inside (lag_start, lag_end]
@@ -113,10 +117,15 @@ def seasonal_sigma_hq(resid_dates, residuals: np.ndarray, horizon: tuple[int, in
     lag0, lag1 = horizon
     # A day t belongs to this horizon's window when (t - issuance) in [lag0, lag1].
     in_window = np.zeros(len(idx), dtype=bool)
-    for offset in range(lag0, lag1 + 1):
+    # One pass per offset day, and each pass formats the whole index to
+    # strings. For W3_4 that is 14 string formats of every day in the training
+    # window, which is the slowest thing this stage does, so it gets the bar.
+    keys = pd.Index(idx.strftime("%Y-%m-%d"))
+    offsets = range(lag0, lag1 + 1)
+    for offset in progress(offsets, desc=f"sigma {label or horizon[0]}",
+                           unit="d", total=lag1 - lag0 + 1, level="step"):
         shifted = idx - pd.Timedelta(days=offset)
-        key = pd.Index(shifted.strftime("%Y-%m-%d"))
-        in_window |= key.isin(pd.Index(idx.strftime("%Y-%m-%d")))
+        in_window |= pd.Index(shifted.strftime("%Y-%m-%d")).isin(keys)
 
     qu = quarter_of(idx)
     out: dict[str, float] = {}
@@ -212,7 +221,8 @@ def compute_fold_climatology(daily: pd.DataFrame, fold: dict, cfg: dict) -> tupl
     resid_dates = out.loc[out["valid"] & out["A_C2"].notna(), "date"]
     resid = out.loc[out["valid"] & out["A_C2"].notna(), "A_C2"].to_numpy(dtype="float64")
     windows = horizon_windows(cfg.get("target", {}).get("horizons", {"W1": [1, 7]}))
-    sigma = {h: seasonal_sigma_hq(resid_dates, resid, win) for h, win in windows.items()}
+    sigma = {h: seasonal_sigma_hq(resid_dates, resid, win, label=h)
+             for h, win in windows.items()}
 
     meta = {
         "fold": fold["id"],
@@ -253,11 +263,10 @@ def main() -> None:
     merged: pd.DataFrame | None = None
     summaries: dict[str, dict] = {}
 
-    for fold in folds:
+    for fold in progress(folds, desc="climatology fold", unit="fold", level="fold"):
         out, meta = compute_fold_climatology(daily, fold, cfg)
         path = OUTPUTS / "climatology" / f"{fold['id']}.json"
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(json.dumps(meta, indent=2, ensure_ascii=False), encoding="utf-8")
+        atomic_write_json(meta, path)
 
         # Evaluation days belong to exactly one fold: the one that tests them.
         test_year = fold["test"]
@@ -285,7 +294,7 @@ def main() -> None:
 
     assert merged is not None
     merged = merged.sort_values("date").reset_index(drop=True)
-    merged.to_csv(CLIM_CSV, index=False, encoding="utf-8")
+    atomic_write_csv(merged, CLIM_CSV)
 
     print(f"\nevaluation rows (test years only): {len(merged)} "
           f"({merged['date'].min().date()}..{merged['date'].max().date()})")
@@ -294,8 +303,8 @@ def main() -> None:
 
     write_manifest({"climatology": summaries,
                     "climatology_files": {
-                        "daily_clim": "data/processed/daily_clim.csv",
-                        "per_fold": "outputs/climatology/<fold>.json",
+                        "daily_clim": rel_path(CLIM_CSV),
+                        "per_fold": f"{rel_path(OUTPUTS / 'climatology')}/<fold>.json",
                     }})
     for h in ("W1", "W2", "W3_4"):
         if h not in summaries[folds[-1]["id"]]["sigma_hq"]:

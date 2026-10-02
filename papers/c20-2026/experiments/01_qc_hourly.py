@@ -137,11 +137,11 @@ def main() -> None:
 
     # QC output is an intermediate: it feeds 02, so it stays in data/processed
     # (gitignored, regenerable) rather than polluting outputs/.
-    from _common import PROCESSED
+    from _common import PROCESSED, atomic_write_csv
 
     out = PROCESSED / "hourly_qc.csv"
     keep = ["timestamp", *NUMERIC_VARS, *QC_COLUMNS]
-    df[keep].to_csv(out, index=False, encoding="utf-8")
+    atomic_write_csv(df[keep], out)
 
     summary = {}
     for col in QC_COLUMNS:

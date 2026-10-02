@@ -96,3 +96,37 @@ inference:
   secondary_calibration_criterion: {interval: 0.90, coverage_range: [0.85, 0.95]}
 extensions_enabled: {E1_LSTM_TFT: false, E2_multistation: false, E3_S2S_benchmark: false,
                      E4_long_climatology: false, E5_Tmin: false}
+
+# Seeds are declared here, not chosen by the stage that needs them: the stages
+# that consume randomness (07 GBM, 09 moving-block bootstrap) do not exist yet,
+# so there is nothing to seed today. Declaring the block now means whoever
+# writes 07 reads the number instead of inventing one.
+# Every stochastic stage takes its seed from `seeds[<key>]`; a stage may not
+# hardcode one.
+seeds:
+  master: 20260930
+  gbm_local: 101
+  gbm_largescale: 202
+  bootstrap_crpss: 303
+  bootstrap_robustness: 404
+
+# Schema used by _sample_data.py to synthesise a local dataset for functional
+# testing without touching data/raw/dataset.csv. "huancayo" is what the pipeline
+# consumes today; when the multi-station migration lands this becomes the
+# SENAMHI GBON schema and the switch is a one-line config change.
+sample_data:
+  schema: huancayo
+  seed: 42
+  years: 2
+
+# Progress display (see experiments/_progress.py). Stages emit `#PROG` event
+# lines; whoever reads draws. These flags decide which levels get a bar. Phase
+# markers still reach the log for every level, so hiding a bar never hides the
+# diagnosis. `EXP_PROGRESS=off` silences the whole protocol (tests, CI);
+# `TQDM_*` stays as the fine aesthetic override below it.
+progress:
+  mininterval_s: 0.1
+  show_stage_bar: true
+  show_fold_bar: true
+  show_step_bar: true
+  log_phase_markers: true

@@ -1,8 +1,26 @@
-# Declared only — not installed yet (author request).
-pandas
-numpy
-scikit-learn
-lightgbm
-pyyaml
-click
-pytest
+# Experiment environment for c20-2026, on the Colab runtime (Python 3.12).
+#
+# Ranges, not exact pins. An exact pin describes one machine on one day and goes
+# quietly wrong when Colab's image moves under it, with nothing to signal that
+# the pin no longer matches what runs. What actually ran is recorded instead, in
+# outputs/run_meta.json, where run_all.py writes the imported versions of pandas,
+# numpy, pyyaml, scikit-learn and lightgbm on every run.
+#
+# Every range is stated for 3.12 compatibility: no dependency here needs 3.13+,
+# and `lxml` is the cautionary case (it compiles from source on 3.14 because no
+# cp314 wheel exists for the version that resolves there).
+#
+# Local development should use 3.12 as well, so what you run locally is what
+# Colab runs.
+
+pandas>=2.0,<4.0
+numpy>=1.24,<3.0
+scikit-learn>=1.3,<2.0
+lightgbm>=4.0,<5.0
+pyyaml>=6.0,<7.0
+tqdm>=4.66,<5.0
+# Test-only. `pytest` runs the repository's own dependencies, not this file,
+# but a local run of papers/c20-2026/tests needs it.
+pytest>=7.0,<9.0
+
+# Removed: `click`. Declared but imported by nothing; run_all.py uses argparse.

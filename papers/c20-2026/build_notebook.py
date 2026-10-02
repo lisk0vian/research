@@ -111,10 +111,17 @@ steps = sorted(p.stem.split("_")[0] for p in pathlib.Path(
     "/content/c20-2026/experiments").glob("[0-9][0-9]_*.py"))
 print(f"pasos declarados: {steps}")"""),
 
-    ("code", """# Dependencias
-%cd /content/c20-2026/experiments
-!pip install -r requirements-experiments.txt --quiet
-!python -c "import pandas, numpy, sklearn, lightgbm, yaml, click; print('[ok] deps import OK')"
+    ("code", """# Dependencias. Con marca: si ya se instalaron en ESTE runtime, no se repite.
+# Perder el runtime es lo unico que hay que recuperar, y por eso esto tiene marca.
+import os, subprocess, sys
+_MARK = "/content/.deps_c20_2026"
+if os.path.exists(_MARK):
+    print("[skip] deps ya instaladas en este runtime")
+else:
+    subprocess.call([sys.executable, "-m", "pip", "install", "-r",
+                     "requirements-experiments.txt", "--quiet"], check=False)
+    open(_MARK, "w").write("installed")
+    print("[ok] deps instaladas")
 !python --version"""),
 
     ("md", """## 4. Etapas del pipeline (una celda por paso)
@@ -123,51 +130,86 @@ Corre en orden. `02` depende del QC de `01`, así que no te saltes una.
 
 Los módulos `00`-`05` están implementados. `06` en adelante siguen siendo stubs: cuando fallen con `NotImplementedError`, implementalos local y repetí la última celda.
 
+Las etapas emiten eventos de progreso `#PROG` y la celda los dibuja como barras fijas con `tqdm.notebook`; en terminal local el mismo protocolo se dibuja con `tqdm.std`. Las etapas vectorizadas de `01` y `02` no iteran, pero igual reportan su avance a nivel etapa, así que siempre ves en qué paso estás.
+
 `06_features_largescale.py` necesita descargas externas (Niño CPC, RMM, ERA5) y su dominio/variables siguen marcados `TO_CONFIRM_D4` en `config.yaml`."""),
 
     ("md", """## 4b. Correr todo de una (recomendado)
 
-`00` a `04` se ejecutan en orden porque cada uno consume la salida del anterior. Esta celda los encadena y se detiene en el primer fallo."""),
+Las etapas se ejecutan en orden porque cada una consume la salida de la anterior. Esta celda las encadena, se detiene en el primer fallo, y deja un log por etapa en `outputs/logs/`.
 
-    ("code", '''%%bash
-# Encadena 00 -> 04. El compute corre en los servidores de Colab, no en tu maquina.
-# %%bash debe ser la PRIMERA linea de la celda; si no, Colab la parsea como Python.
-cd /content/c20-2026/experiments
-for s in 00_verify_source 01_qc_hourly 02_aggregate_daily 03_climatology \
-         04_make_issuances 05_features_local; do
-  echo "===== $s ====="
-  python "$s.py" || { echo "FALLO en $s"; break; }
-done
+Cada etapa escribe `outputs/logs/<etapa>.log` con header (comando, timestamp, rutas activas), la salida completa, y footer con **exit code y elapsed**. Ese footer va dentro del archivo, no en la consola: por eso el log se sostiene solo y se puede leer desde Drive sin el notebook.
+
+El nombre del archivo es fijo y se sobreescribe en cada corrida, asi que su id de Drive no cambia nunca. El agregado queda en `outputs/logs/run_all.log`."""),
+
+    ("code", '''# Corre 00 -> 10 en orden, con barras fijas dibujadas por el kernel.
+# Cada etapa es un subproceso que emite eventos #PROG y este runner los dibuja
+# como widgets que se quedan quietos (nada de \\r en la salida capturada).
+import sys
+sys.path.insert(0, "/content/c20-2026/experiments")
+from _progress import run_and_render
+
+rc = run_and_render([sys.executable, "run_all.py"], cwd="/content/c20-2026/experiments")
+print(f"[run_all exit={rc}]")
 '''),
 
-    ("code", '''# Paso 00: V1-V6 verificacion de fuente -> outputs/tables/T1_completeness.csv
-%cd /content/c20-2026/experiments
-!python 00_verify_source.py\n'''),
+    ("code", '''# Una etapa, con el prefijo numerico. Cambia solo el argumento.
+#
+#   paso("03")                    # abreviatura de 03_climatology (unica coincidencia)
+#   paso("03", "05")              # varias
+#   paso(desde="03", hasta="05")   # rango, inclusive
+#   paso("05", config="mi.yaml")  # otra config
+#
+# Cada paso es un SUBPROCESO que emite eventos #PROG; el runner los dibuja como
+# widgets fijos. El kernel no guarda estado entre ellos, asi que nada se pierde
+# si Colab recicla el runtime.
+import sys
+sys.path.insert(0, "/content/c20-2026/experiments")
+from _progress import run_and_render
 
-    ("code", '''# Paso 01: QC horario -> data/processed/hourly_qc.csv
-# Flags: missing_source (gap del proveedor), out_of_range, spike,
-# precip_event (tormenta convectiva, se conserva)
-%cd /content/c20-2026/experiments
-!python 01_qc_hourly.py\n'''),
+def paso(*etapas, **kw):
+    argv = [sys.executable, "run_all.py"]
+    if etapas:
+        argv += ["--only", *etapas]
+    if kw.get("desde") or kw.get("hasta"):
+        argv += ["--from", kw.get("desde", "00"), "--to", kw.get("hasta", "10")]
+    if kw.get("config"):
+        argv += ["--config", kw["config"]]
+    print("::", " ".join(argv[1:]))
+    return run_and_render(argv, cwd="/content/c20-2026/experiments")
 
-    ("code", '''# Paso 02: agregacion diaria local -> data/processed/daily.csv
-%cd /content/c20-2026/experiments
-!python 02_aggregate_daily.py\n'''),
+# Ejemplos:
+# paso("03")
+# paso("03", "05")
+# paso(desde="03", hasta="05")
+# paso("05", config="mi.yaml")
+'''),
 
-    ("code", '''# Paso 03: climatologias C1/C2/C3 + sigma_h,q + terciles, train-only por fold
-# -> data/processed/daily_clim.csv + outputs/climatology/<fold>.json
-%cd /content/c20-2026/experiments
-!python 03_climatology.py\n'''),
+    ("md", """### Que escribe cada etapa
 
-    ("code", '''# Paso 04: emisiones semanales, targets A^h_d y embargo de 28 dias
-# -> data/processed/issuances.csv (una fila por issue_date x horizonte x fold)
-%cd /content/c20-2026/experiments
-!python 04_make_issuances.py\n'''),
+| Etapa | Escribe |
+|---|---|
+| `00_verify_source` | `outputs/tables/T1_completeness.csv` (V1-V6) |
+| `01_qc_hourly` | `data/processed/hourly_qc.csv` |
+| `02_aggregate_daily` | `data/processed/daily.csv` |
+| `03_climatology` | `data/processed/daily_clim.csv` + `outputs/climatology/<fold>.json` |
+| `04_make_issuances` | `data/processed/issuances.csv` |
+| `05_features_local` | `data/processed/features_<fold>.csv` |
 
-    ("code", '''# Paso 05: predictores locales X_L (22 columnas, solo informacion <= d)
-# -> data/processed/features_<fold>.csv
-%cd /content/c20-2026/experiments
-!python 05_features_local.py\n'''),
+Todas las escrituras son atomicas (temporal hermano + `os.replace`): una
+desconexion a mitad de escritura deja el archivo anterior o nada, nunca un CSV
+a medias que la etapa siguiente leeria como completo.
+
+`run_all.py` ademas escribe `outputs/run_meta.json`: que etapas corrieron, con
+que commit, que versiones de pandas/numpy/etc. se importaron de verdad, y cuanto
+tardo cada una. Nombre fijo a proposito, porque un nombre con timestamp
+crearia un archivo nuevo de Drive en cada corrida.""",),
+
+    ("md", """### Leyendo los logs desde Drive
+
+Cada corrida deja su log en Drive, asi que sobrevive a que Colab recicle el runtime. Para revisar una corrida sin el notebook, leé `outputs/logs/<etapa>.log`: el footer dice que etapa fallo, con que exit code, y en cuanto tiempo.
+
+Los logs guardan marcadores de fase (`# progress <paso>: n/total`) en vez de barras: dicen qué fase corría sin enterrar el diagnóstico en redraws. El archivo es texto plano y se puede leer con cualquier herramienta."""),
 
     ("md", "## 5. Estado (solo lectura)"),
 
