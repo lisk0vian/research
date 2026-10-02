@@ -159,6 +159,14 @@ scratch/
 # ---- Pipeline run logs (verbose, regenerable) ----
 papers/*/outputs/logs/
 
+# ---- Regenerated figures and run manifests ----
+# Submission TIFFs are rebuilt by every run; only the PNG previews are versioned.
+papers/*/outputs/**/*.tiff
+papers/*/outputs/**/*.tif
+papers/*/outputs/requirements.txt
+MANIFEST.sha256
+*.zip
+
 # ---- Build-time copies of the journal extension ----
 # papers/<slug>/paper: Quarto's format-resources for the CAS extension are
 # copied (flattened) next to main.qmd, and scripts/paper_build.py syncs the

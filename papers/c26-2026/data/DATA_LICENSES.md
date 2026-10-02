@@ -4,7 +4,7 @@ The three input files are redistributed **unmodified**, exactly as downloaded, s
 
 ## 1. Missing-person reports (RENIPED extract)
 
-- **File:** `data/raw/DATASET_Personas_Desaparecidas_2019-01_2025-12.csv` (latin-1, 77,331 rows, 142,374 reports)
+- **File:** `data/raw/dataset.csv` (latin-1, 77,331 rows, 142,374 reports)
 - **Publisher:** Ministerio del Interior (MININTER), Dirección General de Información para la Seguridad.
 - **Dataset:** "Denuncias por desaparición de personas [MININTER]".
 - **Resource:** "DataSet Personas desaparecidas – Enero 2019 a Diciembre 2025", Plataforma Nacional de Datos Abiertos: <https://www.datosabiertos.gob.pe/dataset/personas-desaparecidas/resource/f49ae77f-8822-45ea-aa16-911d677e303d>
@@ -15,7 +15,7 @@ The three input files are redistributed **unmodified**, exactly as downloaded, s
 
 ## 2. Population denominators (INEI)
 
-- **File:** `data/external/INEI_poblacion_proyectada_2018-2026_cuadro01.xlsx` (Table No. 01)
+- **File:** `data/external/population.xlsx` (Table No. 01)
 - **Publisher:** Instituto Nacional de Estadística e Informática (INEI).
 - **Title:** "Perú: Población total proyectada al 30 de junio de cada año, según departamento, provincia y distrito, 2018–2026".
 - **URL:** <https://www.gob.pe/institucion/inei/informes-publicaciones/6894980-peru-poblacion-total-proyectada-al-30-de-junio-de-cada-ano-segun-departamento-provincia-y-distrito-2018-2026>
@@ -24,7 +24,7 @@ The three input files are redistributed **unmodified**, exactly as downloaded, s
 
 ## 3. Provincial boundaries
 
-- **File:** `data/external/limites_provinciales_peru_simplificados.geojson`
+- **File:** `data/external/boundaries.geojson`
 - **Source:** J.E. Sanchez Rosas, *peru-geojson*: <https://github.com/juaneladio/peru-geojson>. The file is `peru_provincial_simple.geojson`, downloaded from <https://raw.githubusercontent.com/juaneladio/peru-geojson/master/peru_provincial_simple.geojson>.
 - **License:** Mozilla Public License 2.0 (MPL-2.0). The file is distributed unmodified under MPL-2.0 (<https://mozilla.org/MPL/2.0/>). The dissolution into 26 territorial units happens in memory at run time (`src/reniped/spatial.py`), and no modified copy is stored.
 - **SHA-256:** `3663a2b58e52a6bba9c43acabe33e7d9bb065e54551edd9aa375a411fd0c7fa1`

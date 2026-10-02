@@ -218,7 +218,6 @@ restructure them, and do not treat them as the reference layout.
 |---|---|
 | `C20-202610-temperature/` | Notebook-only pipeline; data `data/EstacionEMA_2018_2025.csv`. |
 | `C25-202620-violence/` | Early stage. |
-| `C26-202609-missingpersons/` | Information Sciences submission; `src/reniped/`, `run_all.py`. |
 | `C20-2026-Reproducible GeoAi/` | Early stage. |
 
 New work always goes under `papers/` with the structure in section 2.

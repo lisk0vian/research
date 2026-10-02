@@ -1,6 +1,6 @@
 """Manuscript figures (Figs. 1-6) in Spanish (internal review) and English (submission).
 
-The figures are built only from the tables in results/tables, the territory-month panel
+The figures are built only from the tables in outputs/tables, the territory-month panel
 (data/processed/panel_departamento_mes.csv, for Fig. 2) and the geometry of the 26 territorial
 units, so they can be regenerated without rerunning the analysis.
 Elsevier artwork guidelines: double-column width 190 mm; printed text of at least 7 pt (6 pt for

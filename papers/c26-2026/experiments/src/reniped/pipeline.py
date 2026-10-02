@@ -56,16 +56,21 @@ def _t_index(df):
 
 # ---------------------------------------------------------------- stage 0
 def stage_init(root, plan=PLAN):
-    """Freeze the analysis plan, check its SHA-256 lock and open the results store."""
+    """Freeze the analysis plan, check its SHA-256 lock and open the results store.
+
+    `root` is the experiments/ folder (the package and the frozen plan live
+    there); the data and outputs folders are one level up, in the paper folder.
+    """
     root = Path(root)
+    paper = root.parent
     sha, fixed = freeze_plan(root, plan)
-    res = ResultsStore(root / "results")
+    res = ResultsStore(paper / "outputs")
     res.set("paquete", {"version": __version__})
     res.set("plan", {"version": plan["version_plan"], "sha256": sha, "fijado_utc": fixed,
                      "estado": plan["estado"]})
     print(f"Plan {plan['version_plan']} congelado | SHA-256 {sha[:16]}… | {plan['estado']}")
-    return {"root": root, "plan": plan, "res": res, "seed": plan["semilla"],
-            "paths": data_paths(root, plan)}
+    return {"root": paper, "experiments": root, "plan": plan, "res": res, "seed": plan["semilla"],
+            "paths": data_paths(paper, plan)}
 
 
 # ---------------------------------------------------------------- stage 1
@@ -448,7 +453,7 @@ def stage_article_figures(ctx):
     with res.timer("9_figuras_articulo"):
         out = res.root / "figures_article"
         files = build_all(res.tables, ctx["units"], res.data["seleccion_k"]["K_elegido"], out, ctx["panel"])
-        res.set("figuras_articulo", {"carpeta": "results/figures_article", "archivos": files})
+        res.set("figuras_articulo", {"carpeta": "outputs/figures_article", "archivos": files})
     print("\n".join(files))
     return ctx
 

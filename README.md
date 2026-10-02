@@ -26,6 +26,7 @@ rules are enforced in CI (see [`AGENTS.md`](./AGENTS.md)).
 |---|---|---|---|---|
 | `C15-2026` | A Reproducible Methodological Framework for Prosecutorial Congestion Risk Prediction | Machine Learning with Applications | `Revision` | [`papers/c15-2026/`](./papers/c15-2026/) |
 | `C21-2026` | Early Prediction of Low Birth Weight in a National Peruvian Cohort | Discover Artificial Intelligence | `Revision` | [`papers/c21-2026/`](./papers/c21-2026/) |
+| `C26-2026` | A Reproducible GeoAI Framework for Explainable Spatiotemporal Analysis of National Missing-Person Registers | Information Sciences | `Draft` | [`papers/c26-2026/`](./papers/c26-2026/) |
 
 ### Legacy projects (pre-standardization)
 
@@ -33,7 +34,6 @@ rules are enforced in CI (see [`AGENTS.md`](./AGENTS.md)).
 |---|---|---|---|
 | `C20-2026` | Subseasonal Temperature Forecasting in Andean Stations | `In Progress` | [`C20-202610-temperature/`](./C20-202610-temperature/) |
 | `C25-2026` | Violence analysis | `In Progress` | [`C25-202620-violence/`](./C25-202620-violence/) |
-| `C26-2026` | Explainable Spatiotemporal Analysis of National Missing Persons Records | `In Progress` | [`C26-202609-missingpersons/`](./C26-202609-missingpersons/) |
 | `C20-GeoAI` | Reproducible GeoAI | `In Progress` | [`C20-2026-Reproducible GeoAi/`](./C20-2026-Reproducible%20GeoAi/) |
 
 ## Structure of an active paper

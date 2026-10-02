@@ -1,16 +1,28 @@
 """Tests of the critical components of the pipeline (synthetic data, < 1 min).
 
-Run from the repository root:  python -m pytest -q tests   (or  python tests/test_core.py)
+Run from the repository root:  python -m pytest -q papers/c26-2026/tests
+
+The suite needs the paper's scientific stack (see experiments/requirements-
+experiments.txt); per AGENTS.md §6 the repository test environment is stdlib +
+pytest + numpy + pandas, so the module skips instead of failing to import when
+that stack is absent.
 """
 import json
 import math
 import sys
 from pathlib import Path
 
-import numpy as np
-import pandas as pd
+import pytest
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
+for _mod in ("scipy", "sklearn", "statsmodels", "matplotlib", "openpyxl",
+             "geopandas", "shapely", "pyproj", "libpysal", "esda"):
+    pytest.importorskip(_mod, reason="c26-2026 tests require the paper environment "
+                                     "(experiments/requirements-experiments.txt)")
+
+import numpy as np                                  # noqa: E402
+import pandas as pd                                 # noqa: E402
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "experiments" / "src"))
 
 from reniped.clustering import LabeledKMeans                      # noqa: E402
 from reniped.panel import build_panel                              # noqa: E402

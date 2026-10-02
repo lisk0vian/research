@@ -78,7 +78,7 @@ class ResultsStore:
         self.timings[stage] = round(time.perf_counter() - t0, 2)
         print(f"  [tiempo] {stage}: {self.timings[stage]:.1f} s")
 
-    def save(self, name="FINAL_RESULTS.json"):
+    def save(self, name="results.json"):
         self.data["tiempos_por_etapa_s"] = self.timings
         path = self.root / name
         txt = json.dumps(sanitize(self.data), indent=2, ensure_ascii=False, allow_nan=False)

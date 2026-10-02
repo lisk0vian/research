@@ -13,7 +13,7 @@ from pathlib import Path
 HUECOS_ENE_2023 = ["PIURA", "PUNO", "TACNA", "SAN MARTIN", "MOQUEGUA", "MADRE DE DIOS"]
 
 PLAN = {
-    "version_plan": "3.3.2",
+    "version_plan": "3.3.3",
     "estado": "Plan congelado para la revisión; no es un preregistro público.",
     "historial": [
         {"version": "2A-1.0", "fecha": "2026-09-25",
@@ -84,16 +84,30 @@ PLAN = {
                      "en la escala original; etiquetas de estado en data/processed.",
                      "T10: columna q_BY (Benjamini-Yekutieli) junto a q_FDR (Benjamini-Hochberg).",
                      "Ninguna otra cifra cambia."]},
+        {"version": "3.3.3", "fecha": "2026-10-02",
+         "resumen": "Migración a papers/c26-2026: los archivos de entrada pasan a nombres "
+                    "cortos en inglés y minúsculas.",
+         "motivo": "Los nombres originales mezclaban mayúsculas, español y fechas, lo que "
+                   "dificultaba su uso en scripts y su lectura por herramientas automáticas. "
+                   "El contenido de los tres archivos es idéntico byte a byte: solo cambia el "
+                   "nombre canónico, no los SHA-256.",
+         "cambios": ["data/raw/DATASET_Personas_Desaparecidas_2019-01_2025-12.csv -> "
+                     "data/raw/dataset.csv.",
+                     "data/external/INEI_poblacion_proyectada_2018-2026_cuadro01.xlsx -> "
+                     "data/external/population.xlsx.",
+                     "data/external/limites_provinciales_peru_simplificados.geojson -> "
+                     "data/external/boundaries.geojson.",
+                     "Sin cambios analíticos: ninguna cifra del artículo cambia."]},
     ],
     "datos": {
         "csv_reniped": {
-            "nombre_canonico": "DATASET_Personas_Desaparecidas_2019-01_2025-12.csv",
+            "nombre_canonico": "dataset.csv",
             "sha256": "c41ebcced14fdf86bbf17db9f54bb381d73c0464a402f22ac5548a7899ef0e32",
             "fuente": "MININTER-DGIS, Plataforma Nacional de Datos Abiertos, recurso "
                       "f49ae77f-8822-45ea-aa16-911d677e303d (licencia ODC-By)",
             "codificacion": "latin1"},
         "xlsx_inei": {
-            "nombre_canonico": "INEI_poblacion_proyectada_2018-2026_cuadro01.xlsx",
+            "nombre_canonico": "population.xlsx",
             "sha256": "9436df29b883fd4a9db3705040a6668ff4efe7047c2643249b6b6bedd90d5c8b",
             "fuente": "INEI, Perú: Población total proyectada al 30 de junio de cada año, "
                       "según departamento, provincia y distrito, 2018-2026 (Cuadro N.° 01); "
@@ -101,7 +115,7 @@ PLAN = {
         "geometria": {
             "url": "https://raw.githubusercontent.com/juaneladio/peru-geojson/master/"
                    "peru_provincial_simple.geojson",
-            "nombre_canonico": "limites_provinciales_peru_simplificados.geojson",
+            "nombre_canonico": "boundaries.geojson",
             "sha256": "3663a2b58e52a6bba9c43acabe33e7d9bb065e54551edd9aa375a411fd0c7fa1",
             "campo_codigo_provincia": "FIRST_IDPR",
             "fuente": "Capa provincial simplificada de terceros (repositorio GitHub "
