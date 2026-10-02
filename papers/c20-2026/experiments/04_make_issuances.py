@@ -33,9 +33,12 @@ import pandas as pd
 from _common import (
     OUTPUTS,
     PROCESSED,
+    atomic_write_csv,
     ensure_dirs,
     load_config,
     paths_report,
+    progress,
+    rel_path,
     write_manifest,
 )
 from _harmonic import doy_fractional, eval_harmonic
@@ -246,12 +249,12 @@ def main() -> None:
     frames = [compute_fold_issuances(daily, f, cfg) for f in folds]
     issuances = pd.concat([f for f in frames if not f.empty], ignore_index=True)
     out_path = PROCESSED / "issuances.csv"
-    issuances.to_csv(out_path, index=False, encoding="utf-8")
+    atomic_write_csv(issuances, out_path)
 
     weekday_name = cfg.get("issuance", {}).get("weekday", "monday")
     embargo = cfg.get("validation", {}).get("embargo_days", 28)
     print(f"issuances: {len(issuances)} rows | weekday={weekday_name} embargo={embargo}d")
-    for fold in folds:
+    for fold in progress(folds, desc="issuances fold", unit="fold"):
         sub = issuances[issuances["fold"] == fold["id"]]
         if sub.empty:
             print(f"[{fold['id']}] no issuances")
@@ -284,7 +287,7 @@ def main() -> None:
         for f in folds
     }
     write_manifest({"issuances": summary,
-                    "issuance_files": {"issuances": "data/processed/issuances.csv"}})
+                    "issuance_files": {"issuances": rel_path(out_path)}})
 
 
 if __name__ == "__main__":

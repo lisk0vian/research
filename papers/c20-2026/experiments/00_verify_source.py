@@ -96,14 +96,22 @@ def check_v4_coverage(df, cfg) -> dict:
         f["test"] for f in cfg.get("validation", {}).get("folds", [])
         if f.get("role") == "blind"
     ]
+    # A year absent from the frame is a coverage finding, not an exception.
+    # Stations carry different windows and a synthetic dataset carries a short
+    # one, so `per_day.loc[str(y)]` used to raise a bare KeyError naming nothing
+    # useful. per_day is indexed by timestamp, so membership is tested against
+    # the years the index actually holds.
+    present_years = set(per_day.index.year)
     complete_blind = [
         y for y in blind_years
-        if per_day.loc[str(y)].index.month.nunique() == 12
+        if y in present_years and per_day.loc[str(y)].index.month.nunique() == 12
     ] if len(blind_years) else []
+    missing_blind = [y for y in blind_years if y not in present_years]
     return {
         "check": "V4_coverage",
         "detail": f"{first} -> {last} | days={days} | days with <24h={incomplete_days} "
-        f"| declared={years_declared} | blind years fully present={complete_blind}",
+        f"| declared={years_declared} | blind years fully present={complete_blind}"
+        + (f" | blind years absent from the data={missing_blind}" if missing_blind else ""),
         "verdict": "ok" if incomplete_days == 0 and complete_blind else "REVIEW_coverage_gaps",
         "value": f"first={first};last={last};days={days}",
     }

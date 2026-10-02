@@ -18,7 +18,15 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
-from _common import NUMERIC_VARS, PROCESSED, ensure_dirs, load_config, paths_report, read_hourly
+from _common import (
+    NUMERIC_VARS,
+    PROCESSED,
+    atomic_write_csv,
+    ensure_dirs,
+    load_config,
+    paths_report,
+    read_hourly,
+)
 
 QC_PATH = PROCESSED / "hourly_qc.csv"
 
@@ -105,7 +113,7 @@ def main() -> None:
     print(paths_report())
     daily = aggregate(df, cfg)
     out = PROCESSED / "daily.csv"
-    daily.to_csv(out, index=False, encoding="utf-8")
+    atomic_write_csv(daily, out)
 
     n_days = len(daily)
     n_valid = int(daily["valid"].sum())
