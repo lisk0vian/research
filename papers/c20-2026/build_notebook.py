@@ -130,7 +130,7 @@ Corre en orden. `02` depende del QC de `01`, así que no te saltes una.
 
 Los módulos `00`-`05` están implementados. `06` en adelante siguen siendo stubs: cuando fallen con `NotImplementedError`, implementalos local y repetí la última celda.
 
-Las barras de progreso `tqdm` aparecen en las operaciones largas (ajuste de climatología por fold, `sigma_h,q`, panel de anomalías, Loop de issuances). Las etapas vectorizadas de `01` y `02` no las llevan: no hay nada que mostrar porque no hay loop.
+Las etapas emiten eventos de progreso `#PROG` y la celda los dibuja como barras fijas con `tqdm.notebook`; en terminal local el mismo protocolo se dibuja con `tqdm.std`. Las etapas vectorizadas de `01` y `02` no iteran, pero igual reportan su avance a nivel etapa, así que siempre ves en qué paso estás.
 
 `06_features_largescale.py` necesita descargas externas (Niño CPC, RMM, ERA5) y su dominio/variables siguen marcados `TO_CONFIRM_D4` en `config.yaml`."""),
 
@@ -142,39 +142,47 @@ Cada etapa escribe `outputs/logs/<etapa>.log` con header (comando, timestamp, ru
 
 El nombre del archivo es fijo y se sobreescribe en cada corrida, asi que su id de Drive no cambia nunca. El agregado queda en `outputs/logs/run_all.log`."""),
 
-    ("code", '''%%bash
-# Corre 00 -> 05 en orden. El compute corre en los servidores de Colab, no en tu maquina.
-# %%bash debe ser la PRIMERA linea de la celda; si no, Colab la parsea como Python.
-cd /content/c20-2026/experiments
-python run_all.py
+    ("code", '''# Corre 00 -> 10 en orden, con barras fijas dibujadas por el kernel.
+# Cada etapa es un subproceso que emite eventos #PROG y este runner los dibuja
+# como widgets que se quedan quietos (nada de \\r en la salida capturada).
+import sys
+sys.path.insert(0, "/content/c20-2026/experiments")
+from _progress import run_and_render
+
+rc = run_and_render([sys.executable, "run_all.py"], cwd="/content/c20-2026/experiments")
+print(f"[run_all exit={rc}]")
 '''),
 
     ("code", '''# Una etapa, con el prefijo numerico. Cambia solo el argumento.
 #
-#   --only 03        abreviatura de 03_climatology (unica coincidencia)
-#   --only 03 05     dos etapas
-#   --from 03 --to 05    rango, inclusive
-#   --config ruta.yaml    otra config; run_all la exporta a las etapas
+#   paso("03")                    # abreviatura de 03_climatology (unica coincidencia)
+#   paso("03", "05")              # varias
+#   paso(desde="03", hasta="05")   # rango, inclusive
+#   paso("05", config="mi.yaml")  # otra config
 #
-# Cada paso es un SUBPROCESO: el kernel no guarda estado entre ellos, asi que
-# nada se pierde si Colab recicla el runtime. Lo unico que se pierde es el pip
-# instalado, y por eso la celda de dependencias lleva marca.
+# Cada paso es un SUBPROCESO que emite eventos #PROG; el runner los dibuja como
+# widgets fijos. El kernel no guarda estado entre ellos, asi que nada se pierde
+# si Colab recicla el runtime.
+import sys
+sys.path.insert(0, "/content/c20-2026/experiments")
+from _progress import run_and_render
+
 def paso(*etapas, **kw):
-    import subprocess, sys
-    sel = " ".join(etapas)
+    argv = [sys.executable, "run_all.py"]
+    if etapas:
+        argv += ["--only", *etapas]
     if kw.get("desde") or kw.get("hasta"):
-        sel = f"--from {kw.get('desde','00')} --to {kw.get('hasta','10')}"
+        argv += ["--from", kw.get("desde", "00"), "--to", kw.get("hasta", "10")]
     if kw.get("config"):
-        sel += f" --config {kw['config']}"
-    cmd = f"python run_all.py {'--only' if etapas else ''} {sel}".replace("  ", " ")
-    print("::", cmd)
-    return subprocess.call(cmd, shell=True, cwd="/content/c20-2026/experiments")
+        argv += ["--config", kw["config"]]
+    print("::", " ".join(argv[1:]))
+    return run_and_render(argv, cwd="/content/c20-2026/experiments")
 
 # Ejemplos:
-# paso("03")                    # una etapa
-# paso("03", "05")              # varias
-# paso(desde="03", hasta="05")   # rango
-# paso("05", config="mi.yaml")  # otra config
+# paso("03")
+# paso("03", "05")
+# paso(desde="03", hasta="05")
+# paso("05", config="mi.yaml")
 '''),
 
     ("md", """### Que escribe cada etapa
@@ -201,7 +209,7 @@ crearia un archivo nuevo de Drive en cada corrida.""",),
 
 Cada corrida deja su log en Drive, asi que sobrevive a que Colab recicle el runtime. Para revisar una corrida sin el notebook, leé `outputs/logs/<etapa>.log`: el footer dice que etapa fallo, con que exit code, y en cuanto tiempo.
 
-Los redraws de las barras `tqdm` se colapsan a su estado final y las secuencias ANSI se eliminan, asi que el archivo es texto plano y se puede leer con cualquier herramienta."""),
+Los logs guardan marcadores de fase (`# progress <paso>: n/total`) en vez de barras: dicen qué fase corría sin enterrar el diagnóstico en redraws. El archivo es texto plano y se puede leer con cualquier herramienta."""),
 
     ("md", "## 5. Estado (solo lectura)"),
 
