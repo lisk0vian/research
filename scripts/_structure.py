@@ -76,17 +76,20 @@ def format_block_from_type(type_meta: dict) -> str:
     One function for `paper_new` and `paper_journal` so the front-matter is
     always written the same way. Falls back to generic pdf + docx when the
     journal has no official Quarto extension. The optional `model` and
-    `formatting` keys of type.yaml are forwarded to the extension's `journal:`
-    block, which turns them into class options.
+    `formatting` keys of type.yaml are forwarded to the `journal:` block, which
+    the extension turns into class options; `quarto_docx_format` names the docx
+    target the extension contributes (elsevier-cas-docx), so that Word goes
+    through the journal's own docx filter instead of pandoc's default.
     """
     quarto_format = type_meta.get("quarto_format") or type_meta.get("quarto_extension") or "pdf"
     extension = type_meta.get("extension") or type_meta.get("quarto_extension") or ""
     name = type_meta.get("journal", "")
     cite = type_meta.get("cite_style", "number")
+    docx_format = type_meta.get("quarto_docx_format") or ""
     # layout options the extension turns into class options (elsarticle: 1p/3p/5p,
     # preprint/review/doubleblind); emitted only when the journal declares them.
     layout = "".join(
-        f"      {key}: {value}\n"
+        f"  {key}: {value}\n"
         for key, value in (
             ("model", type_meta.get("model")),
             ("formatting", type_meta.get("formatting")),
@@ -95,15 +98,20 @@ def format_block_from_type(type_meta: dict) -> str:
     )
 
     if extension and quarto_format != "pdf":
+        docx_block = f"  {docx_format}: {{}}\n" if docx_format else "  docx: default\n"
         return (
             "format:\n"
             f"  {quarto_format}:\n"
             "    keep-tex: true\n"
-            "    journal:\n"
-            f'      name: "{name}"\n'
-            f"      cite-style: {cite}\n"
+            f"{docx_block}"
+            # journal.* sits at the TOP level, not under a single format, so that
+            # every target sees it: the PDF template reads $journal.*$ and the
+            # journal's docx filter (cas-docx.lua) builds the Word front matter
+            # (highlights, corresponding author) from it.
+            "journal:\n"
+            f'  name: "{name}"\n'
+            f"  cite-style: {cite}\n"
             f"{layout}"
-            "  docx: default\n"
         )
     return (
         "format:\n"

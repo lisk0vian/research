@@ -95,6 +95,20 @@ def test_format_block_passes_model_and_formatting():
     assert "cite-style: numbername" in block
     assert "model: 1p" in block
     assert "formatting: review" in block
+    # journal.* is top level so every target sees it (PDF template and docx filter)
+    assert "\njournal:\n" in block
+
+
+def test_format_block_with_extension_docx_target():
+    block = format_block_from_type(
+        {"journal": "Information Sciences", "extension": "quarto-journals/elsevier-cas",
+         "quarto_format": "elsevier-cas-pdf", "quarto_docx_format": "elsevier-cas-docx",
+         "cite_style": "authoryear"}
+    )
+    assert "  elsevier-cas-pdf:" in block
+    assert "  elsevier-cas-docx: {}" in block
+    assert "docx: default" not in block
+    assert "cite-style: authoryear" in block
 
 
 def test_format_block_without_extension():
