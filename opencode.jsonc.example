@@ -12,43 +12,58 @@
 // works from any subdirectory, on any platform.
 //
 // MCP servers you add directly to opencode.jsonc are preserved across runs.
+//
+// OpenCode V2 shape: servers live under `mcp.servers` and timeouts are
+// objects (`startup`/`catalog`/`execution` in ms). A bare number is ignored
+// for `startup` (falls back to 30s), which timed out the 130-tool gdrive
+// server. `startup: 90000` covers cold `pnpm dlx` + OAuth refresh.
 {
   "$schema": "https://opencode.ai/config.json",
   "mcp": {
-    "gdrive": {
-      "type": "local",
-      "command": ["npx", "-y", "@piotr-agier/google-drive-mcp"],
-      "timeout": 120000,
-      "environment": {
-        "GDRIVE_FOLDER_ID": "{env:GDRIVE_FOLDER_ID}",
-        "GDRIVE_NOTEBOOK_ID": "{env:GDRIVE_NOTEBOOK_ID}",
-        "GDRIVE_NOTEBOOK_NAME": "{env:GDRIVE_NOTEBOOK_NAME}",
-        "GDRIVE_PROJECT_ID": "{env:GDRIVE_PROJECT_ID}"
-      }
-    },
+    "servers": {
+      "gdrive": {
+        "type": "local",
+        "command": ["pnpm", "dlx", "@piotr-agier/google-drive-mcp"],
+        "timeout": {
+          "startup": 90000,
+          "catalog": 120000,
+          "execution": 600000
+        },
+        "environment": {
+          "GDRIVE_FOLDER_ID": "{env:GDRIVE_FOLDER_ID}",
+          "GDRIVE_NOTEBOOK_ID": "{env:GDRIVE_NOTEBOOK_ID}",
+          "GDRIVE_NOTEBOOK_NAME": "{env:GDRIVE_NOTEBOOK_NAME}",
+          "GDRIVE_PROJECT_ID": "{env:GDRIVE_PROJECT_ID}"
+        }
+      },
 
-    "academic-search": {
-      "type": "local",
-      "command": [
-        "uv",
-        "run",
-        "--no-project",
-        "--python",
-        "3.12",
-        "--with",
-        "mcp>=1.0.0,<2.0.0",
-        "--with",
-        "requests>=2.28.0,<3.0.0",
-        "--with",
-        "toml>=0.10.2,<2.0.0",
-        "--with",
-        "lxml>=4.9.0,<6.0.0",
-        "--with",
-        "pybliometrics>=4.4.1,<5.0.0",
-        "python",
-        "__REPO_ROOT__/.agents/skills/paper-search/mcp-server/academic_search_server.py"
-      ],
-      "timeout": 120000
+      "academic-search": {
+        "type": "local",
+        "command": [
+          "uv",
+          "run",
+          "--no-project",
+          "--python",
+          "3.12",
+          "--with",
+          "mcp>=1.0.0,<2.0.0",
+          "--with",
+          "requests>=2.28.0,<3.0.0",
+          "--with",
+          "toml>=0.10.2,<2.0.0",
+          "--with",
+          "lxml>=4.9.0,<6.0.0",
+          "--with",
+          "pybliometrics>=4.4.1,<5.0.0",
+          "python",
+          "__REPO_ROOT__/.agents/skills/paper-search/mcp-server/academic_search_server.py"
+        ],
+        "timeout": {
+          "startup": 90000,
+          "catalog": 120000,
+          "execution": 600000
+        }
+      }
     }
   }
 }

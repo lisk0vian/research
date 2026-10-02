@@ -111,7 +111,7 @@ def current_script_path(config: dict) -> str | None:
     servers = config.get("mcp")
     if not isinstance(servers, dict):
         return None
-    # Tolerate both the flat and the nested `mcp.servers` shapes.
+    # Tolerate both the flat (V1) and the nested `mcp.servers` (V2) shapes.
     if isinstance(servers.get("servers"), dict):
         servers = servers["servers"]
     entry = servers.get("academic-search")
@@ -123,24 +123,62 @@ def current_script_path(config: dict) -> str | None:
     return None
 
 
+def _split_servers(mcp_dict: dict) -> tuple[dict, dict]:
+    """Split an `mcp` mapping into (servers, rest).
+
+    V2 nests servers under `mcp.servers`; V1 placed them directly under `mcp`.
+    The flat branch treats any dict value with `type`/`command`/`url` as a
+    server and keeps mcp-level keys (e.g. `timeout`) in `rest`.
+    """
+    if not isinstance(mcp_dict, dict):
+        return {}, {}
+    if isinstance(mcp_dict.get("servers"), dict):
+        return (
+            dict(mcp_dict["servers"]),
+            {k: v for k, v in mcp_dict.items() if k != "servers"},
+        )
+    servers: dict = {}
+    rest: dict = {}
+    for key, value in mcp_dict.items():
+        if isinstance(value, dict) and ("type" in value or "command" in value or "url" in value):
+            servers[key] = value
+        else:
+            rest[key] = value
+    return servers, rest
+
+
+def _server_names(config: dict) -> list[str]:
+    """Server names regardless of flat (V1) or nested (V2) shape."""
+    mcp = (config or {}).get("mcp")
+    if not isinstance(mcp, dict):
+        return []
+    servers, _ = _split_servers(mcp)
+    return sorted(servers)
+
+
 def build_config(repo: Path, example: dict, existing: dict) -> dict:
-    """Generated example (paths resolved) + any hand-added servers/keys from existing."""
+    """Generated example (paths resolved) + any hand-added servers/keys from existing.
+
+    Output is always the V2 shape: `mcp.servers.<name>`. Legacy flat configs
+    (`mcp.<name>`) are migrated on write; hand-added servers are preserved.
+    """
     resolved = json.loads(json.dumps(example).replace(REPO_ROOT_TOKEN, repo.as_posix()))
     out: dict = {k: v for k, v in resolved.items() if k != "mcp"}
-    merged: dict = dict(resolved.get("mcp") or {})
+    resolved_servers, resolved_rest = _split_servers(resolved.get("mcp") or {})
+    existing_servers, existing_rest = _split_servers((existing or {}).get("mcp") or {})
+
+    merged_servers: dict = dict(resolved_servers)
+    for name, cfg in existing_servers.items():
+        merged_servers.setdefault(name, cfg)
+    merged_rest: dict = dict(resolved_rest)
+    for key, value in existing_rest.items():
+        merged_rest.setdefault(key, value)
 
     for key, value in (existing or {}).items():
         if key != "mcp":
-            out[key] = value
-            continue
-        servers = value
-        if isinstance(servers, dict) and isinstance(servers.get("servers"), dict):
-            servers = servers["servers"]
-        if isinstance(servers, dict):
-            for name, cfg in servers.items():
-                merged.setdefault(name, cfg)
+            out.setdefault(key, value)
 
-    out["mcp"] = merged
+    out["mcp"] = {**merged_rest, "servers": merged_servers}
     # $schema first, for readability.
     ordered = {"$schema": out.pop("$schema")} if "$schema" in out else {}
     ordered.update(out)
@@ -188,7 +226,7 @@ def main() -> int:
 
     print(f"wrote {config_path}")
     print(f"  academic-search -> {wanted}")
-    others = sorted(k for k in config["mcp"] if k != "academic-search")
+    others = [k for k in _server_names(config) if k != "academic-search"]
     if others:
         print(f"  preserved: {', '.join(others)}")
     print(f"  ({CONFIG_NAME} is gitignored; commit {EXAMPLE_NAME} instead)")
