@@ -2,28 +2,29 @@ journal: "Information Sciences"
 publisher: Elsevier
 issn: "0020-0255"                 # print; online 1872-6291
 format: latex
-extension: "quarto-journals/elsevier"
-quarto_extension: "quarto-journals/elsevier"
-quarto_format: elsevier-pdf
-model: 1p                          # submitted draft (single column); 5p = published two-column
-# formatting: review               # optional: double-spaced copy for refereeing
-cite_style: numbername             # [1] numbered, full author names + titles (see notes)
+extension: "quarto-journals/elsevier-cas"
+quarto_extension: "quarto-journals/elsevier-cas"
+quarto_format: elsevier-cas-pdf
+quarto_docx_format: elsevier-cas-docx
+# formatting: doubleblind        # NOT for this journal: single anonymized review
+cite_style: authoryear            # the CAS extension only renders author-year (see notes)
 url: "https://www.sciencedirect.com/journal/information-sciences/publish/guide-for-authors"
 notes: >
-  Single anonymized review (min. 2 reviewers). Original research: abstract up to
-  200 words (Elsevier generic ceiling 250) and a Conclusions section; experimental
-  manuscripts <= 40 double-spaced pages + 8 figures+tables, theoretical <= 45 pages
-  + 10 figures+tables. Keywords 1-7. Highlights encouraged (3-5 bullets x 85 chars).
-  References: no strict format at submission (any consistent style is accepted);
-  every entry must carry authors, title, year, volume and article no./pagination,
-  DOIs recommended; the journal reference style is applied at proof stage.
-  cite_style numbername renders numbered citations [1] with full names and titles
-  via elsarticle-num-names.bst, whose bibliography follows citation order (the
-  SORT pass is disabled in the stock file); the published journal list is sorted
-  alphabetically by first author, which Elsevier applies at proof, so no extra
-  .bst is needed here.
-  Data statement + CRediT required at submission. Editable .tex sources accepted
-  (double-column layout is only permitted for LaTeX submissions). APC USD 3040 (OA)
-  or subscription (no fee). Submission via Editorial Manager.
+  Same CAS template as engineering-applications-of-artificial-intelligence
+  (cas-sc.cls, two-column), so the PDF looks like the other Elsevier submissions
+  of this repository. cas.lua only maps cite-style 'authoryear' to
+  cas-model2-names; there is no numbered branch, so the manuscript cites as
+  (Author, Year). This is compliant: the Guide for Authors sets no strict
+  reference format at submission ("any consistent style") and the journal
+  reference style is applied at proof stage. Single anonymized review (min. 2
+  reviewers). Original research: abstract up to 200 words (Elsevier generic
+  ceiling 250) and a Conclusions section; experimental manuscripts <= 40
+  double-spaced pages + 8 figures+tables, theoretical <= 45 pages + 10
+  figures+tables. Keywords 1-7. Highlights 3-5 bullets x 85 chars (kept in
+  journal.highlights so the DOCX target sees them). Data statement + CRediT
+  required at submission; CRediT roles go in author[].cas.credit and the class
+  prints them with \printcredits. APC USD 3040 (OA) or subscription (no fee).
+  Submission via Editorial Manager; .tex sources accepted (double column is
+  only permitted for LaTeX submissions).
   Source: Guide for Authors 2/10/2026,
   https://www.sciencedirect.com/journal/information-sciences/publish/guide-for-authors

@@ -1,0 +1,78 @@
+title: Elsevier CAS Journal Format (Information Sciences)
+author: Elsevier CAS bundle v2.4 + Quarto wrapper
+version: 2.5.0-cas
+quarto-required: ">=1.2.198"
+contributes:
+  formats:
+    common:
+      date-format: full
+      filters:
+        # Pass 0 (see cas-pre-ast.lua): tables, figures and @fig:/@tbl:
+        # references are converted to CAS raw LaTeX at the `pre-ast` entry
+        # point, BEFORE Quarto's normalize pipeline (crossref) rewrites
+        # captions, wraps floats in FloatRefTargets and resolves references.
+        # cas.lua keeps running at the default `pre-quarto` entry, where
+        # authors are normalized, and retains float/cite handlers as a
+        # fallback for renders where this entry point is unavailable.
+        - at: pre-ast
+          path: cas-pre-ast.lua
+          type: lua
+        - cas.lua
+    pdf:
+      documentclass: cas-sc
+      classoption:
+        - a4paper
+        - fleqn
+      # Fonts are owned by cas-sc.cls (T1 + stix); the template partials below
+      # stop pandoc from injecting lmodern/microtype/upquote, which would break
+      # the typography of els-cas-templates/cas-sc-sample.pdf.
+      template-partials:
+        - partials/fonts.latex
+        - partials/font-settings.latex
+        - partials/hypersetup.latex
+        - partials/before-body.tex
+        - partials/title.tex
+        - partials/after-body.tex
+      include-in-header: nologo.tex
+      # paragraph geometry belongs to the class as well (cas-common.sty sets
+      # \parskip/\parindent); `indent` stops pandoc's parskip override.
+      indent: true
+      # keep the generated .tex for inspection and for scripts/cas_fidelity.py
+      # (paper/main.tex is gitignored).
+      keep-tex: true
+      format-resources:
+        - cas-sc.cls
+        - cas-common.sty
+        - bib/cas-model2-names.bst
+        - thumbnails/cas-email.jpeg
+        - thumbnails/cas-facebook.jpeg
+        - thumbnails/cas-gplus.jpeg
+        - thumbnails/cas-linkedin.jpeg
+        - thumbnails/cas-twitter.jpeg
+        - thumbnails/cas-url.jpeg
+      cite-method: natbib
+      pdf-engine: pdflatex
+      # pandoc's default \urlstyle{same} renders URLs in the roman face; the
+      # official sample keeps url's default typewriter face (cmtt10), which is
+      # what makes line widths and justification glue around URLs match.
+      urlstyle: tt
+      # pandoc's template otherwise emits colorlinks=true/linkcolor=blue,
+      # overriding the class's own \RequirePackage[colorlinks]{hyperref} +
+      # hscolor (DarkSlateGrey) setup that the sample renders with. The
+      # hypersetup.latex partial also drops pandoc's hidelinks fallback.
+      colorlinks: false
+      biblio-style: "cas-model2-names"
+      number-sections: true
+    # DOCX target (`--to elsevier-cas-docx`): co-editing mirror of the PDF
+    # (typography/geometry/front matter of cas-sc, not pixel-faithful).
+    # reference-doc + csl paths resolve inside this extension directory;
+    # cas-docx.lua builds the Word-native front matter and rasterizes
+    # .pdf figures (Word cannot embed them).
+    docx:
+      reference-doc: reference.docx
+      csl: elsevier-harvard.csl
+      filters:
+        - cas-docx.lua
+      number-sections: true
+    html:
+      theme: styles/elsevier.scss
