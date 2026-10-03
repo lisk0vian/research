@@ -68,3 +68,26 @@ def test_summary_flags_the_hypothesised_failure():
     assert daily["paths"] == pytest.approx(0.90, abs=0.03)
     assert pers["paths"] < 0.1 < 0.6 < pers["observed"]
     assert agg["paths"] < 0.5 * agg["observed"]
+
+
+# --- 09d sensitivity: window coverage on the same anomaly scale -----------------------
+
+def test_window_coverage_is_nominal_for_calibrated_paths():
+    d09d = importlib.import_module("09d_chronos_sensitivity")
+    rng = np.random.default_rng(5)
+    n, s, lead = 400, 200, 28
+    truth_paths = rng.normal(size=(n, s, lead))
+    obs = rng.normal(size=(n, lead))
+    cov, rmse = d09d.window_coverage(truth_paths, obs, 1, 7)
+    assert cov == pytest.approx(0.90, abs=0.04)
+    assert rmse == pytest.approx(1 / np.sqrt(7), rel=0.1)
+
+
+def test_window_coverage_ignores_contexts_with_a_missing_day():
+    d09d = importlib.import_module("09d_chronos_sensitivity")
+    rng = np.random.default_rng(6)
+    paths = rng.normal(size=(10, 50, 28))
+    obs = rng.normal(size=(10, 28))
+    obs[:, 3] = np.nan                       # every W1 window broken
+    assert np.isnan(d09d.window_coverage(paths, obs, 1, 7)[0])
+    assert np.isfinite(d09d.window_coverage(paths, obs, 8, 14)[0])

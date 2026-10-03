@@ -180,9 +180,9 @@ Diagnosis (from the scored rows, blind folds included, hence post hoc):
   weighted mean of its members' widths, so disagreement between members never
   widens it. Chronos is the narrowest member by far (90 % width 0.43 °C against
   1.9-2.3 °C; 90 % coverage 0.22-0.31) and carries ~22 % of the weight; without
-  it the Ensemble would be 16-21 % wider. A likely cause, not tested: each
-  Chronos sample path is averaged over the 7-28-day window, and paths with less
-  persistence than the real anomalies shrink that average's spread.
+  it the Ensemble would be 16-21 % wider. The first explanation put forward
+  (window averaging of paths with too little persistence) was tested and
+  rejected; see the T10 result below.
 - **Under-dispersion is already there in dev.** The dev PIT puts 13-15 % of the
   outcomes in *each* tail (5 % expected): a spread problem, not a bias. The GBM
   quantile members also under-cover (0.67-0.73 in dev).
@@ -207,6 +207,23 @@ Secondary analyses added (stage `09b_calibration`, table T9):
   T10): on the daily sample paths, the daily 90 % coverage, the lag-1
   autocorrelation of the paths against that of the real errors, and how much
   the spread shrinks from daily values to the window mean in each.
+  **Result: the window-averaging explanation is rejected.** The daily paths
+  already cover only 0.20-0.21 of the observed daily anomalies (nominal 0.90),
+  with a spread of 0.18-0.24 °C against a median RMSE of 1.12-1.32 °C, about six
+  times too narrow, in dev and blind alike. The paths are *more* persistent
+  than the real errors (lag-1 0.82-0.86 against 0.73-0.76) and their spread
+  shrinks *less* under window averaging (0.71-0.84 against 0.58-0.79). The
+  defect is in Chronos' daily predictive distribution: smooth paths that stay
+  close to their median; the windows only inherit it.
+- **Is the narrowness technical or the model's?** (stage
+  `09d_chronos_sensitivity`, table T11, one dev fold only.) Chronos re-run on
+  D3 under a 2 x 2 design: weights in bfloat16 (as in 07b; emulated on a T4)
+  or float32, and the context given as anomalies (as in 07b; values around
+  0 °C, which Chronos' mean scaling handles poorly) or as absolute temperature,
+  with the paths turned back into anomalies against the same climatology.
+  A technical cause would show as a variant with much wider, better-covering
+  paths. Any such variant stays a sensitivity analysis: 07b, the Ensemble and
+  M* keep the pre-registered configuration.
 
 What this cannot say: k was conceived after the blind coverage was seen, so a
 blind coverage near 0.90 after recalibration is evidence that the spread
@@ -244,8 +261,8 @@ sensitivities (C1/C3, Thursday issuance, bootstrap block length).
 
 Tables (`outputs/tables/`): T1 completeness, T2 blind skill + CI, T3 tests,
 T4 Murphy, T5 LOSO gap, T6 secondary targets and frost, T7 conditional skill,
-T8 CFS calibration, T9 calibration of M* and T10 Chronos diagnostic (A2, post
-hoc), `metrics_long.csv`.
+T8 CFS calibration, T9 calibration of M*, T10 Chronos diagnostic and T11 Chronos
+precision/scale sensitivity (A2, post hoc), `metrics_long.csv`.
 Figures (`outputs/figures/`): F1 skill vs horizon, F2 PIT and reliability of
 M*, F3 skill by season and ENSO phase, F4 dev vs blind, F5 LOSO vs elevation,
 F6 predictability budget (L vs LG). Every number in the manuscript is a claim

@@ -134,6 +134,14 @@ def _t10():
           .round(3).to_string(index=False))
 
 
+@section("T11 Chronos precision and scale (amendment A2, post hoc, D3)")
+def _t11():
+    t11 = pd.read_csv(TABLES / "T11_chronos_sensitivity.csv")
+    show = t11[t11["metric"].str.startswith(("cov90", "path SD"))]
+    print(show.pivot_table(index=["check", "scope", "metric"], columns="variant",
+                           values="paths").round(3).to_string())
+
+
 @section("Figures")
 def _figures():
     figs = sorted((OUTPUTS / "figures").glob("F*.png"))
