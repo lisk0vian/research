@@ -90,6 +90,7 @@ that know *when* to call them and interview you for the arguments.
 | Link skills for Claude | `python scripts/link_skills.py` |
 | Generate `opencode.jsonc` (MCP, OpenCode) | `python scripts/setup_mcp.py` |
 | Register the MCP servers in Claude Code | `python scripts/setup_mcp.py --claude` (verify: add `--check`) |
+| Upload to Zenodo | `python scripts/paper_zenodo.py --slug <slug> [--production] [--draft --yes \| --publish --yes \| --yes]` |
 | Run tests | `pytest -q` |
 
 A new paper typically follows: `paper_new.py` → literature search
@@ -219,6 +220,7 @@ Registry:
 | `util-office-to-md` | Convert Office files to Markdown |
 | `util-search` | Content search (prefer over `grep`/`rg`) |
 | `grilling` | Relentless design interview before committing to a plan |
+| `paper-zenodo` | Upload experiments to Zenodo and get a DOI (reads `manifest.yaml` + `authors/`) |
 
 ## 6. Pull request validation
 
