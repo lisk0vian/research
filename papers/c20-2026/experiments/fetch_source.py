@@ -73,6 +73,18 @@ def source_json_path() -> Path:
     return DATA_DIR / "SOURCE.json"
 
 
+# datosabiertos.gob.pe sits behind a WAF that answers urllib's default
+# User-Agent with HTTP 418 and an interstitial page. A browser-like agent is
+# what gets the JSON and the CSV.
+BROWSER_UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+              "(KHTML, like Gecko) Chrome/126.0 Safari/537.36")
+
+
+def _open(url: str, timeout: int):
+    req = urllib.request.Request(url, headers={"User-Agent": BROWSER_UA})
+    return urllib.request.urlopen(req, timeout=timeout)
+
+
 def resolve_resource(cfg: dict, timeout: int) -> dict:
     """Ask the catalogue which file backs this dataset and return that resource.
 
@@ -88,7 +100,7 @@ def resolve_resource(cfg: dict, timeout: int) -> dict:
 
     url = f"{api}/package_show?id={dataset_id}"
     try:
-        with urllib.request.urlopen(url, timeout=timeout) as resp:
+        with _open(url, timeout) as resp:
             payload = json.loads(resp.read().decode("utf-8"))
     except urllib.error.URLError as exc:
         raise FetchError(
@@ -100,6 +112,10 @@ def resolve_resource(cfg: dict, timeout: int) -> dict:
     if not payload.get("success"):
         raise FetchError(f"catalogue returned success=false for {dataset_id}")
     pkg = payload.get("result", {})
+    # CKAN returns the package as an object; this portal runs DKAN, which wraps
+    # it in a one-element list.
+    if isinstance(pkg, list):
+        pkg = pkg[0] if pkg else {}
     resources = [r for r in pkg.get("resources", []) if r.get("url")]
     if not resources:
         raise FetchError(f"dataset {dataset_id} exposes no downloadable resource")
@@ -126,7 +142,7 @@ def resolve_resource(cfg: dict, timeout: int) -> dict:
 def _stream(url: str, fh, timeout: int) -> tuple[str, int]:
     digest = hashlib.sha256()
     total = 0
-    with urllib.request.urlopen(url, timeout=timeout) as resp:
+    with _open(url, timeout) as resp:
         while True:
             block = resp.read(CHUNK)
             if not block:

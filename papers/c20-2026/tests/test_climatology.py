@@ -77,8 +77,30 @@ def test_design_matrix_shape_without_trend():
 
 
 def test_design_matrix_shape_with_trend():
-    X = clim.design_matrix(np.linspace(0, 365, 50), k=3, trend=True)
+    X = clim.design_matrix(np.linspace(0, 365, 50), k=3, trend=True,
+                           t=np.linspace(0, 1, 50))
     assert X.shape == (50, 8)
+
+
+def test_trend_requires_an_elapsed_time_axis():
+    """Day-of-year is not a trend axis: it resets every January, so a trend on
+    it is a sawtooth. The design matrix refuses to guess."""
+    with pytest.raises(ValueError):
+        clim.design_matrix(np.linspace(0, 365, 50), k=3, trend=True)
+
+
+def test_c3_trend_extrapolates_across_years():
+    """A secular warming must carry forward into a year the fit never saw."""
+    idx = pd.date_range("2015-01-01", "2020-12-31", freq="D")
+    t = clim.years_since(idx, "2015-01-01")
+    doy = clim.doy_fractional(idx)
+    y = 10.0 + 3.0 * np.sin(2 * np.pi * doy / 365.25) + 0.2 * t
+    coef = clim.fit_harmonic(doy, y, k=3, trend=True, t=t)
+    future = pd.date_range("2022-01-01", "2022-12-31", freq="D")
+    pred = clim.eval_harmonic(coef, clim.doy_fractional(future), t=clim.years_since(future, "2015-01-01"))
+    truth = (10.0 + 3.0 * np.sin(2 * np.pi * clim.doy_fractional(future) / 365.25)
+             + 0.2 * clim.years_since(future, "2015-01-01"))
+    assert np.max(np.abs(pred - truth)) < 0.05
 
 
 def test_eval_harmonic_recovers_k_from_coefficients():
@@ -91,8 +113,9 @@ def test_eval_harmonic_recovers_k_from_coefficients():
 def test_eval_harmonic_with_trend():
     coef = np.arange(8, dtype="float64")
     doy = np.linspace(0, 365, 20)
-    X = clim.design_matrix(doy, k=3, trend=True)
-    assert np.allclose(clim.eval_harmonic(coef, doy), X @ coef)
+    t = np.linspace(0, 2, 20)
+    X = clim.design_matrix(doy, k=3, trend=True, t=t)
+    assert np.allclose(clim.eval_harmonic(coef, doy, t=t), X @ coef)
 
 
 # --- fitting ---------------------------------------------------------------
@@ -117,10 +140,12 @@ def test_harmonic_ignores_nan_days():
 
 
 def test_c3_captures_a_trend_that_c2_cannot():
-    doy = np.linspace(0, 365.25, 900, endpoint=False)
-    y = 11.0 + 3.0 * np.sin(2 * np.pi * doy / 365.25) + 0.03 * doy
+    idx = pd.date_range("2015-01-01", periods=1800, freq="D")
+    doy = clim.doy_fractional(idx)
+    t = clim.years_since(idx, idx[0])
+    y = 11.0 + 3.0 * np.sin(2 * np.pi * doy / 365.25) + 0.8 * t
     resid_c2 = y - clim.eval_harmonic(clim.fit_harmonic(doy, y, k=3), doy)
-    resid_c3 = y - clim.eval_harmonic(clim.fit_harmonic(doy, y, k=3, trend=True), doy)
+    resid_c3 = y - clim.eval_harmonic(clim.fit_harmonic(doy, y, k=3, trend=True, t=t), doy, t=t)
     assert np.std(resid_c3) < np.std(resid_c2) * 0.5
 
 

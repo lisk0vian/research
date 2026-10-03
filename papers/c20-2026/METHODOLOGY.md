@@ -1,184 +1,211 @@
-# Methodology — C20-2026 (design v2.0)
+# Methodology — C20-2026 (design v3.0)
 
-> **SUPERSEDED IN PART — revision pending.** This document still describes the
-> single-station Huancayo design (2018–2025) and the IGP-LAMAR variable names
-> (`TT`, `RR`, `FF`, `DD`, `PP` as pressure in hPa). Both are wrong for the data
-> of record. The study of record is **five SENAMHI GBON/RBON stations over a
-> 2054 m altitude gradient, 2015–2024**, with cross-station generalisation
-> (leave-one-station-out) as the engineering contribution. `E2_multistation` is
-> no longer disabled.
->
-> What changes: §1 question and scope, §4 predictors (wind and accumulated rain
-> **do not exist in the file**; the large-scale set is Niño 3.4 and Niño 1+2;
-> RMM dropped and ERA5 deferred), §6 validation (fold window 2015–2024, five
-> rolling 12-month windows, plus a separate LOSO experiment), §10 extensions
-> (E2 reopened), §11 open decisions (D1 reversed, D5 no longer pending). What
-> does not: §2 notation, §3 temporal design, §5 models, §7 metrics, §8
-> inference.
->
-> The variable names in §4 are the sharpest instance: the source file carries
-> `TEMP`, `HR` and `PP`, where **`PP` is precipitation in mm/h**, not pressure in
-> hPa. Implementing §4 as written nulls the entire precipitation column and the
-> run still exits 0.
->
-> Do not implement from this file as it stands. The verified station list, the
-> measured schema and the properties of the data are in
-> [`DESIGN_DECISIONS.md`](DESIGN_DECISIONS.md) §9; the evidence behind each
-> change, the rejected alternatives, and the current resume order are in §1 and
-> §7 of the same file.
+Design of record, frozen 2026-10-02 **before any model was scored on real
+data**. It supersedes v2.0 (single-station Huancayo, IGP-LAMAR). The evidence
+behind each choice and the rejected alternatives are in
+[`DESIGN_DECISIONS.md`](DESIGN_DECISIONS.md). Operating parameters live in
+`experiments/config.yaml`; this file states concept and method, not numbers.
+Each decision is checked against the published literature, with the supporting
+references and the open recommendations (R1–R4), in
+[`LITERATURE_REVIEW.md`](LITERATURE_REVIEW.md).
 
-English methodology extract. The Spanish original (full design, v2.0, 2026-09-28)
-lives outside the repo at `C:\Users\Aron\Downloads\README.md` and remains the
-source of truth for the design. This file states the concept and methods only.
+## 1. Question, scope and contribution
 
-No duplication by rule:
+**Question.** How much probabilistic skill do statistical, gradient-boosting,
+deep and foundation models have for 1–4-week air-temperature anomalies at
+high-Andean stations, which information sources supply that skill (local
+observations vs ENSO/MJO), and does a model trained on other stations transfer
+to an unseen one across a 2054 m altitude gradient?
 
-- Data description → `data/docs/metadata.md`, `data/docs/data_dictionary.md`,
-  `data/README.md` (includes V1–V6 source checks).
-- Operating parameters → `experiments/config.yaml` (literal §18).
-- Run order + anti-leakage checklist → `experiments/README.md`.
-- Numbers and figures → `outputs/manifest_index.json` (T1–T4/F1–F4).
+**Data.** SENAMHI GBON/RBON automatic stations, hourly, 2015-01-01 to
+2024-06-30, one provider (instrument not confounded with site): Matucana
+(2421 m), San José de Uzuna (3269 m), Candarave (3410 m), Carania (3840 m),
+Imata (4475 m). Variables: hourly-mean temperature, relative humidity,
+precipitation. No wind, no pressure.
 
-Scope: probabilistic subseasonal forecast skill of 2 m air-temperature anomalies
-at one high-Andean station (EMA Observatorio de Huancayo, Huayao, Junin:
--12.0401, -75.32049, 3329 m). Hourly data, 2018–2025. This study measures the
-skill of a statistical forecasting system (forecast skill), not the
-predictability of the phenomenon, and makes no causal claims about forcings.
-Single site only; no generalization to the Central Andes without E2.
+**AI contribution (EAAI).** (i) A leakage-controlled benchmark of seven model
+families on a shared quantile grid; (ii) cross-station generalisation
+(leave-one-station-out) as the engineering test of whether a data-driven
+forecaster can serve a station without its own training history; (iii) a
+zero-shot time-series foundation model as a modern baseline.
 
-## 1. Research question and objective
-
-Question: to what extent do local meteorological information and large-scale
-atmospheric/oceanic forcings add skill to the probabilistic subseasonal forecast
-of air-temperature anomalies at a high-Andean station in the Mantaro Valley,
-against climatology and damped persistence? How does skill evolve across W1,
-W2 and W3–4?
-
-Objective: quantify deterministic and probabilistic skill of statistical
-subseasonal temperature forecasts at Huayao; determine the incremental
-predictive value of large-scale forcings over local information, against
-climatological and persistence baselines, with out-of-sample temporal
-validation.
-
-Working title (EN): *Probabilistic Subseasonal Temperature Forecast Skill at a
-High-Andean Station in the Mantaro Valley, Peru: Contributions of Local
-Observations and Large-Scale Forcing*.
+**Application.** High-altitude agriculture and frost risk, through a frost
+index (see §6). Skill measured here is that of a forecasting system, a lower
+bound on predictability; no causal claim about forcings is made.
 
 ## 2. Notation
 
-`t`: day (local calendar). `d`: issuance date (only data dated ≤ d, plus §7.2
-latencies). `h ∈ {W1, W2, W3–4}`; `J_W1 = {1..7}`, `J_W2 = {8..14}`,
-`J_W3–4 = {15..28}`. `TT_t`: observed daily mean temperature. `C_t`: daily
-climatology fitted on training only. `A_t = TT_t − C_t`: daily anomaly.
-`T^h_d`, `C^h_d`, `A^h_d`: period-mean observed, climatology and anomaly
-(**target**). `A^0_d`: trailing 7-day anomaly mean. `q(d)`: quarter
-(DJF/MAM/JJA/SON). `X_L`, `G`, `X_LG`: local, large-scale and combined
-predictors. `F̂^h_d`: predictive distribution of `A^h_d`. Reconstruction:
-`T̂^h_d = C^h_d + Â^h_d`.
+`d` issuance date (only data dated ≤ d, plus source latencies). Horizons
+`W1 = days 1–7`, `W2 = 8–14`, `W3_4 = 15–28`. `C_t` daily harmonic
+climatology fitted per station and fold on training data only;
+`A_t = T_t − C_t`. Target `A^h_d`: mean of `A_t` over the horizon window,
+valid with ≥ 5/7 (W1, W2) or ≥ 10/14 (W3_4) valid days, never imputed.
+Targets: `TT_mean` (primary), `TT_min`, `TT_max` (secondary, each with its own
+climatology). `A0_7d`: trailing 7-day anomaly mean.
 
 ## 3. Temporal design
 
-Evaluation issuance is weekly on a fixed weekday (default Monday; Thursday as
-sensitivity) to avoid inflating the sample with near-identical forecasts.
-Training may use daily issuance; overlapping targets do not bias point
-estimates but require the 28-day embargo. Target validity: ≥ 5/7 valid days
-(W1/W2) or ≥ 10/14 (W3–4), else the issuance is excluded for that horizon;
-the target is never imputed. Weekly W3–4 targets of consecutive issuances share
-7 days, so errors are autocorrelated by construction (handled in §8).
+Weekly evaluation issuance on Mondays; daily training issuance with a 28-day
+embargo before each test window (no training target reaches it). Rolling-origin
+expanding folds with July–June test windows (the record ends 2024-06-30):
+
+| Fold | Test window | Role |
+|---|---|---|
+| D1 | 2019-07 – 2020-06 | dev |
+| D2 | 2020-07 – 2021-06 | dev |
+| D3 | 2021-07 – 2022-06 | dev |
+| B1 | 2022-07 – 2023-06 | blind |
+| B2 | 2023-07 – 2024-06 | blind |
+
+Training always starts 2015-01-01. Hyperparameter procedures, the ensemble
+weights and the primary model M* are fixed on D1–D3 and frozen before B1–B2.
+About 52 weekly issuances per fold and station: roughly 520 blind issuances
+pooled over five stations, of which about 104 are distinct dates (the effective
+sample for inference, since stations share forcing).
 
 ## 4. Climatology and predictors
 
-Climatology C2 (harmonic, K = 3 on day-of-year, fitted on daily training data
-then aggregated to horizons) is the primary reference fixed a priori; C1
-(±15-day window) and C3 (C2 + linear trend) are sensitivity runs. Switching
-references changes the meaning of skill and both variants are reported.
-Seasonal dispersion `σ_h,q` (residual SD by horizon and quarter, training only)
-feeds the Gaussian predictive distributions.
+Primary reference C2: harmonic, K = 3, per station and fold, training only
+(K chosen on evidence, DESIGN_DECISIONS §3.1). Sensitivities: C1 (±15-day
+window) and C3 (C2 + linear trend in elapsed years; until v3 the trend column
+was day-of-year, a defect now fixed).
 
-Local predictors (`X_L`, all dated ≤ d, as anomalies vs own training
-climatology): TT lags/means/`A^0`, DTR/TTmax/TTmin, HR, log1p RR sums, PP level
-+ tendency, 7-day u/v means, target-midpoint day-of-year sin/cos. Wind uses
-FF-weighted vector components; calms contribute u = v = 0.
+Local predictors `L` (~20): TT anomaly lags 0–6, trailing means 7/14/30 days,
+DTR/Tmax/Tmin and HR anomalies (each against its own harmonic), HR 30-day
+anomaly, log1p precipitation sums 7/30 days, target-midpoint day-of-year
+sin/cos. The calendar terms are reported as climatology correction, not skill.
 
-Large-scale predictors (`G`, fixed a priori list): weekly Nino 3.4 and Nino 1+2
-(last week centered ≤ d − 7), RMM1/RMM2 at d − 1 (operational provider to
-verify), ERA5 PCs at d − 5 emulating ERA5T latency, refit per fold on training
-only (k = 5; sensitivity 3/10). ONI and ICEN are excluded (centered 3-month
-smoothing leaks future information). See `experiments/config.yaml` for lags,
-domain defaults and `excluded_leaky`.
+Large-scale predictors `G`, as known on `d`: weekly Niño 3.4 and Niño 1+2 SST
+anomalies (CPC OISST, last week centred ≤ d−7) and real-time OMI (ROMI1/2 and
+amplitude, NOAA PSL, d−1). Sensitivity: Takahashi's E and C indices replace the
+Niño pair (official IGP monthly series from ERSSTv5, a month known 10 days
+after it ends), in `Ridge_LG@EC` and `GBM_LG@EC`; these never enter M* or the
+ensemble. Excluded for leakage: ONI and ICEN (centred 3-month
+means) and OMI (centred band-pass filter). RMM is not used (no stable public
+source); ERA5 is deferred and stated as a limitation.
 
 ## 5. Models
 
-Direct strategy: one model per horizon. Clim (empirical ±15-day window
-distribution, point 0); Damp (OLS by horizon × quarter on `A^0`, gaussian
-`σ_h,q`; main skill reference); Pers (deterministic only, secondary); Ridge_L /
-Ridge_LG (standardized Ridge, gaussian); GBM_L / GBM_LG (L2 GBM + quantile GBM
-on the 19-level grid with rearrangement). Ridge_L nests Damp; Ridge_LG nests
-Ridge_L. Hyperparameters use inner temporal validation with embargo. Primary
-model M* is the better of {Ridge_LG, GBM_LG} by mean dev-fold CRPS, frozen
-before opening the blind test (with its L counterpart).
+Direct strategy, one prediction per horizon, all on the 19-level quantile grid
+(0.05–0.95).
 
-## 6. Validation
+| Model | Role | Specification |
+|---|---|---|
+| Clim | reference | empirical ±15-day distribution of training targets; point 0 |
+| Pers | reference, deterministic | `A0_7d` |
+| Damp | main reference | OLS on `A0_7d` by station × horizon × quarter; Gaussian |
+| Ridge_L / Ridge_LG | statistical | per station × horizon; alpha by embargoed inner validation; Gaussian with out-of-sample residual SD by quarter |
+| GBM_L / GBM_LG | ML | LightGBM pooled over stations with elevation/lat/lon; quantile loss per level; rearrangement |
+| LSTM_LG | deep | pooled; 60-day sequence of daily anomalies + G + static; pinball loss, all horizons jointly; early stopping on embargoed tail |
+| Chronos | foundation, zero-shot | Chronos-T5-small on daily TT_mean anomalies; window means per sample path |
+| Ensemble | combination | level-wise quantile average, weights ∝ 1/CRPS on D1–D3 |
+| CFS_BC | dynamical reference (amendment A1) | NOAA CFSv2, 4 members of the Monday 00Z run, 2 m temperature interpolated to the station; calibrated by train-only anomaly regression. Blind folds only; never a candidate for M* nor an ensemble member |
 
-Expanding rolling-origin with annual folds (see `experiments/config.yaml`):
-D1–D3 for development (hyperparameters + M* selection; sign consistency
-reported descriptively), B1–B2 (2024, 2025) as blind test with frozen
-hyperparameters/M* and refits at each year start. Expected blind size ≈ 104
-weekly issuances per horizon (limited power: report effect sizes with
-intervals, not p-values alone). Regime caveat: La Nina 2020–2023 and El Nino
-2023–2024; ENSO effects rest on few events.
+M* = lowest mean dev CRPS among {Ridge_LG, GBM_LG, LSTM_LG, Ensemble}.
 
-## 7. Metrics
+**LOSO.** On B1–B2, the pooled models (GBM, LSTM) are refitted without the
+held-out station and scored on it; Chronos is station-agnostic by construction.
+Held-out stations differ in difficulty: Matucana and Imata are extrapolation
+cases at the ends of the altitude range, the others interpolation. This is
+reported as a finding (skill change vs elevation), not averaged away. With
+only four training stations, latitude and longitude act as station identifiers,
+so LOSO runs three static-descriptor variants: elevation, latitude and
+longitude; elevation only (`@elev`); none (`@none`).
 
-Deterministic: MAE/RMSE/ACC descriptive; primary axis is MSSS vs Clim and vs
-Damp, plus Murphy (1988) decomposition against the evaluation-sample mean
-(reported separately from MSSS_clim since out-of-sample Clim MSE includes drift).
-Probabilistic: CRPS on the shared 19-quantile grid for all models
-(quantile-score integral approximation), CRPSS vs Clim/Damp, tercile RPSS
-(training ±15-day empirical thresholds, CDF linearly interpolated for quantile
-models), PIT histograms, tercile reliability (small-sample binned), 50/90%
-interval coverage and width. No fair-score versions (parametric/quantile
-distributions, not finite ensembles).
+## 6. Metrics
 
-## 8. Hypotheses and inference (blind test only)
+Deterministic: MAE, RMSE, ACC, MSSS vs Clim and vs Damp, Murphy decomposition
+against the sample mean. Probabilistic: CRPS on the grid (same quadrature for
+every model), CRPSS vs Clim and Damp, tercile RPSS with thresholds from the
+training distribution of the *period-mean* anomaly, PIT, tercile reliability,
+50/90 % coverage and width. Skill scores are ratios of sums over shared rows.
 
-H1 (incremental large-scale value, per h): one-sided mean-loss difference L
-vs LG. Ridge pair: Clark-West (2007) MSPE-adjusted with Newey-West HAC
-(bandwidth max of rule-of-thumb and overlap order), normal critical values.
-GBM pair: CW invalid (non-parametric); moving block bootstrap of ΔMSE,
-one-sided. Probabilistic H1 component: block bootstrap of ΔCRPS for both pairs.
-H2 (W3–4 skill vs Damp for M*): one-sided 95% block-bootstrap lower bound of
-MSSS_damp > 0 (plus CW complement when M* is Ridge). H3 (probabilistic skill
-per h): CRPSS_clim > 0 by block bootstrap; preregistered secondary criterion:
-90% interval coverage in [0.85, 0.95]. Bootstrap: consecutive weekly issuances,
-8-week blocks (sensitivity 4/13), B = 10000, percentile intervals, ratio-of-sums
-per replicate. Multiplicity: Holm within families (H1: 3, H2: 1, H3: 3);
-unadjusted + adjusted p reported. Nulls with ≈ 104 issuances are inconclusive
-without effect sizes.
+**Frost index** (TT_min target): P(window-mean TT_min < 0 °C) from the
+anomaly quantiles plus the window climatology; Brier score and BSS vs Clim.
+`TEMP` is an hourly mean, so this understates true frost; it is called a frost
+index throughout.
 
-## 9. Secondary analyses and output contract (summary)
+## 7. Hypotheses and inference (blind folds only, pre-registered)
 
-Descriptive only: skill by quarter and by ENSO phase / MJO activity at d,
-permutation importance of G vs X_L (non-causal), sensitivities (C1/C3,
-Thursday issuance, block length, PC count, daily-issuance + HAC evaluation).
-Contract IDs (details in `outputs/manifest_index.json`): tables T1
-(completeness/QC), T2 (blind skill + 95% CI), T3 (H1–H3 tests), T4 (Murphy);
-figures F1 (skill vs horizon), F2 (PIT + reliability for M*), F3
-(quarter/ENSO), F4 (robustness D1–D3 vs B1–B2).
+Stations are pooled per issue date; the moving-block bootstrap (blocks of 8
+weekly issuances; sensitivity 4 and 13; B = 10 000) resamples the same dates
+for all stations. Skill intervals are percentile intervals of ratio-of-sums
+replicates.
 
-## 10. Extensions and limitations (summary)
+- **H1** incremental value of `G`, per horizon: Ridge_L vs Ridge_LG by
+  Clark–West with Newey–West HAC (bandwidth max of rule of thumb and overlap
+  order); GBM_L vs GBM_LG by block bootstrap of ΔMSE; ΔCRPS for both pairs.
+  One-sided. Holm over the three horizons.
+- **H2** M* beats damped persistence at W3_4: one-sided 95 % lower bound of
+  MSSS_damp > 0 (plus Clark–West if M* is a Ridge model).
+- **H3** M* has probabilistic skill: CRPSS_clim > 0 per horizon, Holm over
+  three; secondary criterion 90 % coverage in [0.85, 0.95].
 
-Extensions E1–E5 disabled (`extensions_enabled: false`): E1 LSTM/TFT, E2
-multi-station (only then may inference extend to the Central Andes, with
-leave-station-out and spatial FDR), E3 S2S reforecast benchmark, E4 long
-climatology, E5 TT_min frost objective. Known limitations: single site; short
-record (3–7-year climatologies, unstable trend); few ENSO events; wide CIs
-with ≈ 104 autocorrelated blind issuances; partial non-stationarity; skill as a
-lower bound on predictability; undocumented source QC/conventions (V1–V6).
+- **H4** (amendment A1) M* against the dynamical reference: ΔCRPS =
+  CRPS(CFS_BC) − CRPS(M*) > 0 per horizon on B1–B2, one-sided block bootstrap
+  on the dates both scored, Holm over three horizons. A non-rejection is
+  reported as is; it does not change the decision rule below.
 
-## 11. Open decisions (defaults frozen for start)
+### Amendment A1 (2026-10-03, before any real score)
 
-D1 E2 multi-station: No (single station). D2 blind period: B1 + B2 (2024–2025).
-D3 issuance day: Monday (Thursday sensitivity). D4 ERA5 domain/variables:
-25°S–5°N, 85°W–60°W; T2m/Z500/U200/q600 (defaults; marked TO_CONFIRM_D4 in
-config). D5 target journal: pending. D6 E5 TT_min: No.
+R1 of the literature review asked for an ECMWF S2S benchmark and a hybrid.
+ECMWF S2S needs an account on the ECMWF Data Store, which the author declined,
+so A1 uses the open NOAA CFSv2 archive instead and drops the hybrid:
+
+- **Scope.** Blind folds only. The bucket's first forecast is 2018-10-31, which
+  leaves 8 months of history before D1 and 3.7 / 4.7 years before B1 / B2.
+- **Why not a hybrid.** CFS as a predictor cannot be trained in D1-D2, and M* is
+  chosen on D1-D3; a model that exists only in some dev folds cannot compete.
+- **Calibration.** Per station and horizon, on training Mondays only: remove the
+  CFS window-mean climatology (harmonic, K = 2, fitted on the CFS forecasts
+  themselves), regress the observed anomaly on the CFS anomaly, Gaussian
+  residual by quarter as for Damp.
+- **What this cannot say.** CFSv2 is not the ECMWF system the S2S literature
+  treats as the reference, and 1° grid cells do not resolve the stations.
+  Results against CFS_BC are evidence about observation-only models versus a
+  dynamical system, not versus the state of the art.
+
+## 8. Pre-registered decision rule
+
+Written before any real score exists, so the framing cannot follow the numbers.
+
+1. **EAAI framing holds** if at least one of: (a) M* has CRPSS_damp > 0 with a
+   95 % interval excluding 0 at W2 or W3_4 on the blind folds; (b) a pooled
+   model under LOSO keeps CRPSS_clim > 0 at the held-out station for at least
+   three of five stations at W1–W2, i.e. the transfer works; (c) H1 is
+   rejected (Holm) for at least one horizon, i.e. ENSO/MJO add measurable
+   skill.
+2. **Otherwise** the result is a rigorous negative ("statistical and AI
+   forecasters do not beat damped persistence beyond week 2 at high-Andean
+   stations"). The paper is then re-targeted to a climate venue (Weather and
+   Forecasting or International Journal of Climatology), where such a negative
+   is a first-class result. Hyperparameters and models are not re-tuned to
+   rescue the EAAI framing.
+3. Whatever the outcome, the dev-fold numbers, LOSO by station and every null
+   result are reported.
+
+## 9. Secondary analyses (descriptive)
+
+Skill by season, by ENSO phase at issuance (Niño 3.4 ≥ 0.5 / ≤ −0.5) and by
+MJO activity (ROMI amplitude ≥ 1), reported as windows of opportunity (T7, F3),
+dev vs blind robustness, the TT_min/TT_max targets and the frost index,
+sensitivities (C1/C3, Thursday issuance, bootstrap block length).
+
+## 10. Output contract
+
+Tables (`outputs/tables/`): T1 completeness, T2 blind skill + CI, T3 tests,
+T4 Murphy, T5 LOSO gap, T6 secondary targets and frost, T7 conditional skill,
+`metrics_long.csv`.
+Figures (`outputs/figures/`): F1 skill vs horizon, F2 PIT and reliability of
+M*, F3 skill by season and ENSO phase, F4 dev vs blind, F5 LOSO vs elevation,
+F6 predictability budget (L vs LG). Every number in the manuscript is a claim
+in `manifest.yaml` pointing at one of these files.
+
+## 11. Limitations stated in the paper
+
+No ECMWF benchmark and no hybrid (dynamical forecasts as predictors); the only
+dynamical reference is the open CFSv2, on the blind folds. Five stations in one country; 9.5 years, so climatologies rest on 4.5–8.5
+training years and few ENSO events (La Niña 2020–23, El Niño 2023–24); no wind,
+pressure or ERA5 predictors; hourly-mean temperature for the frost index; no
+dynamical S2S benchmark (ECMWF reforecasts are future work); skill as a lower
+bound on predictability.

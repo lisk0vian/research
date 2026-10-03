@@ -107,17 +107,24 @@ def build_huancayo(years: int, seed: int) -> pd.DataFrame:
     })
 
 
-def build_senamhi(years: int, seed: int) -> pd.DataFrame:
-    """The SENAMHI GBON contract, five stations over a 2054 m altitude range."""
+def build_senamhi(years: int, seed: int, start_year: int = 2018,
+                  end_date: str | None = None) -> pd.DataFrame:
+    """The SENAMHI GBON contract, five stations over a 2054 m altitude range.
+
+    `end_date` trims the series the way the real record ends (2024-06-30), so a
+    smoke run meets the same half-year at the end that the real data has.
+    """
     rng = np.random.default_rng(seed)
-    hours = _hourly_index(years)
+    hours = _hourly_index(years, start_year)
+    if end_date is not None:
+        hours = hours[hours < pd.Timestamp(end_date) + pd.Timedelta(days=1)]
     stations = [
         # name, ubigeo, lat, lon, alt, mean_c, RED
-        ("MATUCANA", "150701", -11.8391, -76.3780, 2421, 15.3, "RBON"),
-        ("SAN_JOSE_DE_UZUNA", "040114", -16.5810, -71.3284, 3269, 10.3, "GBON"),
+        ("MATUCANA", "150701", -11.8391, -76.3780, 2421, 15.3, "GBON"),
+        ("SAN_JOSE_DE_UZUNA", "040114", -16.5810, -71.3284, 3269, 10.3, "RBON"),
         ("CANDARAVE", "230201", -17.2680, -70.2541, 3410, 9.8, "RBON"),
         ("CARANIA", "151007", -12.3444, -75.8722, 3840, 8.4, "GBON"),
-        ("IMATA", "040514", -15.8427, -71.0906, 4475, 3.0, "GBON"),
+        ("IMATA", "040514", -15.8427, -71.0906, 4475, 3.0, "RBON"),
     ]
     frames = []
     for i, (name, ubi, lat, lon, alt, mean_c, red) in enumerate(stations):
@@ -149,12 +156,15 @@ def build_senamhi(years: int, seed: int) -> pd.DataFrame:
 BUILDERS = {"huancayo": build_huancayo, "senamhi": build_senamhi}
 
 
-def build(schema: str = "huancayo", years: int = 2, seed: int = 42) -> pd.DataFrame:
+def build(schema: str = "huancayo", years: int = 2, seed: int = 42,
+          start_year: int | None = None, end_date: str | None = None) -> pd.DataFrame:
     """Build a synthetic dataset with the named schema."""
     if schema not in BUILDERS:
         raise SystemExit(
             f"ERROR: unknown schema {schema!r}; known: {', '.join(sorted(BUILDERS))}"
         )
+    if schema == "senamhi":
+        return build_senamhi(years, seed, start_year or 2018, end_date)
     return BUILDERS[schema](years, seed)
 
 
@@ -172,7 +182,8 @@ def main() -> int:
                     help="summarise without writing")
     args = ap.parse_args()
 
-    df = build(args.schema, args.years, args.seed)
+    df = build(args.schema, args.years, args.seed,
+               start_year=sample_cfg.get("start_year"), end_date=sample_cfg.get("end_date"))
 
     if args.show:
         print(f"schema={args.schema} rows={len(df)} cols={len(df.columns)}")

@@ -1,80 +1,68 @@
-# Experiments for papers/c20-2026 (design v2.0, five SENAMHI stations)
+# Experiments for papers/c20-2026 (design v3.0, five SENAMHI stations)
 
 All modules read `config.yaml`. No hardcoded constants. Nothing here edits the
-manuscript; numbers go to `../outputs/` as CSV/JSON only.
+manuscript; numbers go to `../outputs/` as CSV/JSON only. The design is in
+[`../METHODOLOGY.md`](../METHODOLOGY.md); the reasons for each choice in
+[`../DESIGN_DECISIONS.md`](../DESIGN_DECISIONS.md).
 
-> **The station refactor is done; the variable layer is not.** Stages `00`–`05`
-> now carry a station key end to end and run green on five stations. They still
-> expect the previous provider's schema: `read_hourly` builds its timestamp from
-> `year/month/day/hour`, and `NUMERIC_VARS` is `TT, HR, RR, PP, FF, DD`.
->
-> The data of record has none of that. It has `FECHA`+`HORA` instead of the
-> four component columns, `TEMP` instead of `TT`, no `RR`/`FF`/`DD` at all, and
-> **`PP` is precipitation in mm/h rather than pressure in hPa** — so the config's
-> `PP: [640, 720]` range currently nulls the entire precipitation column while
-> the run still exits 0.
->
-> Fix that before running anything against the real file.
-> [`../DESIGN_DECISIONS.md`](../DESIGN_DECISIONS.md) §1 lists the resume order
-> and §9 the measurements behind it.
+**Where things run.** Every stage runs on Colab through
+`notebooks/experiments.ipynb`. Locally only the test suite runs (about 50 s, no
+real data, no model training); nobody waits on a pipeline run on a laptop.
 
 ## Order
 
-1. `fetch_source.py` — download the raw CSV and record provenance (not a stage: `run_all.py` never calls it).
-2. `00_verify_source.py` — V1–V6 source checks (§2.1).
-2. `01_qc_hourly.py` — hourly QC flags (§3.1), no target imputation.
-3. `02_aggregate_daily.py` — local-day aggregation (§3.2) to `data/processed/`.
-4. `03_climatology.py` — C2 primary + C1/C3 sensitivity, `sigma_h,q`, terciles (§7.1).
-5. `04_make_issuances.py` — weekly eval issuances + daily training pool, 28-day embargo (§6, §12.2).
-6. `05_features_local.py` — `X_L` anomalies (§7.2).
-7. `06_features_largescale.py` — `G` with realistic latencies (§7.2).
-8. `07_models.py` — Clim/Damp/Pers/Ridge_L/LG/GBM_L/LG, direct per horizon (§8).
-9. `08_metrics.py` — MSSS/Murphy/CRPS grid/CRPSS/RPSS/PIT/reliability/coverage (§10).
-10. `09_inference.py` — H1 CW + block bootstrap, H2, H3, Holm (§11).
-11. `10_tables_figures.py` — contract T1–T4/F1–F4 (§14) from `outputs/` only.
-12. `run_all.py` — ordered orchestrator; freezes `M*` + hyperparameters before B1–B2.
-
-## Anti-leakage (§12)
-
-Train-only climatologies/scalers/PCA/Damp coeffs per fold; 28-day embargo
-including inner validation; predictors dated ≤ d plus §7.2 latencies; no ONI/ICEN;
-a-priori C2, G list, quantile grid, bootstrap blocks, horizons; frozen `M*`.
-
-## Stubs
-
-- `secondary/` — §13 descriptive analyses (empty).
-- `extensions/` — E1–E5 disabled via `extensions_enabled` (empty).
-
-Environment is declared in `requirements-experiments.txt`.
-Do not run stages 03+ until the author confirms D2/D3/D4 defaults.
-
-## Status of stages 00-02 (implemented)
-
-| Stage | Output | Result on the real dataset |
+| Stage | Writes | Runs on |
 |---|---|---|
-| `00_verify_source.py` | `outputs/tables/T1_completeness.csv` | V1-V6 run; V1 resolves `tz_of_source` as local civil |
-| `01_qc_hourly.py` | `data/processed/hourly_qc.csv` | 700 `missing_source`, 9 `precip_event`, 0 destroyed by QC |
-| `02_aggregate_daily.py` | `data/processed/daily.csv` | 2922 days, 2886 valid by `min_hours`, 36 rejected |
-| `03_climatology.py` | `data/processed/daily_clim.csv` + `outputs/climatology/<fold>.json` | C2/C1/C3 per fold, variance explained 0.41-0.46 |
-| `04_make_issuances.py` | `data/processed/issuances.csv` | 27721 rows: 51/51/51/52/51 weekly eval issuances per fold (D1/D2/D3/B1/B2) + embargoed daily training rows |
-| `05_features_local.py` | `data/processed/features_<fold>.csv` | 22 local predictors, one row per (issue_date, horizon, fold) |
-| `run_all.py` | `outputs/logs/<stage>.log` + `run_all.log` | orchestrator 00→10; writes a header/footer log per stage |
+| `fetch_source.py` (not a stage) | `data/raw/senamhi.csv` + `data/SOURCE.json` | CPU |
+| `00_verify_source` | `outputs/tables/T1_completeness.csv` (V1–V6) | CPU |
+| `01_qc_hourly` | `data/processed/hourly_qc.csv` | CPU |
+| `02_aggregate_daily` | `data/processed/daily.csv` | CPU |
+| `03_climatology` | `daily_clim.csv`, `outputs/climatology/<station>/<fold>.json` (TT_mean, TT_min, TT_max) | CPU |
+| `04_make_issuances` | `data/processed/issuances.csv` | CPU |
+| `05_features_local` | `data/processed/features/<station>/<fold>.csv` | CPU |
+| `06_features_largescale` | `data/processed/largescale_daily.csv` (Niño 3.4/1+2, ROMI, as-of) | CPU, network |
+| `06b_dynamical` | `data/processed/cfs_windows.csv` (NOAA CFSv2 at the stations, open data, range requests) | CPU, network |
+| `07_models` | `outputs/models/preds_<exp>_<model>.csv`, `eval_index_<exp>.csv` | CPU |
+| `07b_deep` | LSTM_LG and Chronos predictions | **GPU** |
+| `07c_ensemble` | Ensemble predictions, `outputs/models/primary_model.json` (M*) | CPU |
+| `07d_cfs_benchmark` | `CFS_BC` predictions (blind folds), `T8_cfs_calibration.csv` | CPU |
+| `08_metrics` | `outputs/models/scored_<exp>.csv`, `outputs/tables/metrics_long.csv` | CPU |
+| `09_inference` | `T2_blind_skill.csv`, `T3_hypotheses.csv`, `T5_loso_gap.csv` | CPU |
+| `10_tables_figures` | `T4_murphy.csv`, `T6_secondary_targets.csv`, `T7_conditional_skill.csv`, `outputs/figures/F1-F6.png` | CPU |
 
-Findings that resolve open config questions:
+Sensitivity models carry an `@` suffix: `Ridge_LG@EC` and `GBM_LG@EC` (E/C
+indices, R4), and in LOSO `@elev` and `@none` (static descriptors, R2). They
+are scored and reported but never enter M* or the ensemble.
 
-- **V1 (timezone)**: the TT diurnal cycle peaks at 14:00 and troughs at 05:00,
-  amplitude 12.97 degC. That is a local-civil cycle, so `tz_of_source` is
-  resolved and **no UTC-to-local shift is applied** in `02`. If the series had
-  been UTC, the trough would fall near 10:00-11:00; `00` flags that case as
-  `REVIEW_shift_required`.
-- **V3 (missing)**: gaps are **row-wise** (700 empty rows across all six
-  variables at once, 91 distinct days), so they are provider gaps, not sensor
-  faults. No sentinel codes are present.
-- **QC does not destroy data**: the 9 events exceeding `step_TT_max_degC` are
-  convective storms (TT drops ~9 degC while RR rises and HR jumps ~30 points),
-  labelled `precip_event` and kept. Only `out_of_range` and `spike` zero a value.
-- **V4**: 2018-01-01 to 2025-12-31, no day with fewer than 24 hourly records,
-  and both blind years (2024, 2025) are fully present.
+`run_all.py --fast` runs everything with tiny budgets (20 trees, one LSTM
+epoch, 50 bootstrap replicates, no Chronos) to prove the wiring end to end; its
+numbers are never cited. `--skip-dl` leaves out `07b_deep`.
+
+Shared modules: `_common.py` (paths, config, IO, logging), `_harmonic.py`
+(climatology maths), `_panel.py` (the modelling panel and the prediction
+contract), `_scores.py` (CRPS, PIT, RPS, Murphy).
+
+## Anti-leakage
+
+- Climatologies, scalers, ridge alphas, residual SDs and every model are fitted
+  on the fold's own training rows; the fold's test window is never seen.
+- Training issuances are embargoed 28 days before the test window, so no
+  training target reaches it.
+- Large-scale predictors are joined as known on the issue date (Niño d−7,
+  ROMI d−1). ONI, ICEN and OMI are excluded (centred filters read the future).
+- LOSO trains on the other stations *and* on dates before the test window.
+- Ensemble weights and M* come from the dev folds and are frozen in
+  `primary_model.json` before 08-10 read any blind score.
+
+## Status
+
+All stages are implemented and covered by the light test suite
+(`tests/test_v3_contracts.py`, `tests/test_models_pipeline.py`). No stage has
+yet run on the real file under design v3; the first Colab run produces the
+numbers. The notes below were measured on the superseded single-station
+Huancayo data and are kept for their reasoning, not their values.
+
+## Notes from the v2 (Huancayo) runs
 
 ### The harmonic climatology leaves a seasonal residual out of sample
 
@@ -165,23 +153,15 @@ target nor its predictors are ever imputed.
 The loop is: edit locally, check locally, commit, push to Drive, run in Colab
 without reloading the notebook. Each step is one command.
 
-**1. Edit and check locally.** The pipeline runs against a synthetic dataset, so
-no stage needs the real 5 MB file:
+**1. Edit and check locally.** Only the tests run here; they use in-memory
+synthetic fixtures and finish in under a minute:
 
 ```
-cd papers/c20-2026/experiments
-python _sample_data.py --years 2            # writes data/raw/dataset.csv (synthetic)
-python run_all.py --to 05                   # full chain, seconds not minutes
-python -m pytest ../tests -q                # the real check: 179 tests
+python -m pytest papers/c20-2026/tests -q
 ```
 
-The synthetic file is regenerated, never edited, and never cited. Its schema
-comes from `config.sample_data.schema`; switching to the SENAMHI contract after
-the multi-station migration is a config change, not a code change.
-
-Use Python 3.12 locally, the version Colab runs. On 3.14 some dependencies have
-no wheel and compile from source (`lxml` needs Visual C++), so a green local run
-does not prove a green Colab run.
+`_sample_data.py` can still write a synthetic `senamhi.csv` for a Colab smoke
+run, but the pipeline itself is not run on a laptop.
 
 **2. Commit.**
 

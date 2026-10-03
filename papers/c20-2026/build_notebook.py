@@ -24,8 +24,13 @@ Replica el patrón de `papers/c15-2026` (`AGENTS.md` §5-§6): **sin git y sin `
 
 Prerrequisitos:
 
-- Carpeta `c20-2026` en Drive con `code/` y `data/raw/dataset.csv` (ya montada).
+- Carpeta `c20-2026` en Drive con `code/` (el CSV crudo lo baja la celda 3b).
 - Este notebook abierto desde Drive.
+- **GPU**: Entorno de ejecución → Cambiar tipo de entorno → GPU (T4 alcanza). La
+  etapa `07b_deep` (LSTM + Chronos) la necesita; el resto corre en CPU.
+
+Diseño v3: 5 estaciones SENAMHI (2421–4475 m), 2015-01 → 2024-06, folds julio–junio
+(D1–D3 dev, B1–B2 ciegos), horizontes W1/W2/W3–4, experimentos temporal + LOSO.
 
 > Al subirlo a Drive hay que pasar `mimeType: application/x-ipynb+json`; con el
 > default (`application/octet-stream`) Colab no lo reconoce como notebook."""),
@@ -85,7 +90,8 @@ print(f"[ok] config.yaml mtime={_mtime} size={_st.st_size}")
 import yaml
 cfg = yaml.safe_load(_cfg.read_text(encoding="utf-8"))
 print(f"[ok] project={cfg.get('project')} design={cfg.get('design_version')}")
-print(f"[ok] station={(cfg.get('station') or {}).get('name')}")
+print(f"[ok] stations={[s['name'] for s in cfg.get('stations') or []]}")
+print(f"[ok] folds={[(f['id'], f['test']) for f in cfg['validation']['folds']]}")
 print(f"[ok] weekday={(cfg.get('issuance') or {}).get('weekday')}")
 
 # Rutas segun _common: deben caer en Drive, no en /content.
@@ -108,9 +114,8 @@ print(f"[info] procedencia: {(pathlib.Path(os.environ['DATA_DIR']) / 'SOURCE.jso
 QC = pathlib.Path(os.environ["DATA_DIR"]) / "processed/hourly_qc.csv"
 print(f"[info] QC previo presente: {QC.is_file()}")
 
-steps = sorted(p.stem.split("_")[0] for p in pathlib.Path(
-    "/content/c20-2026/experiments").glob("[0-9][0-9]_*.py"))
-print(f"pasos declarados: {steps}")"""),
+import run_all
+print(f"pasos declarados: {run_all.discover_stages()}")"""),
 
     ("md", """## 3b. Bajar el dataset crudo con su procedencia
 
@@ -118,7 +123,9 @@ print(f"pasos declarados: {steps}")"""),
 
 El nombre del archivo sale de `config.source.file`, que es el mismo que leen las etapas: si el fetch escribiera un nombre y las etapas leyeran otro, la corrida entera usaría el archivo viejo sin decirlo.
 
-**Si el portal no resuelve** (pasa: `www.datos.gob.pe` dio NXDOMAIN desde Colab), descargalo vos en el navegador y subilo a `Drive/c20-2026/data/raw/senamhi.csv`. Después corré `--adopt`, que registra la procedencia completa sin red: checksum, columnas, inventario de estaciones y cobertura. Lo único que queda sin registro es de dónde se descargó, y eso queda escrito en el `SOURCE.json`.
+El host es `www.datosabiertos.gob.pe` (no `datos.gob.pe`, que no resuelve) y responde HTTP 418 a clientes sin User-Agent de navegador; `fetch_source.py` ya manda uno.
+
+**Si el portal igual falla**, descargalo vos en el navegador y subilo a `Drive/c20-2026/data/raw/senamhi.csv`. Después corré `--adopt`, que registra la procedencia completa sin red: checksum, columnas, inventario de estaciones y cobertura. Lo único que queda sin registro es de dónde se descargó, y eso queda escrito en el `SOURCE.json`.
 
 El CSV va a `data/raw/` (gitignored). `SOURCE.json` va a `data/` arriba, que sí se versiona: la procedencia es chica y revisable, los datos no."""),
 
@@ -183,23 +190,39 @@ _MARK = "/content/.deps_c20_2026"
 if os.path.exists(_MARK):
     print("[skip] deps ya instaladas en este runtime")
 else:
-    r = subprocess.run([sys.executable, "-m", "pip", "install", "-r",
-                        "requirements-experiments.txt", "--quiet"])
+    # torch NO se reinstala: Colab ya trae la build con CUDA, y pip la
+    # reemplazaria por una que puede no ver la GPU.
+    pkgs = ["pandas>=2.0", "pyyaml>=6.0", "tqdm>=4.66", "lightgbm>=4.0",
+            "scikit-learn>=1.3", "matplotlib>=3.7", "chronos-forecasting>=1.4,<2.0",
+            "eccodes>=2.36"]
+    r = subprocess.run([sys.executable, "-m", "pip", "install", "--quiet", *pkgs])
     if r.returncode != 0:
         raise RuntimeError(f"pip install fallo con exit={r.returncode}; no se escribe la marca")
     open(_MARK, "w").write("installed")
     print("[ok] deps instaladas")
-!python --version"""),
+!python --version
+import torch
+print(f"torch {torch.__version__} | GPU: {torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'NO (07b sera lenta)'}")"""),
 
     ("md", """## 4. Etapas del pipeline (una celda por paso)
 
 Corre en orden. `02` depende del QC de `01`, así que no te saltes una.
 
-Los módulos `00`-`05` están implementados. `06` en adelante siguen siendo stubs: cuando fallen con `NotImplementedError`, implementalos local y repetí la última celda.
+Todas las etapas `00`→`10` están implementadas. Orden y costo aproximado en Colab (GPU T4):
+
+| Bloque | Etapas | Dónde | Notas |
+|---|---|---|---|
+| Datos | `00`–`06` | CPU | minutos; `06` baja Niño (CPC) y ROMI (NOAA PSL) con caché |
+| Dinámico | `06b_dynamical` | CPU, red | CFSv2 abierto de NOAA (sin registro): ~9 MB por corrida y miembro por lectura de rangos; cacheado por fecha. Corré primero `--probe` |
+| Modelos | `07_models` | CPU | Clim/Damp/Pers/Ridge/GBM, temporal + LOSO; el más largo en CPU |
+| Deep | `07b_deep` | **GPU** | LSTM pooled + Chronos zero-shot |
+| Cierre | `07c`–`10` | CPU | ensamble, M\\* congelado, `07d` (CFS_BC), métricas, tests H1–H4, tablas y figuras |
+
+**Primero un smoke run** (`--fast`): presupuestos mínimos, termina rápido y prueba el cableado de punta a punta. Sus números **no se citan**; después corré la versión completa.
 
 Las etapas emiten eventos de progreso `#PROG` y la celda los dibuja como barras fijas con `tqdm.notebook`; en terminal local el mismo protocolo se dibuja con `tqdm.std`. Las etapas vectorizadas de `01` y `02` no iteran, pero igual reportan su avance a nivel etapa, así que siempre ves en qué paso estás.
 
-`06_features_largescale.py` necesita descargas externas (Niño CPC, RMM, ERA5) y su dominio/variables siguen marcados `TO_CONFIRM_D4` en `config.yaml`."""),
+`06_features_largescale.py` baja Niño 3.4/1+2 semanal (CPC, latencia 7 d) y ROMI (MJO en tiempo real, latencia 1 d). OMI y ONI/ICEN están excluidos: sus filtros centrados leen el futuro."""),
 
     ("md", """## 4b. Correr todo de una (recomendado)
 
@@ -242,6 +265,10 @@ def paso(*etapas, **kw):
         argv += ["--from", kw.get("desde", "00"), "--to", kw.get("hasta", "10")]
     if kw.get("config"):
         argv += ["--config", kw["config"]]
+    if kw.get("fast"):
+        argv += ["--fast"]
+    if kw.get("skip_dl"):
+        argv += ["--skip-dl"]
     print("::", " ".join(argv[1:]))
     return run_and_render(argv, cwd="/content/c20-2026/experiments")
 
@@ -250,6 +277,30 @@ def paso(*etapas, **kw):
 # paso("03", "05")
 # paso(desde="03", hasta="05")
 # paso("05", config="mi.yaml")
+# paso(fast=True)                      # smoke run de todo, numeros NO citables
+# paso(desde="00", hasta="07_models")  # bloque CPU
+# paso("07b_deep")                     # bloque GPU
+# paso(desde="07c_ensemble", hasta="10_tables_figures")
+'''),
+
+    ("code", '''# 0) Sanidad del CFSv2 (una fecha, un miembro): decodifica GRIB, interpola a las
+# estaciones y chequea unidades. Si falla, no sigas: el resto no depende de esto,
+# pero 07d y H4 si. Esperable: sesgo de varios grados (rejilla de 1 grado).
+import subprocess
+r = subprocess.run([sys.executable, "06b_dynamical.py", "--probe"],
+                   cwd="/content/c20-2026/experiments", capture_output=True, text=True)
+print(r.stdout[-2500:], r.stderr[-1500:])
+print(f"[probe exit={r.returncode}]")
+'''),
+
+    ("code", '''# 1) Smoke run: todo el pipeline con presupuestos minimos (no citable).
+rc = paso(fast=True)
+print(f"[smoke exit={rc}]")
+'''),
+
+    ("code", '''# 2) Corrida completa (la que se cita). Despues del smoke run sin errores.
+rc = paso()
+print(f"[full exit={rc}]")
 '''),
 
     ("md", """### Que escribe cada etapa
@@ -259,9 +310,16 @@ def paso(*etapas, **kw):
 | `00_verify_source` | `outputs/tables/T1_completeness.csv` (V1-V6) |
 | `01_qc_hourly` | `data/processed/hourly_qc.csv` |
 | `02_aggregate_daily` | `data/processed/daily.csv` |
-| `03_climatology` | `data/processed/daily_clim.csv` + `outputs/climatology/<fold>.json` |
-| `04_make_issuances` | `data/processed/issuances.csv` |
-| `05_features_local` | `data/processed/features_<fold>.csv` |
+| `03_climatology` | `data/processed/daily_clim.csv` + `outputs/climatology/<estacion>/<fold>.json` |
+| `04_make_issuances` | `data/processed/issuances.csv` (TT_mean + TT_min/TT_max) |
+| `05_features_local` | `data/processed/features/<estacion>/<fold>.csv` |
+| `06_features_largescale` | `data/processed/largescale_daily.csv` (Niño, ROMI as-of) |
+| `07_models` | `outputs/models/preds_<exp>_<modelo>.csv` + `eval_index_<exp>.csv` |
+| `07b_deep` | `preds_*_LSTM_LG.csv`, `preds_*_Chronos.csv` |
+| `07c_ensemble` | `preds_*_Ensemble.csv` + `outputs/models/primary_model.json` (M\\*) |
+| `08_metrics` | `outputs/models/scored_<exp>.csv` + `outputs/tables/metrics_long.csv` |
+| `09_inference` | `T2_blind_skill.csv`, `T3_hypotheses.csv`, `T5_loso_gap.csv` |
+| `10_tables_figures` | `T4_murphy.csv`, `T6_secondary_targets.csv`, `outputs/figures/F1..F6.png` |
 
 Todas las escrituras son atomicas (temporal hermano + `os.replace`): una
 desconexion a mitad de escritura deja el archivo anterior o nada, nunca un CSV
@@ -323,27 +381,19 @@ if isu.is_file():
 else:
     print("issuances.csv aun no generado (corre el paso 04)")
 
-# Diagnostico de features: missing y correlacion con el target.
-feat_files = sorted(pathlib.Path(DATA_DIR).glob("processed/features_*.csv"))
+# Diagnostico de features: missing por estacion y fold.
+feat_files = sorted(pathlib.Path(DATA_DIR).glob("processed/features/*/*.csv"))
 if feat_files:
     print(f"\\n--- features ({len(feat_files)} archivo/s) ---")
     for f in feat_files:
-        d = pd.read_csv(f, parse_dates=["issue_date"])
-        meta = ["fold", "role", "issue_date", "kind", "horizon", "lag_start", "lag_end"]
+        d = pd.read_csv(f, dtype={"station": str})
+        meta = ["fold", "role", "issue_date", "kind", "horizon", "lag_start", "lag_end", "station"]
         cols = [c for c in d.columns if c not in meta]
         miss = d[cols].isna().mean().mul(100)
-        print(f"{f.name}: {len(d)} filas x {len(cols)} features | "
+        print(f"{f.parent.name}/{f.name}: {len(d)} filas x {len(cols)} features | "
               f"missing medio {miss.mean():.1f}% | peor {miss.idxmax()} {miss.max():.1f}%")
-        if "B2" in f.name:
-            tgt = i[(i["fold"] == "B2") & (i["horizon"] == "W1")]
-            m = d[(d["kind"] == "eval") & (d["horizon"] == "W1")].merge(
-                tgt[["issue_date", "A_C2_target"]], on="issue_date")
-            corr = m[cols + ["A_C2_target"]].corr(numeric_only=True)["A_C2_target"]
-            corr = corr.drop("A_C2_target").dropna().sort_values(key=abs, ascending=False)
-            print("\\n  Correlacion de cada feature con el target W1 (B2, eval):")
-            print("  " + "\\n  ".join(f"{k:32s} {v:+.3f}" for k, v in corr.head(8).items()))
 else:
-    print("features_<fold>.csv aun no generado (corre el paso 05)")"""),
+    print("features aun no generadas (corre el paso 05)")"""),
 
     ("code", """# Logs de la corrida
 logs = pathlib.Path(os.environ["OUTPUT_DIR"]) / "logs"
@@ -354,7 +404,67 @@ for f in files:
     print("\\n--- {} ({} bytes) ---".format(f.name, f.stat().st_size))
     print(f.read_text(encoding="utf-8", errors="ignore")[:2000])"""),
 
-    ("md", "## 6. Refrescar el código cuando el agente suba cambios"),
+    ("md", """## 6. Resultados para el paper
+
+Todo sale de `outputs/` (tablas CSV y figuras PNG). Cada número del manuscrito debe poder rastrearse a uno de estos archivos (`manifest.yaml → claims`).
+
+- **T2**: skill ciego (B1–B2) de cada modelo vs Clim y Damp, con IC 95 % (block bootstrap, estaciones juntas).
+- **T3**: hipótesis H1 (valor de Niño/MJO), H2 (M\\* vs Damp en W3–4), H3 (skill probabilístico), con p de Holm.
+- **T5**: LOSO, cuánto skill se pierde al no entrenar con la estación, vs altitud (con variantes de descriptores estáticos, R2).
+- **T8** (`T8_cfs_calibration.csv`): cuánta señal tiene el CFSv2 (correlación de su anomalía con la observada, pendiente) antes de mirar cualquier skill.
+- **T7**: skill condicionado a estación del año, fase ENSO y MJO activo (R3, descriptivo).
+- Modelos `@EC`: sensibilidad con índices E/C de Takahashi (R4); nunca entran a M\\* ni al ensamble."""),
+
+    ("code", """import json, pathlib
+import pandas as pd
+from IPython.display import Image, display
+
+OUT = pathlib.Path(os.environ["OUTPUT_DIR"])
+T = OUT / "tables"
+pm = OUT / "models/primary_model.json"
+if pm.is_file():
+    info = json.loads(pm.read_text())
+    print(f"M* = {info['primary_model']}  (elegido en dev, congelado antes del ciego)")
+    print("CRPS dev:", info["dev_crps"])
+
+m = pd.read_csv(T / "metrics_long.csv", dtype={"scope": str})
+sel = m[(m["experiment"] == "temporal") & (m["scope"] == "pooled") & (m["target"] == "TT_mean")]
+for role in ("dev", "blind"):
+    print(f"\\n== CRPSS vs Damp | {role} | TT_mean, 5 estaciones ==")
+    display(sel[sel["role"] == role].pivot(index="model", columns="horizon",
+                                         values="CRPSS_damp").round(3))
+print("\\n== CRPSS vs Clim | blind ==")
+display(sel[sel["role"] == "blind"].pivot(index="model", columns="horizon",
+                                         values="CRPSS_clim").round(3))"""),
+
+    ("code", """t2 = pd.read_csv(T / "T2_blind_skill.csv")
+print("T2 (CRPSS vs Damp, ciego, IC 95 %):")
+display(t2[t2["metric"] == "CRPSS_damp"].round(3))
+t3 = pd.read_csv(T / "T3_hypotheses.csv")
+print("T3 hipotesis:")
+display(t3.round(4))
+t5 = T / "T5_loso_gap.csv"
+if t5.is_file() and t5.stat().st_size > 5:
+    print("T5 LOSO (dCRPS > 0 = se pierde skill sin la estacion);")
+    print("   variantes: all = elev+lat+lon, elev = solo altitud, none = sin estaticos")
+    display(pd.read_csv(t5).round(3))
+t7 = T / "T7_conditional_skill.csv"
+if t7.is_file():
+    print("T7 skill condicionado (estacion del anio, fase ENSO, MJO activo), ciego:")
+    d7 = pd.read_csv(t7)
+    display(d7[d7["model"].isin(["Damp", "Ridge_LG", "GBM_LG", "Ensemble"])]
+            .pivot_table(index=["split", "condition"], columns=["model", "horizon"],
+                         values="CRPSS_clim").round(3))
+sens = sel[sel["model"].str.contains("@EC")]
+if len(sens):
+    print("Sensibilidad R4 (indices E/C de Takahashi en vez de Nino 1+2/3.4), CRPSS vs Damp:")
+    display(sens.pivot(index=["model", "role"], columns="horizon", values="CRPSS_damp").round(3))"""),
+
+    ("code", """for f in sorted((OUT / "figures").glob("F*.png")):
+    print(f.name)
+    display(Image(filename=str(f), width=720))"""),
+
+    ("md", "## 7. Refrescar el código cuando el agente suba cambios"),
 
     ("code", """# Drive code/ -> /content. Repetir despues de cada sync del agente.
 import shutil
