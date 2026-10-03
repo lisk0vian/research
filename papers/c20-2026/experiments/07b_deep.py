@@ -306,13 +306,60 @@ def window_quantiles(paths: np.ndarray, windows: dict[str, tuple[int, int]],
     return out
 
 
+def _is_oom(exc: BaseException) -> bool:
+    return type(exc).__name__ == "OutOfMemoryError" or "out of memory" in str(exc).lower()
+
+
+def predict_paths(pipe, ctx: list, horizon_len: int, num_samples: int,
+                  batch_size: int) -> tuple[np.ndarray, int]:
+    """(n, num_samples, horizon_len) sample paths, halving the batch on GPU OOM.
+
+    Chronos decodes batch x num_samples sequences at once and its key/value cache
+    grows with every step, so 64 contexts x 100 samples over 28 days needed more
+    than a T4's 15 GB. Each context is forecast independently, so the batch size
+    changes memory and speed, not the paths. Returns the batch size that worked,
+    so the next fold starts there instead of failing again.
+    """
+    try:
+        import torch
+    except ImportError:  # only needed to free the GPU cache
+        torch = None
+
+    paths: list[np.ndarray] = []
+    start, bs = 0, max(1, int(batch_size))
+    while start < len(ctx):
+        oom = False
+        try:
+            out = pipe.predict(ctx[start:start + bs], prediction_length=horizon_len,
+                               num_samples=num_samples)
+        except Exception as exc:  # noqa: BLE001 - only OOM is retried
+            if not _is_oom(exc) or bs == 1:
+                raise
+            oom = True
+        if oom:
+            # Outside the except block: the traceback's frames hold the failed
+            # batch's tensors until it closes, so the cache cannot be freed inside.
+            if torch is not None and torch.cuda.is_available():
+                torch.cuda.empty_cache()
+            bs = max(1, bs // 2)
+            print(f"[chronos] GPU out of memory; retrying with batch size {bs}")
+            continue
+        paths.append(out.float().cpu().numpy())
+        del out
+        start += bs
+    return np.concatenate(paths, axis=0), bs
+
+
 def run_chronos(panel: pd.DataFrame, seqs_by_fold: dict, index: pd.DataFrame,
                 cfg: dict, levels: list[float]) -> list[pd.DataFrame]:
     import torch
     ccfg = cfg["models"]["chronos"]
     windows = {h: (int(v[0]), int(v[1])) for h, v in cfg["target"]["horizons"].items()}
     horizon_len = max(b for _, b in windows.values())
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()  # whatever the LSTM left cached
     pipe = chronos_pipeline(ccfg["model_id"])
+    bs = int(ccfg.get("batch_size", 64))
     frames = []
     evals = index.drop_duplicates(["station", "fold", "issue_date"])
     for fold, block in progress(list(evals.groupby("fold")), desc="07b chronos",
@@ -322,13 +369,8 @@ def run_chronos(panel: pd.DataFrame, seqs_by_fold: dict, index: pd.DataFrame,
             s = seqs_by_fold[fold][st]["A_TT_mean"]
             s = s[s.index <= d].iloc[-int(ccfg["context_days"]):]
             ctx.append(torch.tensor(s.to_numpy("float32")))
-        paths = []
-        bs = int(ccfg.get("batch_size", 64))
-        for start in range(0, len(ctx), bs):
-            out = pipe.predict(ctx[start:start + bs], prediction_length=horizon_len,
-                               num_samples=int(ccfg["num_samples"]))
-            paths.append(out.float().cpu().numpy())
-        paths = np.concatenate(paths, axis=0)
+        paths, bs = predict_paths(pipe, ctx, horizon_len, int(ccfg["num_samples"]), bs)
+        print(f"[chronos/{fold}] batch size {bs}")
         wq = window_quantiles(paths, windows, levels)
         base = block[["station", "fold", "role", "issue_date"]].reset_index(drop=True)
         keys = index[["station", "fold", "issue_date", "horizon"]]

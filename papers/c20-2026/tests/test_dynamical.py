@@ -338,3 +338,46 @@ def test_reframe_refuses_when_message_count_disagrees_with_idx():
     blob = _grib(b"a") + _grib(b"b")
     with pytest.raises(ValueError, match="idx lists"):
         d06.reframe_from_file(blob, [(6, 0), (12, 10), (18, 20)], [6])
+
+
+# --- Chronos batch size (07b) -------------------------------------------------------
+
+def test_chronos_halves_the_batch_on_gpu_oom_and_keeps_every_path():
+    import importlib
+    import numpy as np
+    m07b = importlib.import_module("07b_deep")
+
+    class OutOfMemoryError(RuntimeError):
+        pass
+
+    class FakePipe:
+        calls: list[int] = []
+
+        def predict(self, ctx, prediction_length, num_samples):
+            self.calls.append(len(ctx))
+            if len(ctx) > 2:
+                raise OutOfMemoryError("CUDA out of memory")
+            import types
+            arr = np.stack([np.full((num_samples, prediction_length), float(c)) for c in ctx])
+            return types.SimpleNamespace(float=lambda: types.SimpleNamespace(
+                cpu=lambda: types.SimpleNamespace(numpy=lambda: arr)))
+
+
+    pipe = FakePipe()
+    paths, bs = m07b.predict_paths(pipe, [1, 2, 3, 4, 5], 28, 3, batch_size=8)
+    assert bs == 2
+    assert paths.shape == (5, 3, 28)
+    assert list(paths[:, 0, 0]) == [1, 2, 3, 4, 5]  # every context, in order
+
+
+def test_chronos_does_not_retry_other_errors():
+    import importlib
+    m07b = importlib.import_module("07b_deep")
+
+
+    class Pipe:
+        def predict(self, ctx, prediction_length, num_samples):
+            raise ValueError("bad context")
+
+    with pytest.raises(ValueError):
+        m07b.predict_paths(Pipe(), [1, 2], 28, 3, batch_size=2)

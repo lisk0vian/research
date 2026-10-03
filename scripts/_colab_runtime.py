@@ -175,12 +175,25 @@ class RunLog:
 
 
 def tail(path: str | Path, n: int = TAIL_LINES) -> str:
-    """Last `n` lines of a text file; a traceback lives at the end of a stage log."""
+    """The end of a stage log, keeping the top of its last traceback.
+
+    A traceback lives at the end of the log, but a deep one (torch,
+    transformers) is longer than `n` lines, and a plain tail then shows only
+    library frames: the frames that name the pipeline's own file and line are
+    at its top. So when the last traceback is too long, keep its first lines,
+    an ellipsis, and its end.
+    """
     try:
         lines = Path(path).read_text(encoding="utf-8", errors="replace").splitlines()
     except OSError:
         return ""
-    return "\n".join(lines[-n:])
+    starts = [i for i, ln in enumerate(lines) if ln.startswith("Traceback (most recent call last)")]
+    if not starts or len(lines) - starts[-1] <= n:
+        return "\n".join(lines[-n:])
+    tb = lines[starts[-1]:]
+    head, end = n // 3, n - n // 3
+    return "\n".join([*tb[:head], f"    ... ({len(tb) - head - end} traceback lines omitted) ...",
+                      *tb[-end:]])
 
 
 # --- notebook cell errors --------------------------------------------------------

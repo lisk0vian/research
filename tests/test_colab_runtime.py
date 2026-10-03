@@ -442,3 +442,16 @@ def test_the_runtime_itself_is_not_part_of_the_fingerprint(tmp_path, code):
     before = st.fingerprints(STAGES)
     (code / "_colab_runtime.py").write_text("# v2\n", encoding="utf-8")
     assert _state(tmp_path, code).fingerprints(STAGES) == before
+
+
+def test_tail_keeps_the_top_of_a_long_traceback(tmp_path):
+    """A torch/transformers traceback pushed 07b's own frame out of errors.log."""
+    lines = ["stage output"] * 5 + ["Traceback (most recent call last):",
+                                    '  File "07b_deep.py", line 328, in run_chronos']
+    lines += [f'  File "torch/module.py", line {i}' for i in range(200)]
+    lines += ["torch.OutOfMemoryError: CUDA out of memory."]
+    p = tmp_path / "s.log"
+    p.write_text("\n".join(lines), encoding="utf-8")
+    out = rt.tail(p, 30)
+    assert "07b_deep.py" in out and "OutOfMemoryError" in out and "omitted" in out
+    assert len(out.splitlines()) <= 31
