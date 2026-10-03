@@ -35,3 +35,12 @@ figures:
     caption: "EXAMPLE: Methodological workflow diagram."
     file: "media/image2.png"          # path relative to paper/
     source: "migrated"                # migrated (came from Word) | experiments/exp-XX
+
+# --- Zenodo archive (populated by paper_zenodo.py) ---
+# zenodo_status: draft | published
+# zenodo_doi: "10.5281/zenodo.XXXX"        # only after --publish/--yes
+# zenodo_deposit_id: XXXX
+# zenodo_draft_url: "https://zenodo.org/deposit/XXXX"   # draft only
+# zenodo_reserved_doi: "10.5281/zenodo.XXXX"            # draft only
+# zenodo_record_url: "https://zenodo.org/records/XXXX" # published only
+# zenodo_version: "1.0.0"
