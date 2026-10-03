@@ -140,6 +140,13 @@ predictors:
     # band-passed OLR, a centred filter that reads the future (the same leak as
     # ONI/ICEN). ROMI uses only past data.
     romi: {source: NOAA_PSL, url: "https://psl.noaa.gov/mjo/mjoindex/romi.cpcolr.1x.txt", components: [ROMI1, ROMI2], lag_days: 1}
+    # Sensitivity R4 (LITERATURE_REVIEW.md): Takahashi et al. (2011) E and C
+    # indices, near-orthogonal where Niño 1+2 and 3.4 are collinear. Official
+    # IGP monthly series from ERSSTv5, unsmoothed. A month's value is treated as
+    # known `lag_days` after the month ends (ERSST is released early the next
+    # month). Used only by the @EC sensitivity models, never by M*.
+    ec_indices: {source: IGP_ERSSTv5, url: "http://met.igp.gob.pe/datos/ecindex_ersstv5.txt",
+                 lag_days: 10, sensitivity: true}
   excluded_leaky: [ONI, ICEN, OMI]
 models:
   references: [Clim, Damp, Pers]
@@ -185,13 +192,20 @@ validation:
   # four stations with dates before the test window (no temporal leak), score
   # the held-out station. Static descriptors replace a station embedding, which
   # would be undefined for a station never seen in training.
-  loso: {folds: [B1, B2], static_features: [elev_m, lat, lon]}
+  loso: {folds: [B1, B2], static_features: [elev_m, lat, lon],
+         # R2 (LITERATURE_REVIEW.md): with four training stations, lat/lon act as
+         # station identifiers, so LOSO also runs with elevation only and with no
+         # static descriptor. Suffix "" keeps the plain model name.
+         static_variants: {"": [elev_m, lat, lon], elev: [elev_m], none: []}}
 metrics:
   deterministic: [MAE, RMSE, ACC, MSSS_clim, MSSS_damp, murphy_decomposition]
   probabilistic: [CRPS_quantile_grid, CRPSS_clim, CRPSS_damp, RPSS_terciles, PIT, reliability, coverage_50_90, sharpness]
   # Frost index from hourly-mean temperature (TEMP is an hourly mean, so this
   # understates true frost): P(period-mean TT_min < threshold).
   frost: {threshold_degC: 0.0, target: TT_min}
+  # R3 (LITERATURE_REVIEW.md): skill conditioned on the state at issuance,
+  # descriptive "windows of opportunity" (Mariotti et al. 2020).
+  conditional: {enso_threshold: 0.5, mjo_active_amplitude: 1.0}
   fair_scores: false
 inference:
   population: blind_test_only

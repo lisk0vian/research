@@ -398,7 +398,9 @@ Todo sale de `outputs/` (tablas CSV y figuras PNG). Cada número del manuscrito 
 
 - **T2**: skill ciego (B1–B2) de cada modelo vs Clim y Damp, con IC 95 % (block bootstrap, estaciones juntas).
 - **T3**: hipótesis H1 (valor de Niño/MJO), H2 (M\\* vs Damp en W3–4), H3 (skill probabilístico), con p de Holm.
-- **T5**: LOSO, cuánto skill se pierde al no entrenar con la estación, vs altitud."""),
+- **T5**: LOSO, cuánto skill se pierde al no entrenar con la estación, vs altitud (con variantes de descriptores estáticos, R2).
+- **T7**: skill condicionado a estación del año, fase ENSO y MJO activo (R3, descriptivo).
+- Modelos `@EC`: sensibilidad con índices E/C de Takahashi (R4); nunca entran a M\\* ni al ensamble."""),
 
     ("code", """import json, pathlib
 import pandas as pd
@@ -430,8 +432,20 @@ print("T3 hipotesis:")
 display(t3.round(4))
 t5 = T / "T5_loso_gap.csv"
 if t5.is_file() and t5.stat().st_size > 5:
-    print("T5 LOSO (dCRPS > 0 = se pierde skill sin la estacion):")
-    display(pd.read_csv(t5).round(3))"""),
+    print("T5 LOSO (dCRPS > 0 = se pierde skill sin la estacion);")
+    print("   variantes: all = elev+lat+lon, elev = solo altitud, none = sin estaticos")
+    display(pd.read_csv(t5).round(3))
+t7 = T / "T7_conditional_skill.csv"
+if t7.is_file():
+    print("T7 skill condicionado (estacion del anio, fase ENSO, MJO activo), ciego:")
+    d7 = pd.read_csv(t7)
+    display(d7[d7["model"].isin(["Damp", "Ridge_LG", "GBM_LG", "Ensemble"])]
+            .pivot_table(index=["split", "condition"], columns=["model", "horizon"],
+                         values="CRPSS_clim").round(3))
+sens = sel[sel["model"].str.contains("@EC")]
+if len(sens):
+    print("Sensibilidad R4 (indices E/C de Takahashi en vez de Nino 1+2/3.4), CRPSS vs Damp:")
+    display(sens.pivot(index=["model", "role"], columns="horizon", values="CRPSS_damp").round(3))"""),
 
     ("code", """for f in sorted((OUT / "figures").glob("F*.png")):
     print(f.name)

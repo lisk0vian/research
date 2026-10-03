@@ -46,6 +46,8 @@ from _common import (
 CACHE = DATA_DIR / "raw" / "largescale"
 OUT = PROCESSED / "largescale_daily.csv"
 G_COLUMNS = ["nino34_anom", "nino12_anom", "romi1", "romi2", "romi_amp"]
+# Sensitivity only (R4): Takahashi E/C, monthly, never in the primary G set.
+EC_COLUMNS = ["e_index", "c_index"]
 UA = "Mozilla/5.0 (X11; Linux x86_64) c20-2026 research pipeline"
 
 _FLOAT = re.compile(r"-?\d+\.\d+")
@@ -95,6 +97,28 @@ def parse_romi(text: str) -> pd.DataFrame:
     for col in ("romi1", "romi2", "romi_amp"):
         out.loc[out[col].abs() > 90, col] = np.nan
     return out
+
+
+def parse_ec(text: str) -> pd.DataFrame:
+    """IGP `ecindex_ersstv5.txt` -> month_end, e_index, c_index."""
+    rows = []
+    for line in text.splitlines():
+        parts = line.split()
+        if len(parts) != 4 or not (parts[0].isdigit() and parts[1].isdigit()):
+            continue
+        month_end = pd.Timestamp(int(parts[0]), int(parts[1]), 1) + pd.offsets.MonthEnd(0)
+        rows.append({"month_end": month_end, "e_index": float(parts[2]),
+                     "c_index": float(parts[3])})
+    return pd.DataFrame(rows, columns=["month_end", *EC_COLUMNS])
+
+
+def as_of_monthly(days: pd.DatetimeIndex, monthly: pd.DataFrame, lag_days: int) -> pd.DataFrame:
+    """Monthly value known on each day: the last month that ended `lag_days` before it."""
+    frame = pd.DataFrame({"date": pd.DatetimeIndex(days).sort_values()})
+    frame["key"] = frame["date"] - pd.Timedelta(days=lag_days)
+    m = monthly.sort_values("month_end").assign(ec_month=lambda x: x["month_end"])
+    out = pd.merge_asof(frame, m, left_on="key", right_on="month_end", direction="backward")
+    return out[["date", *EC_COLUMNS, "ec_month"]]
 
 
 # --- as-of construction -----------------------------------------------------
@@ -174,14 +198,27 @@ def main(argv: list[str] | None = None) -> None:
     days = pd.date_range(start - pd.Timedelta(days=120), end, freq="D")
     out = as_of_daily(days, nino, romi, int(nino_cfg.get("lag_days", 7)),
                       int(romi_cfg.get("lag_days", 1)))
+    ec_cfg = ls.get("ec_indices") or {}
+    ec_sources: dict = {}
+    if ec_cfg.get("url"):
+        try:
+            ec_text, ec_sha = fetch(ec_cfg["url"], CACHE / "ecindex_ersstv5.txt", args.refresh)
+            ec = parse_ec(ec_text)
+            out = out.merge(as_of_monthly(days, ec, int(ec_cfg.get("lag_days", 10))), on="date",
+                            how="left")
+            ec_sources = {"url": ec_cfg["url"], "sha256": ec_sha, "rows": int(len(ec))}
+        except SystemExit as exc:
+            # A sensitivity input must not take the primary analysis down with it.
+            print(f"WARNING: E/C indices unavailable, sensitivity skipped: {exc}")
     atomic_write_csv(out, OUT)
 
     span = out[out["date"] >= start]
     print(f"Niño weeks parsed: {len(nino)} ({nino['week_centre'].min().date()}.."
           f"{nino['week_centre'].max().date()})")
     print(f"ROMI days parsed : {len(romi)}")
+    present = [c for c in G_COLUMNS + EC_COLUMNS if c in span.columns]
     print(f"as-of rows       : {len(out)}  missing % in study span: "
-          + ", ".join(f"{c}={span[c].isna().mean() * 100:.1f}" for c in G_COLUMNS))
+          + ", ".join(f"{c}={span[c].isna().mean() * 100:.1f}" for c in present))
     print(f"wrote {OUT}")
     write_manifest({"largescale": {
         "file": rel_path(OUT),
@@ -189,7 +226,7 @@ def main(argv: list[str] | None = None) -> None:
         "lags_days": {"nino": int(nino_cfg.get("lag_days", 7)),
                       "romi": int(romi_cfg.get("lag_days", 1))},
         "sources": {"nino": {"url": nino_cfg["url"], "sha256": nino_sha, "rows": int(len(nino))},
-                    "romi": romi_sources},
+                    "romi": romi_sources, "ec": ec_sources},
     }}, replace=("largescale",))
 
 

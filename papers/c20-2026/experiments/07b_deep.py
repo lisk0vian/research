@@ -182,8 +182,13 @@ def _prep(seq: np.ndarray, tab: np.ndarray, stats: dict | None):
 
 
 def fit_predict_lstm(tr: pd.DataFrame, ev: pd.DataFrame, seqs: dict, horizons: list[str],
-                     levels: list[float], cfg: dict, seed: int) -> tuple[np.ndarray, np.ndarray]:
-    """Returns (n_eval, H, K) quantiles and (n_eval, H) means."""
+                     levels: list[float], cfg: dict, seed: int,
+                     static: list[str] | None = None) -> tuple[np.ndarray, np.ndarray]:
+    """Returns (n_eval, H, K) quantiles and (n_eval, H) means.
+
+    `static` picks the station descriptors fed to the head (None = all of
+    STATIC_COLUMNS); the LOSO variants pass `["elev_m"]` or `[]`.
+    """
     torch = _torch()
     lcfg = dict(cfg["models"]["lstm"])
     if fast_mode():
@@ -193,7 +198,8 @@ def fit_predict_lstm(tr: pd.DataFrame, ev: pd.DataFrame, seqs: dict, horizons: l
     np.random.seed(seed)
     device = "cuda" if torch.cuda.is_available() else "cpu"
     seq_len = int(lcfg["seq_len"])
-    tab_cols = [c for c in [*G_COLUMNS, *STATIC_COLUMNS] if c in tr.columns]
+    static_cols = STATIC_COLUMNS if static is None else static
+    tab_cols = [c for c in [*G_COLUMNS, *static_cols] if c in tr.columns]
     doy = lambda f: np.column_stack([np.sin(2 * np.pi * f["issue_date"].dt.dayofyear / 365.25),
                                      np.cos(2 * np.pi * f["issue_date"].dt.dayofyear / 365.25)])
 
@@ -374,7 +380,7 @@ def main(argv: list[str] | None = None) -> None:
     seed = int(cfg.get("seeds", {}).get("lstm", 0))
 
     if not args.skip_lstm:
-        t_frames, l_frames = [], []
+        t_frames, l_frames = [], {}
         for fid in progress(list(folds), desc="07b lstm", unit="fold", level="fold"):
             block = panel[panel["fold"] == fid]
             tr = issue_samples(block, "train", horizons)
@@ -388,6 +394,10 @@ def main(argv: list[str] | None = None) -> None:
         write_preds(t_frames, "temporal", "LSTM_LG")
 
         index_l = read_eval_index("loso")
+        # R2: same network with all, elevation-only and no static descriptors.
+        variants = {str(k or ""): list(v or []) for k, v in
+                    (cfg["validation"].get("loso", {}).get("static_variants")
+                     or {"": list(STATIC_COLUMNS)}).items()}
         for fid in cfg["validation"].get("loso", {}).get("folds", ["B1", "B2"]):
             block = panel[panel["fold"] == fid]
             tr_all = issue_samples(block, "train", horizons)
@@ -396,12 +406,17 @@ def main(argv: list[str] | None = None) -> None:
                 tr, ev = tr_all[tr_all["station"] != st], ev_all[ev_all["station"] == st]
                 if ev.empty:
                     continue
-                q, mu = fit_predict_lstm(tr, ev, seqs_by_fold[fid], horizons, levels, cfg, seed)
-                rows, Q, M = explode(ev, q, mu, horizons,
-                                     index_l[(index_l["fold"] == fid) & (index_l["station"] == st)])
-                l_frames.append(pred_frame(rows, "loso", TARGET, "LSTM_LG", Q, M, cfg))
-                print(f"[lstm/loso/{fid}] held out {st}")
-        write_preds(l_frames, "loso", "LSTM_LG")
+                idx = index_l[(index_l["fold"] == fid) & (index_l["station"] == st)]
+                for variant, static in variants.items():
+                    name = f"LSTM_LG@{variant}" if variant else "LSTM_LG"
+                    q, mu = fit_predict_lstm(tr, ev, seqs_by_fold[fid], horizons, levels, cfg,
+                                             seed, static=static)
+                    rows, Q, M = explode(ev, q, mu, horizons, idx)
+                    l_frames.setdefault(name, []).append(
+                        pred_frame(rows, "loso", TARGET, name, Q, M, cfg))
+                print(f"[lstm/loso/{fid}] held out {st} ({len(variants)} static variants)")
+        for name, frames in l_frames.items():
+            write_preds(frames, "loso", name)
         summary["lstm"] = "done"
 
     chronos_on = bool(cfg["models"]["chronos"].get("enabled", True)) and not args.skip_chronos

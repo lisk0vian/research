@@ -348,3 +348,74 @@ def test_figures_render_from_tables(tmp_path, monkeypatch):
     for path in (f10.fig_skill_by_horizon(t2, ["W1", "W2"]), f10.fig_budget(t2, ["W1", "W2"]),
                  f10.fig_loso(gaps, ["W1", "W2"])):
         assert (tmp_path / Path(path).name).stat().st_size > 1000
+
+
+# --- R2-R4 (LITERATURE_REVIEW.md) --------------------------------------------------
+
+EC_SAMPLE = """Monthly E and C indices based on ERSSTv5 following
+Takahashi et al. (2011, doi:10.1029/2011GL047364)
+
+  year    month    E_index    C_index
+  2023       05    0.50000    0.10000
+  2023       06    1.50000    0.20000
+"""
+
+
+def test_ec_indices_are_known_only_after_month_end_plus_lag():
+    ec = g06.parse_ec(EC_SAMPLE)
+    assert ec["month_end"].tolist() == [pd.Timestamp("2023-05-31"), pd.Timestamp("2023-06-30")]
+    days = pd.to_datetime(["2023-07-09", "2023-07-10", "2023-07-11"])
+    out = g06.as_of_monthly(days, ec, lag_days=10).set_index("date")
+    # June ends on the 30th; with a 10-day lag it is usable from July 10 on.
+    assert out.loc["2023-07-09", "e_index"] == 0.5
+    assert out.loc["2023-07-10", "e_index"] == 1.5
+
+
+def test_ec_set_replaces_nino_and_keeps_mjo(panel):
+    p = panel.assign(e_index=0.1, c_index=0.2, romi1=0.3, romi2=0.0, romi_amp=0.3)
+    fs = _panel.feature_sets(p)
+    assert "e_index" not in fs["G"] and "nino34_anom" in fs["G"]
+    assert set(fs["G_EC"]) == {"e_index", "c_index", "romi1", "romi2", "romi_amp"}
+    assert "e_index" not in fs["L"]
+    assert _panel.feature_sets(panel)["G_EC"] == []  # no E/C -> no sensitivity
+
+
+def test_loso_static_variants_drop_lat_lon(panel, monkeypatch, cfg):
+    seen = {}
+
+    def fake_gbm(train, evals, cols, target, levels, params):
+        seen.setdefault(tuple(c for c in cols if c in _panel.STATIC_COLUMNS), 0)
+        n = len(evals)
+        return np.zeros((n, len(levels))), np.zeros(n)
+
+    captured = {}
+    monkeypatch.setattr(m07, "predict_gbm", fake_gbm)
+    monkeypatch.setattr(m07, "atomic_write_csv", lambda *a, **k: None)
+    monkeypatch.setattr(m07, "write_preds", lambda frames, exp, model: captured.setdefault(model, 1))
+    cfg["validation"]["loso"]["folds"] = ["B1"]
+    m07.run_loso(panel, cfg)
+    assert set(seen) == {("elev_m", "lat", "lon"), ("elev_m",), ()}
+    assert {"GBM_LG", "GBM_LG@elev", "GBM_LG@none", "GBM_L@none"} <= set(captured)
+
+
+def test_conditional_skill_splits_by_mjo_and_enso(cfg):
+    rows = []
+    for i, amp in enumerate([0.2, 1.5, 0.4, 2.0]):
+        for model, crps in (("Clim", 1.0), ("Ridge_LG", 0.5 if amp >= 1 else 0.9)):
+            rows.append({"model": model, "role": "blind", "station": "A", "horizon": "W1",
+                         "issue_date": pd.Timestamp("2023-01-02") + pd.Timedelta(weeks=i),
+                         "crps": crps, "quarter": 0, "nino34_anom": 1.0, "romi_amp": amp})
+    t7 = f10.conditional_skill(pd.DataFrame(rows), cfg)
+    mjo = t7[(t7["model"] == "Ridge_LG") & (t7["split"] == "mjo")].set_index("condition")
+    assert mjo.loc["MJO active", "CRPSS_clim"] == pytest.approx(0.5)
+    assert mjo.loc["MJO inactive", "CRPSS_clim"] == pytest.approx(0.1)
+    assert set(t7[t7["split"] == "enso"]["condition"]) == {"El Niño"}
+    assert mjo["n"].sum() == 4
+
+
+def test_sensitivity_models_never_enter_the_ensemble_or_m_star(cfg):
+    members = cfg["models"]["ensemble"]["members"]
+    among = cfg["models"]["primary_model_selection"]["among"]
+    assert not any("@" in m for m in members + among)
+    assert m07.model_name("GBM_LG", "") == "GBM_LG"
+    assert m07.model_name("GBM_LG", "elev") == "GBM_LG@elev"

@@ -77,7 +77,10 @@ sin/cos. The calendar terms are reported as climatology correction, not skill.
 
 Large-scale predictors `G`, as known on `d`: weekly Niño 3.4 and Niño 1+2 SST
 anomalies (CPC OISST, last week centred ≤ d−7) and real-time OMI (ROMI1/2 and
-amplitude, NOAA PSL, d−1). Excluded for leakage: ONI and ICEN (centred 3-month
+amplitude, NOAA PSL, d−1). Sensitivity: Takahashi's E and C indices replace the
+Niño pair (official IGP monthly series from ERSSTv5, a month known 10 days
+after it ends), in `Ridge_LG@EC` and `GBM_LG@EC`; these never enter M* or the
+ensemble. Excluded for leakage: ONI and ICEN (centred 3-month
 means) and OMI (centred band-pass filter). RMM is not used (no stable public
 source); ERA5 is deferred and stated as a limitation.
 
@@ -103,7 +106,10 @@ M* = lowest mean dev CRPS among {Ridge_LG, GBM_LG, LSTM_LG, Ensemble}.
 held-out station and scored on it; Chronos is station-agnostic by construction.
 Held-out stations differ in difficulty: Matucana and Imata are extrapolation
 cases at the ends of the altitude range, the others interpolation. This is
-reported as a finding (skill change vs elevation), not averaged away.
+reported as a finding (skill change vs elevation), not averaged away. With
+only four training stations, latitude and longitude act as station identifiers,
+so LOSO runs three static-descriptor variants: elevation, latitude and
+longitude; elevation only (`@elev`); none (`@none`).
 
 ## 6. Metrics
 
@@ -155,14 +161,16 @@ Written before any real score exists, so the framing cannot follow the numbers.
 
 ## 9. Secondary analyses (descriptive)
 
-Skill by quarter and by ENSO phase at issuance (Niño 3.4 ≥ 0.5 / ≤ −0.5),
+Skill by season, by ENSO phase at issuance (Niño 3.4 ≥ 0.5 / ≤ −0.5) and by
+MJO activity (ROMI amplitude ≥ 1), reported as windows of opportunity (T7, F3),
 dev vs blind robustness, the TT_min/TT_max targets and the frost index,
 sensitivities (C1/C3, Thursday issuance, bootstrap block length).
 
 ## 10. Output contract
 
 Tables (`outputs/tables/`): T1 completeness, T2 blind skill + CI, T3 tests,
-T4 Murphy, T5 LOSO gap, T6 secondary targets and frost, `metrics_long.csv`.
+T4 Murphy, T5 LOSO gap, T6 secondary targets and frost, T7 conditional skill,
+`metrics_long.csv`.
 Figures (`outputs/figures/`): F1 skill vs horizon, F2 PIT and reliability of
 M*, F3 skill by season and ENSO phase, F4 dev vs blind, F5 LOSO vs elevation,
 F6 predictability budget (L vs LG). Every number in the manuscript is a claim

@@ -17,6 +17,14 @@ Models
           grid level plus an L2 model for the mean; crossings fixed by
           rearrangement.
 
+Sensitivity models (named `<model>@<variant>`, never candidates for M* or
+members of the ensemble):
+- `Ridge_LG@EC`, `GBM_LG@EC`  ENSO described by Takahashi's E/C indices instead
+  of Niño 1+2/3.4 (R4 in LITERATURE_REVIEW.md), TT_mean only.
+- In LOSO, `GBM_<L|LG>@elev` and `@none`  the same pooled model with elevation
+  only or no static descriptor (R2): with four training stations, lat/lon act as
+  station identifiers.
+
 Experiments
 -----------
 - `temporal` every fold, every station; the primary analysis.
@@ -255,6 +263,14 @@ def run_temporal(panel: pd.DataFrame, cfg: dict, targets: list[str]) -> dict:
                     seed = int(seeds.get("gbm_largescale" if name == "LG" else "gbm_local", 0))
                     emit(model, *predict_gbm(train, evals, cols, target, levels,
                                              gbm_params(cfg, seed)))
+            # R4 sensitivity: E/C replace the Niño pair (primary target only).
+            if target == PRIMARY_TARGET and fs["G_EC"] and _ec_enabled(cfg):
+                ec_cols = fs["L"] + fs["G_EC"]
+                q, mu, _ = predict_ridge(train, evals, ec_cols, target, levels, alphas, embargo)
+                emit("Ridge_LG@EC", q, mu)
+                seed = int(seeds.get("gbm_largescale", 0))
+                emit("GBM_LG@EC", *predict_gbm(train, evals, ec_cols + fs["static"], target,
+                                               levels, gbm_params(cfg, seed)))
             print(f"[temporal/{target}/{fold}] train={len(train)} eval={len(evals)} "
                   f"({time.perf_counter() - t0:.1f}s)")
 
@@ -263,10 +279,28 @@ def run_temporal(panel: pd.DataFrame, cfg: dict, targets: list[str]) -> dict:
     return {"preds": written, "ridge_alphas": ridge_alphas}
 
 
+def _ec_enabled(cfg: dict) -> bool:
+    ec = ((cfg.get("predictors") or {}).get("large_scale") or {}).get("ec_indices") or {}
+    return bool(ec.get("sensitivity", False))
+
+
+def model_name(base: str, variant: str) -> str:
+    """`GBM_LG` + `elev` -> `GBM_LG@elev`; the empty variant keeps the plain name."""
+    return f"{base}@{variant}" if variant else base
+
+
+def static_variants(cfg: dict, available: list[str]) -> dict[str, list[str]]:
+    """LOSO static-descriptor variants from config, restricted to present columns."""
+    loso = cfg["validation"].get("loso", {})
+    variants = loso.get("static_variants") or {"": loso.get("static_features", available)}
+    return {str(k or ""): [c for c in (v or []) if c in available] for k, v in variants.items()}
+
+
 def run_loso(panel: pd.DataFrame, cfg: dict) -> dict:
     """Pooled GBM refitted without each station, blind folds, primary target."""
     levels = quantile_levels(cfg)
     fs = feature_sets(panel)
+    variants = static_variants(cfg, fs["static"])
     loso_cfg = cfg["validation"].get("loso", {})
     folds = loso_cfg.get("folds", ["B1", "B2"])
     seeds = cfg.get("seeds", {})
@@ -285,12 +319,13 @@ def run_loso(panel: pd.DataFrame, cfg: dict) -> dict:
             if evals.empty:
                 continue
             for name, cols in {"L": fs["L"], "LG": fs["L"] + fs["G"]}.items():
-                model = f"GBM_{name}"
                 seed = int(seeds.get("gbm_largescale" if name == "LG" else "gbm_local", 0))
-                q, mu = predict_gbm(train, evals, cols + fs["static"], target, levels,
-                                    gbm_params(cfg, seed))
-                preds.setdefault(model, []).append(
-                    pred_frame(evals, "loso", target, model, q, mu, cfg))
+                for variant, static in variants.items():
+                    model = model_name(f"GBM_{name}", variant)
+                    q, mu = predict_gbm(train, evals, cols + static, target, levels,
+                                        gbm_params(cfg, seed))
+                    preds.setdefault(model, []).append(
+                        pred_frame(evals, "loso", target, model, q, mu, cfg))
             print(f"[loso/{fold}] held out {st}: train={len(train)} eval={len(evals)}")
     atomic_write_csv(index, eval_index_path("loso"))
     return {"preds": {m: str(write_preds(f, "loso", m)) for m, f in preds.items()}}

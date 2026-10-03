@@ -43,6 +43,9 @@ META_COLUMNS = {"fold", "role", "issue_date", "weekday", "kind", "horizon", "lag
                 "lag_end", "target_start", "target_end", "n_days", "n_valid_days",
                 "n_train_days", "station"}
 G_COLUMNS = ["nino34_anom", "nino12_anom", "romi1", "romi2", "romi_amp"]
+# R4 sensitivity: Takahashi E/C replace the Niño pair; ROMI is kept.
+EC_COLUMNS = ["e_index", "c_index"]
+MJO_COLUMNS = ["romi1", "romi2", "romi_amp"]
 STATIC_COLUMNS = ["elev_m", "lat", "lon"]
 
 
@@ -76,7 +79,7 @@ def join_panel(issuances: pd.DataFrame, features: pd.DataFrame,
     feat_cols = [c for c in features.columns if c not in META_COLUMNS or c in keys]
     panel = issuances.merge(features[feat_cols], on=keys, how="left", validate="one_to_one")
     if largescale is not None and not largescale.empty:
-        g = largescale[["date", *[c for c in G_COLUMNS if c in largescale.columns]]]
+        g = largescale[["date", *[c for c in G_COLUMNS + EC_COLUMNS if c in largescale.columns]]]
         panel = panel.merge(g.rename(columns={"date": "issue_date"}), on="issue_date", how="left")
     panel = panel.merge(static, on="station", how="left")
     mid = panel["issue_date"] + pd.to_timedelta((panel["lag_start"] + panel["lag_end"]) / 2, unit="D")
@@ -107,13 +110,18 @@ def load_panel(cfg: dict) -> pd.DataFrame:
 
 def feature_sets(panel: pd.DataFrame) -> dict[str, list[str]]:
     """Local, large-scale and static feature columns actually present with data."""
-    exclude = META_COLUMNS | {"target_mid", "quarter", *STATIC_COLUMNS, *G_COLUMNS}
+    exclude = META_COLUMNS | {"target_mid", "quarter", *STATIC_COLUMNS, *G_COLUMNS, *EC_COLUMNS}
     exclude |= {c for spec in TARGETS.values() for c in spec}
     local = [c for c in panel.columns if c not in exclude
              and pd.api.types.is_numeric_dtype(panel[c]) and panel[c].notna().any()]
-    g = [c for c in G_COLUMNS if c in panel.columns and panel[c].notna().any()]
+    present = lambda cols: [c for c in cols if c in panel.columns and panel[c].notna().any()]
+    g = present(G_COLUMNS)
+    ec = present(EC_COLUMNS)
+    # The E/C set only exists when both indices arrived; ROMI rides along so the
+    # sensitivity changes the ENSO description and nothing else.
+    g_ec = (ec + present(MJO_COLUMNS)) if len(ec) == len(EC_COLUMNS) else []
     static = [c for c in STATIC_COLUMNS if c in panel.columns]
-    return {"L": local, "G": g, "static": static}
+    return {"L": local, "G": g, "G_EC": g_ec, "static": static}
 
 
 def target_rows(panel: pd.DataFrame, target: str, kind: str) -> pd.DataFrame:

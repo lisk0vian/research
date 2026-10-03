@@ -260,8 +260,11 @@ def main() -> None:
         elev = {str(s["ubigeo"]).zfill(6): s["elev_m"] for s in cfg["stations"]}
         keys = ["station", "issue_date", "horizon"]
         for model in sorted(set(lo["model"]) - {"Clim", "Damp"}):
+            # A LOSO variant (`GBM_LG@elev`) is compared with its base model
+            # trained on every station: the gap isolates leaving the station out.
+            base = model.split("@")[0]
             a = lo[lo["model"] == model][keys + ["crps"]]
-            b = tm[tm["model"] == model][keys + ["crps"]]
+            b = tm[tm["model"] == base][keys + ["crps"]]
             ref = tm[tm["model"] == "Clim"][keys + ["crps"]].rename(columns={"crps": "crps_clim"})
             m = a.merge(b, on=keys, suffixes=("_loso", "_temporal")).merge(ref, on=keys).dropna()
             for (st, h), g in m.groupby(["station", "horizon"]):
@@ -269,7 +272,9 @@ def main() -> None:
                 point, reps = bootstrap_mean((gd["crps_loso"] - gd["crps_temporal"]).to_numpy(),
                                              block, B, seed)
                 gap_rows.append({
-                    "model": model, "station": st, "elev_m": elev.get(st), "horizon": h,
+                    "model": model, "base_model": base,
+                    "static_variant": model.split("@")[1] if "@" in model else "all",
+                    "station": st, "elev_m": elev.get(st), "horizon": h,
                     "crpss_clim_temporal": 1 - gd["crps_temporal"].sum() / gd["crps_clim"].sum(),
                     "crpss_clim_loso": 1 - gd["crps_loso"].sum() / gd["crps_clim"].sum(),
                     "dCRPS_loso_minus_temporal": point,

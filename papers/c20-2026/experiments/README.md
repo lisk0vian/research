@@ -26,7 +26,11 @@ real data, no model training); nobody waits on a pipeline run on a laptop.
 | `07c_ensemble` | Ensemble predictions, `outputs/models/primary_model.json` (M*) | CPU |
 | `08_metrics` | `outputs/models/scored_<exp>.csv`, `outputs/tables/metrics_long.csv` | CPU |
 | `09_inference` | `T2_blind_skill.csv`, `T3_hypotheses.csv`, `T5_loso_gap.csv` | CPU |
-| `10_tables_figures` | `T4_murphy.csv`, `T6_secondary_targets.csv`, `outputs/figures/F1-F6.png` | CPU |
+| `10_tables_figures` | `T4_murphy.csv`, `T6_secondary_targets.csv`, `T7_conditional_skill.csv`, `outputs/figures/F1-F6.png` | CPU |
+
+Sensitivity models carry an `@` suffix: `Ridge_LG@EC` and `GBM_LG@EC` (E/C
+indices, R4), and in LOSO `@elev` and `@none` (static descriptors, R2). They
+are scored and reported but never enter M* or the ensemble.
 
 `run_all.py --fast` runs everything with tiny budgets (20 trees, one LSTM
 epoch, 50 bootstrap replicates, no Chronos) to prove the wiring end to end; its

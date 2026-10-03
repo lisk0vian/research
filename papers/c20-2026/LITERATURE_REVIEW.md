@@ -215,9 +215,9 @@ of this file.
 | # | Recommendation | Why | Cost | Priority |
 |---|---|---|---|---|
 | R1 | Add the dynamical benchmark: ECMWF S2S reforecasts of 2 m temperature interpolated to the five stations, as a model and as a predictor (hybrid) | It is the state of the art the field compares against [Vitart2017, Monhart2018, Mouatadid2023abc, Chen2024, Slater2023]. Without it a reviewer can call the benchmark incomplete, and the hybrid is where the literature finds the largest gains | ECMWF account, extraction for 5 points × 2015–2024, a new stage | **High**: needs the author's decision |
-| R2 | LOSO with elevation only, or no static features, next to the current variant | With 4 training stations, lat/lon act as station IDs [Kratzert2019hess needs many sites] | small: one config flag | Medium |
-| R3 | Report skill conditioned on active MJO (ROMI amplitude ≥ 1), next to the ENSO-phase split already in F3 | "Windows of opportunity" is how the field reads conditional skill [Mariotti2020]; Allen et al. give the formal tool [Allen2023] | small: stage 10 | Medium |
-| R4 | Takahashi E and C indices as a sensitivity to Niño 1+2 / 3.4 | They are near-orthogonal by construction and were built for Peru [Takahashi2011]; Niño 1+2 and 3.4 are collinear | small: stage 06 | Low |
+| R2 | **Implemented.** LOSO with elevation only (`@elev`) and with no static features (`@none`), next to the full variant | With 4 training stations, lat/lon act as station IDs [Kratzert2019hess needs many sites] | small: one config flag | Medium |
+| R3 | **Implemented.** Skill conditioned on active MJO (ROMI amplitude ≥ 1), season and ENSO phase: table T7 and figure F3 | "Windows of opportunity" is how the field reads conditional skill [Mariotti2020]; Allen et al. give the formal tool [Allen2023] | small: stage 10 | Medium |
+| R4 | **Implemented.** Takahashi E and C indices (official IGP monthly series, ERSSTv5, known 10 days after month end) [Takahashi2011, IGPECIndex] as the `@EC` sensitivity of Ridge_LG and GBM_LG | They are near-orthogonal by construction and were built for Peru [Takahashi2011]; Niño 1+2 and 3.4 are collinear | small: stage 06 | Low |
 | R5 | Cite the TFT and DeepAR family only as context; do not add them | The design already has a deep model; more architectures add compute, not a new question [Tan2024] | none | done |
 
 ## 5. Venue fit
