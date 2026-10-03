@@ -126,3 +126,31 @@ def test_quantile_grid_is_symmetric_and_sorted(cfg):
     q = np.asarray(cfg["models"]["quantiles"])
     assert len(q) == 19 and np.all(np.diff(q) > 0)
     assert np.allclose(q + q[::-1], 1.0)
+
+
+# --- fetch against the real portal's quirks ------------------------------------
+
+def test_fetch_sends_a_browser_agent_and_reads_a_dkan_list(monkeypatch):
+    import io
+    import json as _json
+
+    fetch = importlib.import_module("fetch_source")
+    seen = {}
+
+    class Resp(io.BytesIO):
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *exc):
+            return False
+
+    def fake(req, timeout=None):
+        seen["ua"] = req.get_header("User-agent")
+        body = {"success": True, "result": [{"resources": [
+            {"url": "https://x/senamhi.csv", "format": "csv", "name": "data"}]}]}
+        return Resp(_json.dumps(body).encode())
+
+    monkeypatch.setattr(fetch.urllib.request, "urlopen", fake)
+    out = fetch.resolve_resource({"source": {"dataset_id": "abc", "api": "https://x/api"}}, 5)
+    assert out["resource"]["url"].endswith("senamhi.csv")
+    assert seen["ua"].startswith("Mozilla/")

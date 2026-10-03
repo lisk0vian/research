@@ -9,30 +9,25 @@ contradict `METHODOLOGY.md`; §7 lists what still has to be revised.
 
 ## 1. Status and where to resume
 
-Read §9 before touching the config. The data of record is not the data the
-config describes, and running the pipeline as it stands destroys data silently.
+Design v3.0, frozen 2026-10-02 in [`METHODOLOGY.md`](METHODOLOGY.md), including
+the pre-registered decision rule (§8 there) written before any real score.
 
-| | State |
+| | State (2026-10-02) |
 |---|---|
-| Phase 0, provenance | **done.** `fetch_source.py` downloads and records checksum, columns and a station inventory. `portal_docs.py` renders the provider's dictionary and metadata as Markdown. 309 tests |
-| Phase 1, station key | **done.** Six changes across `00`–`05`; five station-boundary bugs found and fixed. `00`–`05` run green on 5 synthetic stations |
-| Variable layer | **broken against the real file.** `read_hourly` expects `year/month/day/hour`; the file has `FECHA`+`HORA`. See §9 |
-| QC ranges | **actively destructive.** `PP: [640,720]` is pressure in hPa from the old provider; in the new file `PP` is precipitation in mm/h, so 100% of it is nulled. See §9 |
-| `config.stations[]` | **four of five entries were invented** and have been corrected against the real file (§9). Verify before trusting any station attribute not in §9 |
-| `06`–`10` | stubs (`NotImplementedError`) |
-| `references.bib` | 34 of 36 entries are network community-detection papers |
-| `paper/main.qmd` | owned by the author; not touched here |
+| Provenance | **done.** `fetch_source.py` sends a browser User-Agent (the WAF answers 418 otherwise) and reads DKAN's list-shaped `result` |
+| Variable layer | **done.** `config.variables` maps `TEMP→TT`, `HR→HR`, `PP→RR` (precipitation); `read_hourly` builds the timestamp from `FECHA`+`HORA`; QC ranges recalibrated (`TT` −25..35) |
+| `config.stations[]` | **done.** Five stations with ubigeo, coordinates and elevation read from the file of record |
+| Folds | **done.** July–June test windows (record ends 2024-06-30), D1–D3 dev, B1–B2 blind |
+| C3 climatology | **fixed.** Its trend column was day-of-year (a sawtooth); now elapsed years |
+| `06`–`10` | **implemented**: Niño + ROMI, Clim/Damp/Pers/Ridge/GBM, LSTM, Chronos, ensemble, metrics, H1–H3, LOSO, T1–T6, F1–F6 |
+| Tests | 343, about 50 s locally, no real data, no training |
+| Real-data run | **not yet.** First run happens on Colab (notebook §4b: smoke run, then full) |
+| `references.bib` | still to rebuild (§7.5) |
+| `paper/main.qmd` | owned by the author; title/highlights/abstract still describe v2 (§7.6) |
 
-**Resume here.** In priority order, because the first two lose data silently
-and the rest merely do not exist yet:
-
-1. Map source columns to internal names in `config.variables`, so `PP` cannot
-   mean two different things, and derive `NUMERIC_VARS` from it.
-2. Recalibrate the QC ranges against the real distribution. The current
-   temperature range was set for a station 1150 m lower than the highest one.
-3. Teach `read_hourly` to build its timestamp from `FECHA`+`HORA`.
-4. Then: Phase 2 (three targets, rolling folds, embargo at 42 days for W5_6),
-   `06`, `08` metrics, `07` models, LOSO, `09`, `10`.
+**Resume here.** Sync `experiments/` and the notebook to Drive in place,
+run the notebook (smoke run, then full), read the tables, then apply the
+pre-registered rule in METHODOLOGY §8 to fix the framing before writing.
 
 ### Settled, do not reopen
 
@@ -46,17 +41,26 @@ User-Agent and carries an unresolved licence. Metrics before models. LOSO is the
 AI contribution. Target venue EAAI, whose abstract must state an AI contribution
 and an engineering application. `paper/main.qmd` is the author's.
 
-### Open, needs a decision
+### Closed on 2026-10-02 (author's decisions)
 
-- **Horizons.** W1 = 1–14 d as context outside the claim, W3_4 = 15–28 d,
-  W5_6 = 29–42 d, following the USBR Rodeo convention. Not yet confirmed. W5_6
-  forces the embargo to 42 days, not 28.
-- **Model roster.** `Persistence++`-like linear as primary, XGBoost secondary,
-  LSTM as a pre-registered negative control on pooled data only, AdaHedgeD
-  ensemble. Not yet confirmed.
-- **The threshold.** What happens to the EAAI target if nothing beats damped
-  persistence. Should be written down *before* the numbers exist.
-- **Coverage vs claim.** Five stations in one country is narrow for Q1.
+- **Horizons.** W1, W2, W3_4 (Vitart et al. S2S convention), embargo 28 days.
+  The Rodeo W5_6 option was rejected: it forces a 42-day embargo and thins the
+  valid issuances further.
+- **Model roster.** Clim/Pers/Damp references; Ridge and GBM in L and LG
+  variants; pooled quantile LSTM; Chronos-T5 zero-shot; inverse-CRPS ensemble.
+  TFT stays behind a config flag (off).
+- **Large scale.** Niño 3.4 + Niño 1+2 + MJO through ROMI (real-time OMI, NOAA
+  PSL). OMI itself is excluded: its centred band-pass filter reads the future,
+  the same leak as ONI/ICEN.
+- **The threshold.** Written in METHODOLOGY §8 before any score: EAAI if M*
+  beats Damp at W2/W3_4, or LOSO transfer holds, or H1 is rejected; otherwise
+  a climate venue with the negative result.
+
+### Still open
+
+- **Coverage vs claim.** Five stations in one country is narrow for Q1; it is
+  stated as a limitation, and the LOSO-vs-elevation result is what turns it
+  into a finding.
 
 The split state is deliberate and temporary: the pipeline on disk is
 single-station because that is what was run, while the design of record is
