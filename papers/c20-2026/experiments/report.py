@@ -142,6 +142,24 @@ def _t11():
                            values="paths").round(3).to_string())
 
 
+@section("T12 seed variability (amendment A3.2)")
+def _t12():
+    t12 = pd.read_csv(TABLES / "T12_seed_variability.csv")
+    blind = t12[t12["role"] == "blind"]
+    print(blind[["model", "horizon", "CRPSS_clim_mean", "CRPSS_clim_sd", "CRPSS_clim_min",
+                 "CRPSS_clim_max"]].round(3).to_string(index=False))
+    pairs = pd.read_csv(TABLES / "T12b_seed_pairs.csv")
+    print(pairs[pairs["role"] == "blind"].to_string(index=False))
+
+
+@section("T13-T14 M*2 (amendment A3.3)")
+def _t13():
+    t13 = pd.read_csv(TABLES / "T13_mstar2_selection.csv")
+    print(t13.round(3).to_string(index=False))
+    print()
+    print(pd.read_csv(TABLES / "T14_mstar2_blind.csv").round(4).to_string(index=False))
+
+
 @section("Figures")
 def _figures():
     figs = sorted((OUTPUTS / "figures").glob("F*.png"))

@@ -31,9 +31,12 @@
 | `07b_deep` | `outputs/models/preds_*_LSTM_LG.csv, preds_*_Chronos.csv (GPU)` |
 | `07c_ensemble` | `outputs/models/preds_*_Ensemble.csv, primary_model.json` |
 | `07d_cfs_benchmark` | `outputs/models/preds_temporal_CFS_BC.csv, outputs/tables/T8_cfs_calibration.csv` |
+| `07e_chronos_variants` | `outputs/models/preds_temporal_Chronos@abs.csv, preds_temporal_ChronosBolt.csv (A3.1; GPU)` |
+| `07f_seed_variability` | `outputs/tables/T12_seed_variability.csv, T12b_seed_pairs.csv (A3.2; GPU)` |
 | `08_metrics` | `outputs/tables/metrics_long.csv` |
 | `09_inference` | `outputs/tables/T2_blind_skill.csv, T3_hypotheses.csv, T5_loso_gap.csv` |
 | `09b_calibration` | `outputs/tables/T9_calibration.csv (amendment A2, post hoc)` |
 | `09c_chronos_diagnostic` | `outputs/tables/T10_chronos_diagnostic.csv (amendment A2, post hoc; GPU)` |
 | `09d_chronos_sensitivity` | `outputs/tables/T11_chronos_sensitivity.csv (A2, post hoc; D3 only; GPU)` |
+| `09e_mstar2` | `outputs/models/mstar2.json, outputs/tables/T13_mstar2_selection.csv, T14_mstar2_blind.csv (A3.3)` |
 | `10_tables_figures` | `outputs/tables/T4_murphy.csv, T6_secondary_targets.csv, outputs/figures/F1..F6.png` |
