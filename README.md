@@ -102,6 +102,9 @@ powershell -ExecutionPolicy Bypass -File scripts/install_stix_fonts.ps1
 
 # OpenCode: generate opencode.jsonc for the MCP servers (holds absolute paths)
 python scripts/setup_mcp.py
+
+# Claude Code: register the same MCP servers (kept in ~/.claude.json, not in the repo)
+python scripts/setup_mcp.py --claude
 ```
 
 Claude Code skill links are created automatically by a `SessionStart` hook;

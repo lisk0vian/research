@@ -86,7 +86,8 @@ that know *when* to call them and interview you for the arguments.
 | Check CAS sample fidelity | `python scripts/cas_fidelity.py` (add `--docx` for the Word suite) |
 | Verify Claude skill links | `python scripts/link_skills.py --check` |
 | Link skills for Claude | `python scripts/link_skills.py` |
-| Generate `opencode.jsonc` (MCP) | `python scripts/setup_mcp.py` |
+| Generate `opencode.jsonc` (MCP, OpenCode) | `python scripts/setup_mcp.py` |
+| Register the MCP servers in Claude Code | `python scripts/setup_mcp.py --claude` (verify: add `--check`) |
 | Run tests | `pytest -q` |
 
 A new paper typically follows: `paper_new.py` → literature search
@@ -167,6 +168,25 @@ Canonical skills live in `.agents/skills/` (committed). Agent paths:
 
   The links are machine-local and gitignored. `paper_validate.py` warns when
   they are missing or stale (skipped on CI).
+
+  Its MCP servers are **not** read from `opencode.jsonc`: Claude Code keeps them
+  in `~/.claude.json`. Register the same servers once per machine, from the same
+  template:
+
+  ```bash
+  python scripts/setup_mcp.py --claude            # register gdrive, academic-search
+  python scripts/setup_mcp.py --claude --check    # exit 1 if missing/stale (reads ~/.claude.json)
+  python scripts/setup_mcp.py --claude --only gdrive
+  ```
+
+  It is idempotent, fills `{env:NAME}` from the environment and the gitignored
+  `.env` without ever printing the values, and wraps `pnpm`/`npx` in `cmd /c` on
+  Windows. Scope `local` (default) is this project only; `--scope user` covers
+  every project; `project` is not offered because `.mcp.json` would commit the
+  Drive folder ids. **A Claude Code process that is already running never loads
+  a server registered after it started**: relaunch the conversation
+  (`claude --resume <session-id>`). To see whether a session loaded one, look for
+  its id in `%LOCALAPPDATA%\claude-cli-nodejs\Cache\<project>\mcp-logs-<server>\`.
 
 Registry:
 
