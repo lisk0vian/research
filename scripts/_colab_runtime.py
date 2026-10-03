@@ -49,6 +49,7 @@ _ANSI = re.compile(r"\x1b\[[0-9;?]*[ -/]*[@-~]")
 
 # Status values a stage can carry in status.json.
 OK, SKIPPED, FAILED, NOT_RUN, RUNNING = "ok", "skipped", "failed", "not_run", "running"
+INTERRUPTED = "interrupted"
 
 
 def _now() -> str:
@@ -269,18 +270,28 @@ def _run_command(argv, cwd, env, sink) -> tuple[int, str]:
     keep: list[str] = []
     state: dict = {}
     assert proc.stdout is not None
-    for line in proc.stdout:
-        event = _parse_prog(line)
-        if event is not None:
-            mark = _marker(event, state)
-            if mark:
-                emit(mark + "\n")
-            continue
-        emit(line)
-        keep.append(_ANSI.sub("", line.rstrip("\n")))
-        if len(keep) > TAIL_LINES:
-            del keep[0]
-    proc.wait()
+    try:
+        for line in proc.stdout:
+            event = _parse_prog(line)
+            if event is not None:
+                mark = _marker(event, state)
+                if mark:
+                    emit(mark + "\n")
+                continue
+            emit(line)
+            keep.append(_ANSI.sub("", line.rstrip("\n")))
+            if len(keep) > TAIL_LINES:
+                del keep[0]
+        proc.wait()
+    except KeyboardInterrupt:
+        # Stopping the cell interrupts the kernel only; without this the child
+        # would keep running in the background and race the next run.
+        proc.terminate()
+        try:
+            proc.wait(timeout=30)
+        except subprocess.TimeoutExpired:
+            proc.kill()
+        raise
     return proc.returncode, "\n".join(keep)
 
 
@@ -378,7 +389,10 @@ class StageState:
         files: list[Path] = []
         for pattern in shared or []:
             files.extend(sorted(self.code.glob(pattern)))
-        self.shared = [p for p in dict.fromkeys(files) if p.is_file()]
+        # The runtime itself matches `_*.py` but changes no result; hashing it
+        # would make every runtime fix re-run the whole pipeline.
+        self.shared = [p for p in dict.fromkeys(files)
+                       if p.is_file() and p.name != "_colab_runtime.py"]
         self.inputs = [Path(p) for p in inputs or []]
         self.stage_file = stage_file or (lambda s: self.code / f"{s}.py")
 
@@ -455,7 +469,15 @@ def run_pipeline(spec: dict, code_dir: str | Path, log: RunLog, mode: str = "ful
     print(f"[..] {' '.join(argv)}")
     log.update_status(state=RUNNING, mode=mode)
     started = time.perf_counter()
-    code, out = run_command(argv, cwd=code_dir)
+    try:
+        code, out = run_command(argv, cwd=code_dir)
+    except KeyboardInterrupt:
+        log.record_error("pipeline", "interrupted by the user (cell stopped)",
+                         f"{' '.join(argv)} was stopped after "
+                         f"{time.perf_counter() - started:.0f}s; finished stages keep "
+                         "their state, so Run all resumes from the interrupted one.")
+        log.update_status(state=INTERRUPTED, finished=_now())
+        raise
     status = log.read_status()
     if code != 0 and not log.has_errors():
         # run_all itself died (bad argument, import error) before any stage did.
@@ -481,12 +503,22 @@ def run_report(spec: dict, code_dir: str | Path, log: RunLog) -> int:
 
 
 def raise_if_errors(log: RunLog) -> None:
-    """Print errors.log and stop; the last cell calls this so failures are loud."""
+    """Print errors.log and stop; the last cell calls this so failures are loud.
+
+    No errors is not enough to say "ok": a session whose pipeline never ran
+    (the run cell deleted, skipped or still queued) is reported as such.
+    """
     text = log.error_text()
     if text.strip():
         print(text)
         raise RecordedError(f"this session has errors; full text in {log.errors}")
-    print(f"[ok] no errors in this session ({log.errors} is empty)")
+    state = log.read_status().get("state")
+    if state != OK:
+        msg = (f"the pipeline did not finish in this session (status: {state}); "
+               "run the 'Run the pipeline' cell, or Runtime -> Run all")
+        log.record_error("session", msg)
+        raise RecordedError(msg)
+    print(f"[ok] pipeline finished and no errors in this session ({log.errors} is empty)")
 
 
 # --- a generic pipeline runner ---------------------------------------------------------

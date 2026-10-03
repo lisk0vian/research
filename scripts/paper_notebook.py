@@ -92,6 +92,8 @@ if not (CODE_DIR / "_colab_runtime.py").is_file():
     raise RuntimeError(f"{{CODE_DIR}} has no pipeline code: ask the agent to sync it")
 
 # Loaded straight from Drive, so the error hook covers the rest of this cell.
+# No bytecode: it would be written into Drive code/ as __pycache__.
+sys.dont_write_bytecode = True
 _spec = importlib.util.spec_from_file_location("_colab_runtime", CODE_DIR / "_colab_runtime.py")
 rt = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(rt)
@@ -101,7 +103,7 @@ LOG.begin_session(note="notebook")
 rt.install_cell_error_hook(LOG)
 
 shutil.rmtree(WORK_DIR, ignore_errors=True)
-shutil.copytree(CODE_DIR, WORK_DIR)
+shutil.copytree(CODE_DIR, WORK_DIR, ignore=shutil.ignore_patterns("__pycache__", "*.pyc"))
 for _name, _mod in list(sys.modules.items()):  # forget modules from an older copy
     if str(getattr(_mod, "__file__", "") or "").startswith(str(WORK_DIR)):
         del sys.modules[_name]
@@ -110,7 +112,7 @@ if str(WORK_DIR) not in sys.path:
 os.chdir(WORK_DIR)
 SPEC = rt.load_spec(WORK_DIR)
 
-_files = sorted(p for p in WORK_DIR.rglob("*") if p.is_file())
+_files = sorted(p for p in WORK_DIR.rglob("*") if p.is_file() and "__pycache__" not in p.parts)
 _newest = max(_files, key=lambda p: p.stat().st_mtime)
 print(f"[ok] {{len(_files)}} files copied from {{CODE_DIR}}")
 print(f"[ok] newest: {{_newest.name}} "

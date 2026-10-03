@@ -79,10 +79,20 @@ def test_tail_keeps_the_end_of_a_log(tmp_path):
     assert out.splitlines() == [f"line {i}" for i in range(195, 200)]
 
 
-def test_raise_if_errors_is_quiet_on_a_clean_session(log, capsys):
+def test_raise_if_errors_is_quiet_on_a_finished_clean_session(log, capsys):
     log.begin_session()
+    log.update_status(state=rt.OK)
     rt.raise_if_errors(log)
     assert "no errors" in capsys.readouterr().out
+
+
+def test_a_session_whose_pipeline_never_ran_is_not_reported_ok(log):
+    """The run cell was missing once and the report still said 'no errors'."""
+    log.begin_session()
+    log.update_status(state="ready")  # preflight passed, pipeline never started
+    with pytest.raises(rt.RecordedError, match="did not finish"):
+        rt.raise_if_errors(log)
+    assert "did not finish" in log.error_text()
 
 
 def test_raise_if_errors_raises_an_already_recorded_error(log):
@@ -383,3 +393,11 @@ def test_generic_runner_uses_a_custom_command(pipeline, tmp_path):
                         stage_file=lambda s: pipeline / "main.py", argv=[])
     assert rc == 0
     assert "stage train" in (_logs(tmp_path) / "train.log").read_text(encoding="utf-8")
+
+
+def test_the_runtime_itself_is_not_part_of_the_fingerprint(tmp_path, code):
+    st = _state(tmp_path, code)
+    (code / "_colab_runtime.py").write_text("# v1\n", encoding="utf-8")
+    before = st.fingerprints(STAGES)
+    (code / "_colab_runtime.py").write_text("# v2\n", encoding="utf-8")
+    assert _state(tmp_path, code).fingerprints(STAGES) == before
