@@ -26,6 +26,7 @@ from __future__ import annotations
 
 import argparse
 import html
+import io
 import json
 import os
 import re
@@ -34,6 +35,23 @@ import difflib
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
+
+# Optional rich import — graceful fallback to plain print
+try:
+    from rich.console import Console, Group
+    from rich.live import Live
+    from rich.progress import (
+        BarColumn,
+        MofNCompleteColumn,
+        Progress,
+        SpinnerColumn,
+        TextColumn,
+        TimeElapsedColumn,
+    )
+    from rich.text import Text
+    _HAS_RICH = True
+except ImportError:
+    _HAS_RICH = False
 
 # Force UTF-8 output on Windows to avoid cp1252 encoding errors
 if sys.platform == "win32":
@@ -103,6 +121,135 @@ def _bold(text: str) -> str:
 
 def _dim(text: str) -> str:
     return f"\033[2m{text}\033[0m" if _USE_COLOUR else text
+
+
+# ─── Progress + log panel (rich) ─────────────────────────────────────────────
+
+class ProgressLogManager:
+    """Rich-based dashboard: progress bar on top, scrolling log panel below.
+
+    Falls back to plain print when rich is unavailable or in non-TTY / quiet
+    / interactive modes.  The caller is responsible for checking ``enabled``
+    before calling log/advance/set_detail.
+    """
+
+    def __init__(self, total: int, *, quiet: bool = False) -> None:
+        self.total = total
+        self.quiet = quiet
+        self._count = 0
+        self._log_lines: list[str] = []
+        self._detail = ""
+        self.enabled = False
+        self._live: Live | None = None
+        self._progress: Progress | None = None
+        self._task_id: Any = None
+        self._log_console: Console | None = None
+
+        # Only enable in TTY with rich available and not quiet
+        if (
+            _HAS_RICH
+            and not quiet
+            and hasattr(sys.stdout, "isatty")
+            and sys.stdout.isatty()
+        ):
+            self.enabled = True
+            self._progress = Progress(
+                SpinnerColumn(),
+                TextColumn("[bold blue]{task.description}"),
+                BarColumn(bar_width=40),
+                MofNCompleteColumn(),
+                TimeElapsedColumn(),
+                TextColumn("{task.fields[detail]}"),
+            )
+            self._task_id = self._progress.add_task(
+                "Validating references", total=total, detail=""
+            )
+            self._log_console = Console(
+                file=io.StringIO(),
+                force_terminal=True,
+                width=min(os.get_terminal_size().columns, 120)
+                if hasattr(os, "get_terminal_size")
+                else 100,
+            )
+
+    # -- public API -----------------------------------------------------------
+
+    def set_detail(self, text: str) -> None:
+        """Update the spinner/detail text next to the progress bar."""
+        if self._progress and self._task_id is not None:
+            self._progress.update(self._task_id, detail=text)
+
+    def advance(self, entry_key: str, paper_slug: str) -> None:
+        """Advance the bar by one entry and update the description."""
+        self._count += 1
+        if self._progress and self._task_id is not None:
+            desc = f"[cyan]{paper_slug}[/cyan] — {entry_key}"
+            self._progress.update(
+                self._task_id,
+                completed=self._count,
+                description=desc,
+                detail="",
+            )
+
+    def log(self, message: str) -> None:
+        """Append a line to the scrolling log panel."""
+        if self._log_console:
+            self._log_console.print(message)
+            self._refresh_live()
+        elif not self.quiet:
+            print(message)
+
+    def log_plain(self, message: str) -> None:
+        """Append a plain string (no rich markup) to the log panel."""
+        if self._log_console:
+            self._log_console.print(message, highlight=False)
+            self._refresh_live()
+        elif not self.quiet:
+            print(message)
+
+    def start(self) -> None:
+        """Start the Live display."""
+        if self._live and self.enabled:
+            self._live.start()
+
+    def stop(self) -> None:
+        """Stop the Live display and print final state."""
+        if self._live:
+            self._live.stop()
+
+    def make_live(self) -> Live | None:
+        """Create and store the Live object (call before start)."""
+        if not self.enabled:
+            return None
+        renderable = self._build_renderable()
+        self._live = Live(
+            renderable,
+            console=Console(),
+            refresh_per_second=4,
+            transient=False,
+        )
+        return self._live
+
+    # -- internals ------------------------------------------------------------
+
+    def _build_renderable(self):
+        """Build the combined progress + log renderable."""
+        assert self._progress is not None
+        parts = [self._progress]
+        if self._log_console:
+            log_text = self._log_console.file.getvalue()  # type: ignore[union-attr]
+            if log_text.strip():
+                # Show last N lines that fit the terminal
+                lines = log_text.rstrip("\n").split("\n")
+                max_lines = 15
+                if len(lines) > max_lines:
+                    lines = ["  ..."] + lines[-max_lines:]
+                parts.append(Text.from_ansi("\n".join(lines)))
+        return Group(*parts)
+
+    def _refresh_live(self) -> None:
+        if self._live:
+            self._live.update(self._build_renderable())
 
 
 # ─── Preprint DOI prefixes (skipped in CI mode) ──────────────────────────────
@@ -914,12 +1061,15 @@ def process_paper(
     accept_threshold: float,
     quiet: bool,
     ci_mode: bool = False,
+    progress: ProgressLogManager | None = None,
 ) -> PaperReport:
     """Process one paper's references.bib."""
     bib_path = paper_root / "paper" / "references.bib"
     report = PaperReport(slug=slug, bib_path=str(bib_path))
 
-    if not quiet:
+    if progress and progress.enabled:
+        progress.set_detail(f"Loading papers/{slug}...")
+    elif not quiet:
         print(f"\n  \u2500\u2500\u2500 papers/{slug} \u2500\u2500\u2500")
 
     try:
@@ -955,6 +1105,12 @@ def process_paper(
     for entry in entries:
         cls = classes[entry.uid]
 
+        # Show what we're doing (spinner detail or plain print)
+        if progress and progress.enabled:
+            progress.set_detail(f"Fetching {entry.key}...")
+        elif not quiet:
+            print(f"  [{len(report.results) + 1:>3}/{len(entries)}] {entry.key}...", end="", flush=True)
+
         if mode == "check":
             er = process_entry_check(
                 entry, cls, client,
@@ -986,6 +1142,10 @@ def process_paper(
             and er.doi_status == "no_doi"
             and er.doi_candidates
         ):
+            # In interactive mode we don't use the Live display, so plain print
+            if not progress or not progress.enabled:
+                # Clear the inline counter
+                print()
             choice = prompt_missing_doi(
                 entry.key, entry.title, er.doi_candidates,
             )
@@ -1003,16 +1163,20 @@ def process_paper(
             elif choice == "quit":
                 break
 
-    # Print results
-    if not quiet:
-        for er in report.results:
+        # Log result immediately and advance progress bar
+        if progress and progress.enabled:
+            progress.advance(entry.key, slug)
+            _log_entry_result(progress, er, slug)
+        elif not quiet:
+            # Plain mode: finish the inline counter line, then print result
+            print()  # finish the "... " line
             _print_entry_result(er, slug)
 
     return report
 
 
 def _print_entry_result(er: EntryResult, slug: str) -> None:
-    """Print the result for one entry."""
+    """Print the result for one entry (plain print mode)."""
     prefix = f"  papers/{slug}"
 
     if er.doi_status == "no_doi":
@@ -1058,6 +1222,55 @@ def _print_entry_result(er: EntryResult, slug: str) -> None:
         print(f"  [warn] {prefix}: {er.key} → {er.doi} — {warn_str}")
     else:
         print(f"  [ok]   {prefix}: {er.key} → {er.doi}")
+
+
+def _log_entry_result(pm: ProgressLogManager, er: EntryResult, slug: str) -> None:
+    """Send the result for one entry to the rich log panel."""
+    prefix = f"papers/{slug}"
+
+    if er.doi_status == "no_doi":
+        if er.doi_candidates:
+            pm.log(f"  [yellow][?][/yellow]    {prefix}: {er.key} — no DOI, {len(er.doi_candidates)} candidate(s)")
+        else:
+            pm.log(f"  [dim][info][/dim] {prefix}: {er.key} — no DOI")
+        return
+
+    if er.doi_status == "skipped_preprint":
+        pm.log(f"  [dim][skip][/dim] {prefix}: {er.key} → {er.doi} — preprint (not in CrossRef)")
+        return
+
+    if er.doi_status == "not_found":
+        pm.log(f"  [yellow][warn][/yellow] {prefix}: {er.key} → {er.doi} — DOI not found")
+        return
+
+    if er.doi_status == "network_error":
+        warn = er.warnings[0] if er.warnings else "network error"
+        pm.log(f"  [yellow][warn][/yellow] {prefix}: {er.key} → {er.doi} — {warn}")
+        return
+
+    if er.has_changes:
+        n_fill = sum(1 for c in er.changes if c.action == "auto_fill")
+        n_fix = sum(1 for c in er.changes if c.action in ("auto_fix", "accepted"))
+        n_rej = sum(1 for c in er.changes if c.action == "rejected")
+        parts = []
+        if n_fill:
+            parts.append(f"{n_fill} auto-fill")
+        if n_fix:
+            parts.append(f"{n_fix} fixed")
+        if n_rej:
+            parts.append(f"{n_rej} rejected")
+        detail = ", ".join(parts)
+        pm.log(f"  [green][fix][/green]  {prefix}: {er.key} → {er.doi} ({detail})")
+        for ch in er.changes:
+            if ch.action in ("auto_fill", "auto_fix", "accepted"):
+                tag = "+" if ch.action == "auto_fill" else "~"
+                old = f' "{_truncate(ch.old_value, 30)}" →' if ch.old_value else ""
+                pm.log(f"         {tag} {ch.field_name}{old} \"{_truncate(ch.new_value, 50)}\"")
+    elif er.warnings:
+        warn_str = "; ".join(er.warnings)
+        pm.log(f"  [yellow][warn][/yellow] {prefix}: {er.key} → {er.doi} — {warn_str}")
+    else:
+        pm.log(f"  [green][ok][/green]   {prefix}: {er.key} → {er.doi}")
 
 
 # ─── Output generation ───────────────────────────────────────────────────────
@@ -1188,20 +1401,48 @@ def main() -> int:
     # Create HTTP client
     client = HTTPClient(args.timeout, args.delay, args.retries)
 
+    # Pre-count total entries across all papers for the progress bar
+    total_entries = 0
+    for slug, paper_root in papers:
+        bib_path = paper_root / "paper" / "references.bib"
+        try:
+            raw_bytes = bib_path.read_bytes()
+            text = raw_bytes.decode("utf-8-sig", errors="replace")
+            entries, _, _ = parse_bibtex(text)
+            total_entries += len(entries)
+        except OSError:
+            pass  # will be reported during processing
+
+    # Create progress manager (disabled in interactive mode — uses input())
+    use_progress = mode != "interactive"
+    pm = ProgressLogManager(total_entries, quiet=args.quiet) if use_progress else None
+
     # Process papers
     global_report = GlobalReport()
 
-    for slug, paper_root in papers:
-        pr = process_paper(
-            slug, paper_root, client,
-            mode=mode,
-            search_missing=args.search_missing,
-            crossref_rows=DEFAULT_CROSSREF_ROWS,
-            accept_threshold=DEFAULT_ACCEPT_THRESHOLD,
-            quiet=args.quiet,
-            ci_mode=args.ci,
-        )
-        global_report.papers.append(pr)
+    def _run_papers() -> None:
+        for slug, paper_root in papers:
+            pr = process_paper(
+                slug, paper_root, client,
+                mode=mode,
+                search_missing=args.search_missing,
+                crossref_rows=DEFAULT_CROSSREF_ROWS,
+                accept_threshold=DEFAULT_ACCEPT_THRESHOLD,
+                quiet=args.quiet,
+                ci_mode=args.ci,
+                progress=pm,
+            )
+            global_report.papers.append(pr)
+
+    if pm and pm.enabled:
+        pm.make_live()
+        pm.start()
+        try:
+            _run_papers()
+        finally:
+            pm.stop()
+    else:
+        _run_papers()
 
     # Write fixed .bib files (if --fix and not --dry-run)
     if args.fix and not args.dry_run:
