@@ -203,6 +203,10 @@ Secondary analyses added (stage `09b_calibration`, table T9):
 - **Ensemble without Chronos,** the frozen dev weights renormalised over the
   other three members, as a sensitivity analysis. It does not replace M*.
 - **Chronos,** reported as a mis-calibrated member with the diagnosis above.
+- **Chronos' narrow windows, tested** (stage `09c_chronos_diagnostic`, table
+  T10): on the daily sample paths, the daily 90 % coverage, the lag-1
+  autocorrelation of the paths against that of the real errors, and how much
+  the spread shrinks from daily values to the window mean in each.
 
 What this cannot say: k was conceived after the blind coverage was seen, so a
 blind coverage near 0.90 after recalibration is evidence that the spread
@@ -240,7 +244,8 @@ sensitivities (C1/C3, Thursday issuance, bootstrap block length).
 
 Tables (`outputs/tables/`): T1 completeness, T2 blind skill + CI, T3 tests,
 T4 Murphy, T5 LOSO gap, T6 secondary targets and frost, T7 conditional skill,
-T8 CFS calibration, T9 calibration of M* (A2, post hoc), `metrics_long.csv`.
+T8 CFS calibration, T9 calibration of M* and T10 Chronos diagnostic (A2, post
+hoc), `metrics_long.csv`.
 Figures (`outputs/figures/`): F1 skill vs horizon, F2 PIT and reliability of
 M*, F3 skill by season and ENSO phase, F4 dev vs blind, F5 LOSO vs elevation,
 F6 predictability budget (L vs LG). Every number in the manuscript is a claim

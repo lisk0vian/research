@@ -127,6 +127,13 @@ def _t9():
           .round(3).to_string())
 
 
+@section("T10 Chronos diagnostic (amendment A2, post hoc)")
+def _t10():
+    t10 = pd.read_csv(TABLES / "T10_chronos_diagnostic.csv")
+    print(t10[["role", "check", "scope", "paths", "observed", "metric"]]
+          .round(3).to_string(index=False))
+
+
 @section("Figures")
 def _figures():
     figs = sorted((OUTPUTS / "figures").glob("F*.png"))
