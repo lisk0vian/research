@@ -32,7 +32,28 @@ from _structure import (  # noqa: E402
     MIGRATION_MARKER,
     REQUIRED_DIRS,
     REQUIRED_PAPER_FILES,
+    REVIEW_BASES,
+    REVIEW_CONSOLIDATED_MD,
+    REVIEW_CONSOLIDATED_YAML,
+    REVIEW_DECISIONS,
+    REVIEW_EVIDENCE_MAX,
     REVIEW_FILES,
+    REVIEW_FIX_MAX,
+    REVIEW_KINDS,
+    REVIEW_LEGACY_AI_REVIEW,
+    REVIEW_MAX_FINDINGS,
+    REVIEW_OBJECTS,
+    REVIEW_PACKET_FILE,
+    REVIEW_PENDING,
+    REVIEW_QUOTE_MAX,
+    REVIEW_RAW_DIR,
+    REVIEW_REJECTED_DIR,
+    REVIEW_SCHEMA_VERSION,
+    REVIEW_SCOPES,
+    REVIEW_SEVERITIES,
+    REVIEW_TITLE_MAX,
+    REVIEW_TRIAGE_FILE,
+    REVIEW_WARRANT_MAX,
     SECRET_PATTERNS,
     SKILL_REGISTRY,
     SLUG_PATTERN,
@@ -167,6 +188,32 @@ def check_claude_links(repo: Path, rep: Report) -> None:
             ".claude/skills/",
             f"stale links: {', '.join(stale)} — run `python scripts/link_skills.py`",
         )
+
+
+def check_agent_links(repo: Path, rep: Report) -> None:
+    """Generated subagents for both tools; warn when out of sync. Skip on CI."""
+    canon = repo / ".agents" / "agents"
+    if not canon.is_dir():
+        return
+    names = sorted(p.stem for p in canon.glob("*.md"))
+    if os.environ.get("CI"):
+        return
+    for label, directory, suffix in (
+        ("claude", repo / ".claude" / "agents", ".md"),
+        ("opencode", repo / ".opencode" / "agents", ".md"),
+    ):
+        if not directory.is_dir():
+            rep.warn(
+                f".{label}/agents/",
+                f"not generated — run `python scripts/link_agents.py`",
+            )
+            continue
+        missing = [n for n in names if not (directory / f"{n}{suffix}").is_file()]
+        if missing:
+            rep.warn(
+                f".{label}/agents/",
+                f"missing generated agents: {', '.join(missing)} — run `python scripts/link_agents.py`",
+            )
 
 
 def check_no_tracked_secrets(repo: Path, rep: Report) -> None:
@@ -338,14 +385,416 @@ def check_reviews(root: Path, rep: Report) -> None:
     reviews = root / "reviews"
     if not reviews.is_dir():
         return
-    for round_dir in sorted(p for p in reviews.iterdir() if p.is_dir()):
-        for fname in REVIEW_FILES:
-            f = round_dir / fname
-            if not f.is_file():
-                rep.warn(
-                    f"papers/{slug}/reviews/{round_dir.name}/",
-                    f"missing '{fname}'",
+    round_dirs = sorted(p for p in reviews.iterdir() if p.is_dir())
+    if len(round_dirs) > 3:
+        rep.warn(
+            f"papers/{slug}/reviews/",
+            f"{len(round_dirs)} rounds found; panel limit is 3 "
+            "(a justified 4th round warns but does not fail)",
+        )
+    for round_dir in round_dirs:
+        if _round_is_v2(round_dir):
+            _check_review_round_v2(root, round_dir, rep)
+        else:
+            for fname in REVIEW_FILES:
+                f = round_dir / fname
+                if not f.is_file():
+                    rep.warn(
+                        f"papers/{slug}/reviews/{round_dir.name}/",
+                        f"missing '{fname}'",
+                    )
+
+
+def _round_is_v2(round_dir: Path) -> bool:
+    """Strict checks apply only when schema_version == 2 is present."""
+    for fname in (REVIEW_PACKET_FILE, REVIEW_TRIAGE_FILE, REVIEW_CONSOLIDATED_YAML):
+        f = round_dir / fname
+        if not f.is_file():
+            continue
+        try:
+            data = load_yaml(f)
+        except Exception:
+            continue
+        if data.get("schema_version") == REVIEW_SCHEMA_VERSION:
+            return True
+    return False
+
+
+def _normalize_text(text: str) -> str:
+    """NFKC + collapsed whitespace. No fuzzy matching: a paraphrase must fail."""
+    import re as _re
+    import unicodedata as _ud
+
+    norm = _ud.normalize("NFKC", text)
+    return _re.sub(r"\s+", " ", norm).strip()
+
+
+def _sha256_normalized(path: Path) -> str:
+    import hashlib as _hl
+
+    return _hl.sha256(path.read_bytes().replace(b"\r\n", b"\n")).hexdigest()
+
+
+def _parse_location(loc: str) -> tuple[str, int, int] | None:
+    """'paper/main.qmd:12' or 'paper/main.qmd:12-18' -> (path, first, last)."""
+    import re as _re
+
+    m = _re.match(r"^(.+?):(\d+)(?:-(\d+))?$", str(loc or "").strip())
+    if not m:
+        return None
+    rel, first, last = m.group(1), int(m.group(2)), int(m.group(3) or m.group(2))
+    if first < 1 or last < first:
+        return None
+    return rel, first, last
+
+
+def _finding_id_ok(fid: str) -> bool:
+    """Word-based ids: r<round>-<object>-<nn>, objects from REVIEW_OBJECTS."""
+    import re as _re
+
+    m = _re.match(r"^r\d+-([a-z]+)-\d+$", str(fid or ""))
+    return bool(m) and m.group(1) in REVIEW_OBJECTS
+
+
+def _check_lengths(f: dict, tag: str, rep: Report) -> None:
+    for key, limit in (("title", REVIEW_TITLE_MAX), ("warrant", REVIEW_WARRANT_MAX),
+                       ("fix", REVIEW_FIX_MAX)):
+        value = f.get(key)
+        if isinstance(value, str) and len(value) > limit:
+            rep.error(tag, f"'{key}' exceeds {limit} chars ({len(value)})")
+
+
+def _check_review_round_v2(root: Path, round_dir: Path, rep: Report) -> None:
+    slug = root.name
+    where = f"papers/{slug}/reviews/{round_dir.name}"
+
+    if (round_dir / REVIEW_LEGACY_AI_REVIEW).is_file():
+        try:
+            legacy = load_yaml(round_dir / REVIEW_LEGACY_AI_REVIEW)
+        except Exception:
+            legacy = {}
+        if legacy.get("schema_version") == REVIEW_SCHEMA_VERSION or (
+            round_dir / REVIEW_PACKET_FILE
+        ).is_file():
+            rep.error(
+                where,
+                f"'{REVIEW_LEGACY_AI_REVIEW}' must not coexist with a v2 round "
+                f"(use '{REVIEW_CONSOLIDATED_YAML}' instead)",
+            )
+
+    packet_path = round_dir / REVIEW_PACKET_FILE
+    if not packet_path.is_file():
+        rep.error(where, f"missing '{REVIEW_PACKET_FILE}' (v2 round)")
+        return
+    try:
+        packet = load_yaml(packet_path)
+    except Exception as exc:
+        rep.error(f"{where}/{REVIEW_PACKET_FILE}", f"unparseable YAML: {exc}")
+        return
+    if packet.get("schema_version") != REVIEW_SCHEMA_VERSION:
+        rep.error(f"{where}/{REVIEW_PACKET_FILE}", "missing 'schema_version: 2'")
+        return
+    if not isinstance(packet.get("repos"), list) or not packet["repos"]:
+        rep.error(f"{where}/{REVIEW_PACKET_FILE}", "'repos' must be a non-empty list")
+    files = packet.get("files")
+    if not isinstance(files, dict) or not files:
+        rep.error(f"{where}/{REVIEW_PACKET_FILE}", "'files' must be a non-empty mapping")
+        files = {}
+    scope = packet.get("scope", "full")
+    if scope not in REVIEW_SCOPES:
+        rep.error(f"{where}/{REVIEW_PACKET_FILE}", f"'scope' must be one of {list(REVIEW_SCOPES)}")
+        scope = "full"
+    if scope == "full" and "paper/main.qmd" not in files:
+        rep.error(f"{where}/{REVIEW_PACKET_FILE}", "'files' must anchor 'paper/main.qmd' in full scope")
+    agents = packet.get("agents")
+    if not isinstance(agents, list) or not agents:
+        rep.error(f"{where}/{REVIEW_PACKET_FILE}", "'agents' must be a non-empty list of what ran")
+    deferred = packet.get("deferred") or []
+    if scope == "code-only" and not deferred:
+        rep.error(f"{where}/{REVIEW_PACKET_FILE}", "'deferred' must list what code-only skips (e.g. manuscript checks)")
+
+    raw_dir = round_dir / REVIEW_RAW_DIR
+    raw_ids: set[str] = set()
+    if not raw_dir.is_dir() or not [p for p in raw_dir.glob("*.yaml") if p.is_file()]:
+        rep.error(where, f"missing '{REVIEW_RAW_DIR}/*.yaml' (v2 round)")
+    else:
+        for raw_file in sorted(p for p in raw_dir.glob("*.yaml") if p.is_file()):
+            _check_raw_file(root, raw_file, files, raw_ids, rep)
+
+    con_path = round_dir / REVIEW_CONSOLIDATED_YAML
+    ai_ids: set[str] = set()
+    ai_majors: set[str] = set()
+    if not con_path.is_file():
+        rep.error(where, f"missing '{REVIEW_CONSOLIDATED_YAML}' (v2 round)")
+    else:
+        try:
+            ai_data = load_yaml(con_path)
+        except Exception as exc:
+            rep.error(f"{where}/{REVIEW_CONSOLIDATED_YAML}", f"unparseable YAML: {exc}")
+            ai_data = {}
+        if ai_data.get("schema_version") != REVIEW_SCHEMA_VERSION:
+            rep.error(f"{where}/{REVIEW_CONSOLIDATED_YAML}", "missing 'schema_version: 2'")
+        else:
+            merged_refs: set[str] = set()
+            for i, f in enumerate(ai_data.get("findings") or []):
+                tag = f"{where}/{REVIEW_CONSOLIDATED_YAML} findings[{i}]"
+                fid = f.get("id") if isinstance(f, dict) else None
+                if not fid:
+                    rep.error(tag, "missing 'id'")
+                    continue
+                if not _finding_id_ok(fid):
+                    rep.error(tag, f"id '{fid}' must look like 'r1-<object>-<nn>' ({'/'.join(REVIEW_OBJECTS)})")
+                if fid in ai_ids:
+                    rep.error(tag, f"duplicate finding id '{fid}'")
+                ai_ids.add(str(fid))
+                if f.get("severity") == "major":
+                    ai_majors.add(str(fid))
+                if "addressed" in f:
+                    rep.error(tag, "'addressed' is banned in v2 (triage.yaml owns state)")
+                for key in ("severity", "kind", "basis", "title", "location", "warrant", "fix", "merged_from"):
+                    if f.get(key) in (None, "", [], {}):
+                        rep.error(tag, f"missing '{key}'")
+                if f.get("severity") not in REVIEW_SEVERITIES:
+                    rep.error(tag, f"severity must be one of {list(REVIEW_SEVERITIES)}")
+                if f.get("kind") not in REVIEW_KINDS:
+                    rep.error(tag, f"kind must be one of {list(REVIEW_KINDS)}")
+                if f.get("basis") not in REVIEW_BASES:
+                    rep.error(tag, f"basis must be one of {list(REVIEW_BASES)}")
+                if f.get("severity") == "major" and f.get("basis") != "demonstrable":
+                    rep.error(tag, "MVP: major requires basis: demonstrable (normative is always minor)")
+                merged = f.get("merged_from")
+                if not isinstance(merged, list) or not merged:
+                    rep.error(tag, "'merged_from' must be a non-empty list of raw ids")
+                else:
+                    merged_refs.update(str(x) for x in merged)
+                _check_lengths(f, tag, rep)
+                _check_evidence(root, f, files, tag, rep)
+            for i, d in enumerate(ai_data.get("discarded") or []):
+                tag = f"{where}/{REVIEW_CONSOLIDATED_YAML} discarded[{i}]"
+                if not isinstance(d, dict) or not d.get("raw_id"):
+                    rep.error(tag, "missing 'raw_id'")
+                    continue
+                if not d.get("reason"):
+                    rep.error(tag, "missing 'reason'")
+            discarded_ids = {
+                str(d.get("raw_id"))
+                for d in (ai_data.get("discarded") or [])
+                if isinstance(d, dict) and d.get("raw_id")
+            }
+            for rid in sorted(raw_ids):
+                if rid not in merged_refs and rid not in discarded_ids:
+                    rep.error(
+                        f"{where}/{REVIEW_CONSOLIDATED_YAML}",
+                        f"raw finding '{rid}' is neither merged nor discarded "
+                        "(the editor must not lose a finding in silence)",
+                    )
+            for ref in sorted(merged_refs):
+                if ref not in raw_ids:
+                    rep.error(f"{where}/{REVIEW_CONSOLIDATED_YAML}", f"merged_from '{ref}' has no raw finding")
+            for rid in sorted(discarded_ids):
+                if rid not in raw_ids:
+                    rep.error(f"{where}/{REVIEW_CONSOLIDATED_YAML}", f"discarded '{rid}' has no raw finding")
+        md_path = round_dir / REVIEW_CONSOLIDATED_MD
+        if not md_path.is_file():
+            rep.error(where, f"missing '{REVIEW_CONSOLIDATED_MD}' (generated by render_review.py)")
+        else:
+            try:
+                md_text = md_path.read_text(encoding="utf-8")
+            except OSError as exc:
+                rep.error(f"{where}/{REVIEW_CONSOLIDATED_MD}", f"cannot read: {exc}")
+                md_text = ""
+            for fid in sorted(ai_ids):
+                if fid not in md_text:
+                    rep.error(
+                        f"{where}/{REVIEW_CONSOLIDATED_MD}",
+                        f"id '{fid}' missing from the generated .md (regenerate it)",
+                    )
+
+    tri_path = round_dir / REVIEW_TRIAGE_FILE
+    decided: set[str] = set()
+    if not tri_path.is_file():
+        rep.error(where, f"missing '{REVIEW_TRIAGE_FILE}' (v2 round)")
+    else:
+        try:
+            tri_data = load_yaml(tri_path)
+        except Exception as exc:
+            rep.error(f"{where}/{REVIEW_TRIAGE_FILE}", f"unparseable YAML: {exc}")
+            tri_data = {}
+        if tri_data.get("schema_version") != REVIEW_SCHEMA_VERSION:
+            rep.error(f"{where}/{REVIEW_TRIAGE_FILE}", "missing 'schema_version: 2'")
+        else:
+            for i, d in enumerate(tri_data.get("decisions") or []):
+                tag = f"{where}/{REVIEW_TRIAGE_FILE} decisions[{i}]"
+                if not isinstance(d, dict) or not d.get("finding_id"):
+                    rep.error(tag, "missing 'finding_id'")
+                    continue
+                fid = str(d["finding_id"])
+                if fid in decided:
+                    rep.error(tag, f"duplicate decision for '{fid}'")
+                decided.add(fid)
+                decision = d.get("decision")
+                if decision not in (*REVIEW_DECISIONS, REVIEW_PENDING):
+                    rep.error(tag, f"decision must be one of {[*REVIEW_DECISIONS, REVIEW_PENDING]}")
+                if decision in ("reject", "defer") and not d.get("reason"):
+                    rep.error(tag, "'reason' is required for reject/defer")
+                if decision in ("reject", "defer", REVIEW_PENDING) and d.get("commit"):
+                    rep.error(tag, "'commit' belongs only on applied accept decisions")
+                if d.get("finding_id") not in ai_ids:
+                    rep.error(tag, f"finding_id '{fid}' is not in {REVIEW_CONSOLIDATED_YAML}")
+            for fid in sorted(ai_majors - decided):
+                rep.error(
+                    f"{where}/{REVIEW_TRIAGE_FILE}",
+                    f"major '{fid}' has no triage decision "
+                    "(a round never closes with an undecided major)",
                 )
+            pending_majors = sorted(
+                fid for fid in ai_majors
+                if any(
+                    isinstance(d, dict) and str(d.get("finding_id")) == fid
+                    and d.get("decision") == REVIEW_PENDING
+                    for d in (tri_data.get("decisions") or [])
+                )
+            )
+            for fid in pending_majors:
+                rep.error(
+                    f"{where}/{REVIEW_TRIAGE_FILE}",
+                    f"major '{fid}' is still '{REVIEW_PENDING}' "
+                    "(pending is an initial state, never a final one)",
+                )
+
+
+def _check_raw_file(
+    root: Path, raw_file: Path, files: dict, raw_ids: set[str], rep: Report
+) -> None:
+    slug = root.name
+    where = f"papers/{slug}/reviews/{raw_file.parent.parent.name}/{REVIEW_RAW_DIR}/{raw_file.name}"
+    try:
+        data = load_yaml(raw_file)
+    except Exception as exc:
+        rep.error(where, f"unparseable YAML: {exc}")
+        return
+    if data.get("schema_version") != REVIEW_SCHEMA_VERSION:
+        rep.error(where, "missing 'schema_version: 2'")
+        return
+    if not data.get("agent"):
+        rep.error(where, "missing 'agent'")
+    if "omitted_count" not in data or not isinstance(data.get("omitted_count"), int):
+        rep.error(where, "'omitted_count' is required (int, 0 when nothing was left out)")
+    findings = data.get("findings")
+    if not isinstance(findings, list) or not findings:
+        rep.error(where, "'findings' must be a non-empty list")
+        return
+    if len(findings) > REVIEW_MAX_FINDINGS:
+        rep.error(where, f"'findings' exceeds {REVIEW_MAX_FINDINGS} (prioritize, declare the rest in omitted_count)")
+    if isinstance(data.get("omitted_count"), int) and data["omitted_count"] > 0 and len(findings) != REVIEW_MAX_FINDINGS:
+        rep.error(where, "'omitted_count > 0' requires exactly 15 findings (prioritize first)")
+    for i, f in enumerate(findings):
+        tag = f"{where} findings[{i}]"
+        if not isinstance(f, dict) or not f.get("id"):
+            rep.error(tag, "missing 'id'")
+            continue
+        fid = str(f["id"])
+        if not _finding_id_ok(fid):
+            rep.error(tag, f"id '{fid}' must look like 'r1-<object>-<nn>' ({'/'.join(REVIEW_OBJECTS)})")
+        if fid in raw_ids:
+            rep.error(tag, f"duplicate raw finding id '{fid}' in this round")
+            continue
+        raw_ids.add(fid)
+        if f.get("severity") not in REVIEW_SEVERITIES:
+            rep.error(tag, f"severity must be one of {list(REVIEW_SEVERITIES)}")
+        if f.get("kind") not in REVIEW_KINDS:
+            rep.error(tag, f"kind must be one of {list(REVIEW_KINDS)}")
+        if f.get("basis") not in REVIEW_BASES:
+            rep.error(tag, f"basis must be one of {list(REVIEW_BASES)}")
+        if f.get("severity") == "major" and f.get("basis") != "demonstrable":
+            rep.error(tag, "MVP: major requires basis: demonstrable (normative is always minor)")
+        for key in ("title", "location", "warrant", "fix"):
+            if f.get(key) in (None, ""):
+                rep.error(tag, f"missing '{key}'")
+        _check_lengths(f, tag, rep)
+        _check_evidence(root, f, files, tag, rep)
+
+
+def _check_evidence(root: Path, f: dict, files: dict, tag: str, rep: Report) -> None:
+    """Presence needs verbatim quotes at the cited location; absence needs
+    existing searched paths plus a non-empty expectation. The validator proves
+    the quote exists, never that the conclusion is right."""
+    kind = f.get("kind")
+    loc = _parse_location(f.get("location", ""))
+    if loc is None:
+        rep.error(tag, "location must look like 'path/to/file:12' or 'path:12-18'")
+        return
+    rel, first, last = loc
+    target = root / rel
+    if not target.is_file():
+        rep.error(tag, f"location file '{rel}' does not exist")
+        return
+    try:
+        text = target.read_text(encoding="utf-8")
+    except OSError as exc:
+        rep.error(tag, f"cannot read location file '{rel}': {exc}")
+        return
+    lines = text.splitlines()
+    if last > len(lines):
+        rep.error(tag, f"location lines {first}-{last} exceed {len(lines)} lines in '{rel}'")
+        return
+    expected_hash = files.get(rel)
+    if isinstance(expected_hash, str) and expected_hash:
+        try:
+            actual = _sha256_normalized(target)
+        except OSError as exc:
+            rep.error(tag, f"cannot hash '{rel}': {exc}")
+            return
+        if actual != expected_hash:
+            rep.error(
+                tag,
+                f"'{rel}' changed since packet.yaml "
+                "(commit before reviewing, or re-run with --allow-dirty)",
+            )
+            return
+    if kind == "presence":
+        evidence = f.get("evidence")
+        if not isinstance(evidence, list) or not evidence:
+            rep.error(tag, "'evidence' must be a non-empty list for kind: presence")
+            return
+        if len(evidence) > REVIEW_EVIDENCE_MAX:
+            rep.error(tag, f"'evidence' exceeds {REVIEW_EVIDENCE_MAX} entries")
+        for j, entry in enumerate(evidence):
+            etag = f"{tag} evidence[{j}]"
+            if not isinstance(entry, dict) or not entry.get("path") or not entry.get("quote"):
+                rep.error(etag, "each evidence entry needs 'path' and 'quote'")
+                continue
+            epath = str(entry["path"])
+            equote = str(entry["quote"])
+            if len(equote) > REVIEW_QUOTE_MAX:
+                rep.error(etag, f"'quote' exceeds {REVIEW_QUOTE_MAX} chars ({len(equote)})")
+            efile = root / epath
+            if not efile.is_file():
+                rep.error(etag, f"evidence path '{epath}' does not exist")
+                continue
+            try:
+                etext = efile.read_text(encoding="utf-8")
+            except OSError as exc:
+                rep.error(etag, f"cannot read '{epath}': {exc}")
+                continue
+            want = _normalize_text(equote)
+            if want not in _normalize_text(etext):
+                rep.error(etag, "quote not found verbatim (spaces/unicode normalized)")
+                continue
+            if j == 0:
+                cited = _normalize_text("\n".join(lines[first - 1:last]))
+                if want not in cited:
+                    rep.error(etag, f"quote not inside cited lines {first}-{last}")
+    elif kind == "absence":
+        searched = f.get("searched")
+        if not isinstance(searched, list) or not searched:
+            rep.error(tag, "'searched' must be a non-empty list for kind: absence")
+        else:
+            for s in searched:
+                if not (root / str(s)).exists():
+                    rep.error(tag, f"searched path '{s}' does not exist")
+        if not f.get("expected"):
+            rep.error(tag, "'expected' must be non-empty for kind: absence")
 
 
 # --------------------------------------------------------------------------- #
@@ -430,6 +879,7 @@ def validate_repo(root: str | Path | None = None) -> Report:
     check_cas_fixture(repo, rep)
     check_skills(repo, rep)
     check_claude_links(repo, rep)
+    check_agent_links(repo, rep)
     check_no_tracked_secrets(repo, rep)
 
     papers_dir = repo / "papers"

@@ -40,6 +40,52 @@ MIGRATION_MARKER = "paper/MIGRATION_PENDING.txt"
 REQUIRED_PAPER_FILES = ["manifest.yaml", "paper/references.bib"]
 REVIEW_FILES = ["comments.yaml", "responses.yaml", "ai-review.yaml"]
 
+# --- Review panel (paper-review skill, /review command) -----------------------
+# v2 rounds: packet.yaml + raw/<object>.yaml + consolidated.yaml/.md +
+# triage.yaml alongside the three legacy human files (comments, responses,
+# legacy ai-review). Strict content checks apply only when schema_version
+# == 2 is present, so existing rounds keep warning-only behavior. In a v2
+# round the legacy ai-review.yaml is an error (two sources of truth).
+REVIEW_SCHEMA_VERSION = 2
+REVIEW_PACKET_FILE = "packet.yaml"
+REVIEW_TRIAGE_FILE = "triage.yaml"
+REVIEW_RAW_DIR = "raw"
+REVIEW_REJECTED_DIR = "rejected"
+REVIEW_CONSOLIDATED_YAML = "consolidated.yaml"
+REVIEW_CONSOLIDATED_MD = "consolidated.md"
+REVIEW_LEGACY_AI_REVIEW = "ai-review.yaml"
+REVIEW_SCOPES = ("code-only", "full")
+REVIEW_SEVERITIES = ("major", "minor")
+REVIEW_KINDS = ("presence", "absence")
+REVIEW_BASES = ("demonstrable", "normative")
+REVIEW_DECISIONS = ("accept", "reject", "defer")
+REVIEW_PENDING = "pending"
+REVIEW_MAX_FINDINGS = 15
+REVIEW_TITLE_MAX = 140
+REVIEW_WARRANT_MAX = 280
+REVIEW_FIX_MAX = 280
+REVIEW_QUOTE_MAX = 600
+REVIEW_EVIDENCE_MAX = 2
+# Selectors for /review <slug> <selector>: groups, presets, and the 8 objects.
+REVIEW_GROUPS = {
+    "paper": ("rev-design", "rev-refs", "rev-style"),
+    "code": ("peer-plan", "peer-results", "peer-reach"),
+    "gate": ("gate-claims",),
+}
+REVIEW_PRESETS = {
+    "plan": ("peer-plan",),
+    "code": ("peer-plan", "peer-results", "peer-reach"),
+    "manuscript": ("rev-design", "rev-refs", "rev-style"),
+    "claims": ("gate-claims",),
+    "full": (
+        "rev-design", "rev-refs", "rev-style",
+        "peer-plan", "peer-results", "peer-reach", "gate-claims",
+    ),
+}
+REVIEW_OBJECTS = (
+    "design", "refs", "style", "plan", "results", "reach", "claims", "merge",
+)
+
 # Extensions a paper may never keep as a data-of-record artefact. Numbers must
 # live in CSV/JSON so they are diffable and auditable in CI.
 FORBIDDEN_ARTEFACT_EXTENSIONS = {".xlsx", ".xls"}
@@ -57,6 +103,7 @@ SKILL_REGISTRY = [
     "paper-colab",
     "paper-search",
     "paper-humanize",
+    "paper-review",
     "util-docx",
     "util-office-to-md",
     "util-search",
