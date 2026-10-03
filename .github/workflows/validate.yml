@@ -36,6 +36,25 @@ on:
   workflow_dispatch:
 
 jobs:
+  changes:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: read
+    outputs:
+      refs: ${{ steps.filter.outputs.refs }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            refs:
+              - 'papers/**/paper/references.bib'
+              - 'papers/**/paper/main.qmd'
+
   structure:
     runs-on: ubuntu-latest
     steps:
@@ -61,6 +80,11 @@ jobs:
 
   doi-check:
     runs-on: ubuntu-latest
+    needs: changes
+    # Runs only when references can actually change; otherwise it would
+    # re-audit every DOI on PRs that only touch code, scripts or docs.
+    # Manual runs always audit (workflow_dispatch has no diff to filter).
+    if: github.event_name == 'workflow_dispatch' || needs.changes.outputs.refs == 'true'
     # Runs on every PR that touches papers/scripts, on push to main, and on manual trigger
     steps:
       - uses: actions/checkout@v5
