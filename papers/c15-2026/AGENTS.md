@@ -1,5 +1,12 @@
 # AGENTS.md — Contracts for AI Agents
 
+> Moved here from `experiments/` (everything in `experiments/` is synced to Drive
+> `code/`). Relative paths below are relative to `experiments/`. The notebook now
+> follows the repo-wide Colab standard: **`COLAB.md` at the repo root supersedes
+> the "one Colab cell per stage" and notebook-sync parts of this file.** The
+> notebook is generated from `experiments/colab.yaml`; stages run through
+> `experiments/run_all.py`.
+
 Subfolder of a larger research project. Scope here is **Colab-executable code only**
 (training, verification, metrics) plus its validation. The Q1 article lives outside
 and consumes `outputs/`; never write paper content here. English for AI efficiency.
