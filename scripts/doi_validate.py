@@ -1027,7 +1027,7 @@ def _print_entry_result(er: EntryResult, slug: str) -> None:
         return
 
     if er.doi_status == "not_found":
-        print(f"  [ERROR] {prefix}: {er.key} → {er.doi} — DOI not found")
+        print(f"  [warn] {prefix}: {er.key} → {er.doi} — DOI not found in CrossRef")
         return
 
     if er.doi_status == "network_error":
@@ -1280,14 +1280,19 @@ def main() -> int:
 
     # Exit code logic
     if args.ci:
-        # CI mode: fail only on non-preprint not_found DOIs (real errors)
-        # Network errors are tolerated (CrossRef can be flaky)
-        has_real_errors = any(
-            er.doi_status == "not_found"
+        # CI mode: fail only on malformed DOIs or critical parse errors.
+        # not_found is common for valid DOIs not indexed in CrossRef (Zenodo,
+        # special-char DOIs, very new publications) — those are warnings.
+        # Network errors are also tolerated (CrossRef can be flaky).
+        # Preprints (arXiv, bioRxiv) are already skipped.
+        has_critical_errors = any(
+            er.doi_status == "malformed"
             for p in global_report.papers
             for er in p.results
+        ) or any(
+            p.errors for p in global_report.papers
         )
-        return 1 if has_real_errors else 0
+        return 1 if has_critical_errors else 0
 
     return 0 if global_report.ok else 1
 
