@@ -48,16 +48,43 @@ XML = "http://www.w3.org/XML/1998/namespace"
 PAGE_W = 10885          # 544.252 pt
 PAGE_H = 14854          # 742.677 pt
 MARGIN_LR = 777         # 38.835 pt left/right
-MARGIN_TOP = 1171       # body starts at y = 58.55 pt
+# Word puts the baseline of an "exact" line at 80 % of its height; the
+# vertical values below place every baseline on the PDF's (ink baselines of
+# the rendered CAS PDF, measured by scripts/paper_parity.py's tooling).
+MARGIN_TOP = 1081       # first body baseline at y = 63.6 pt (54.04 + 0.8 * 11.955)
 MARGIN_BOTTOM = 1054    # body ends at y = 690 pt (742.677 - 52.677)
-HEADER_DIST = 706       # header ink at y = 35.29 pt
-FOOTER_DIST = 582       # footer ink bottom at y = 713.57 pt -> 29.1 pt
+HEADER_DIST = 657       # running-head baseline at y = 41.6 pt
+FOOTER_DIST = 564       # footer baseline at y = 712.4 pt
 TEXT_WIDTH = PAGE_W - 2 * MARGIN_LR  # 9331 twips (right tab stop for footer)
 
 FONT = "STIX"
 FONT_ALT = "Times New Roman"
-MONO = "Courier New"
+# The PDF's sans and typewriter faces are cm-super (SFSS0900, SFSX0900,
+# SFTT0800); Latin Modern has the same metrics (scripts/install_stix_fonts.ps1).
+SANS = "LM Sans 9"           # sans small: tables, captions, running heads
+SANS_BOLD = "LM Sans 10"     # LM Sans 9 has no bold face (SFSX0900)
+MONO = "LM Mono 10"          # typewriter at 10 pt
+MONO_SMALL = "LM Mono 8"     # typewriter in footnotes and references (SFTT0800)
+MATH = "STIX Math"
 HYPERLINK_COLOR = "2F4F4F"   # xcolor DarkSlateGrey == cas-sc.cls hscolor
+
+
+def bp(points: float) -> int:
+    """PostScript points (what the PDF measures) -> twips."""
+    return round(points * 20)
+
+
+def tw(tex_pt: float) -> int:
+    """TeX points (1/72.27 in) -> twips (1/1440 in). The PDF is laid out in
+    TeX points; Word works in PostScript points, 0.4 % larger."""
+    return round(tex_pt * 72 / 72.27 * 20)
+
+
+# Baselineskips of cas-sc at 10 pt (TeX pt): the PDF's line pitch per size.
+BLS_NORMAL = tw(12)        # normalsize 10/12
+BLS_SMALL = tw(11)         # small 9/11 (tables, captions)
+BLS_FOOTNOTE = tw(9.5)     # footnotesize 8/9.5 (abstract, keywords, notes)
+BLS_BIB = tw(10)           # references: 8 pt on a 10 pt baselineskip
 
 # style id -> (kind, params); kind: "patch rPr/pPr of an existing style",
 # "new": create the style.
@@ -130,11 +157,15 @@ def ensure_rpr(style: ET.Element) -> ET.Element:
 
 
 def ensure_ppr(style: ET.Element) -> ET.Element:
+    """pPr goes after name/basedOn/next/.../qFormat and before rPr."""
     ppr = style.find(q("pPr"))
     if ppr is None:
         ppr = ET.Element(q("pPr"))
-        name = style.find(q("name"))
-        style.insert(list(style).index(name) + 1 if name is not None else 1, ppr)
+        rpr = style.find(q("rPr"))
+        if rpr is not None:
+            style.insert(list(style).index(rpr), ppr)
+        else:
+            style.append(ppr)
     return ppr
 
 
@@ -168,9 +199,13 @@ def style_para(ppr: ET.Element, before: int | None = None, after: int | None = N
                first_line: int | None = None, hanging: int | None = None,
                keep_next: bool = False, outline: int | None = None,
                border: tuple[str, ...] | None = None,
-               tabs_right: int | None = None, left: int | None = None) -> None:
+               tabs_right: int | None = None, left: int | None = None,
+               exact: int | None = None, right: int | None = None,
+               widow: bool | None = None) -> None:
     if keep_next:
         set_child(ppr, "keepNext", PPR_ORDER, val="1")
+    if widow is not None:
+        set_child(ppr, "widowControl", PPR_ORDER, val="1" if widow else "0")
     if border:
         # border = ("top bottom", space) -> edges given, in twips of space
         edges, space = border
@@ -182,7 +217,7 @@ def style_para(ppr: ET.Element, before: int | None = None, after: int | None = N
             if edge in edges.split():
                 el = ET.SubElement(pbdr, q(edge))
                 el.set(q("val"), "single")
-                el.set(q("sz"), "4")
+                el.set(q("sz"), "2")       # 1/4 pt: the CAS 0.2 pt rules
                 el.set(q("space"), str(space))
                 el.set(q("color"), "auto")
     if tabs_right is not None:
@@ -200,6 +235,11 @@ def style_para(ppr: ET.Element, before: int | None = None, after: int | None = N
     if line is not None:
         spacing_attrs["line"] = str(line)
         spacing_attrs["lineRule"] = "auto"
+    if exact is not None:
+        # TeX keeps a fixed aselineskip; Word's "auto" spacing would use the
+        # font's (large) STIX line gap instead.
+        spacing_attrs["line"] = str(exact)
+        spacing_attrs["lineRule"] = "exact"
     if spacing_attrs:
         set_child(ppr, "spacing", PPR_ORDER, **spacing_attrs)
     ind_attrs: dict[str, str] = {}
@@ -210,6 +250,8 @@ def style_para(ppr: ET.Element, before: int | None = None, after: int | None = N
         ind_attrs.setdefault("left", str(hanging))
     if left is not None:
         ind_attrs["left"] = str(left)
+    if right is not None:
+        ind_attrs["right"] = str(right)
     if ind_attrs:
         set_child(ppr, "ind", PPR_ORDER, **ind_attrs)
     if jc is not None:
@@ -239,13 +281,17 @@ def patch_styles(xml_bytes: bytes) -> bytes:
     root = ET.fromstring(xml_bytes)
 
     # --- docDefaults: STIX everywhere, 10 pt, no paragraph gap -------------
+    # Every vertical value below is measured on the rendered CAS PDF (word
+    # boxes and rules, scripts/paper_parity.py) and expressed in twips; tw()
+    # converts the TeX points of cas-common.sty.
     doc_defaults = root.find(q("docDefaults"))
     rpr_default = doc_defaults.find(q("rPrDefault"))
     rpr = rpr_default.find(q("rPr"))
     style_font(rpr, sz=20)
+    set_child(rpr, "lang", RPR_ORDER, val="en-US")
     ppr_default = doc_defaults.find(q("pPrDefault"))
     ppr = ppr_default.find(q("pPr"))
-    style_para(ppr, after=0, line=240)
+    style_para(ppr, after=0, exact=BLS_NORMAL)
 
     def get(style_id: str) -> ET.Element | None:
         for st in root.findall(q("style")):
@@ -257,10 +303,14 @@ def patch_styles(xml_bytes: bytes) -> bytes:
               bold: bool | None = None, italic: bool | None = None,
               color: str | None = None, underline_none: bool = False,
               char_spacing: int | None = None, caps: bool | None = None,
+              name: str | None = None, based_on: str = "Normal",
               **pkwargs) -> None:
         st = get(style_id)
         if st is None:
-            return
+            if name is None:
+                return
+            st = make_style(style_id, name, based_on=based_on)
+            root.append(st)
         style_font(ensure_rpr(st), font=font, sz=sz, bold=bold,
                    italic=italic, color=color, underline_none=underline_none,
                    char_spacing=char_spacing, caps=caps)
@@ -268,80 +318,91 @@ def patch_styles(xml_bytes: bytes) -> bytes:
             style_para(ensure_ppr(st), **pkwargs)
 
     # --- body ---------------------------------------------------------------
-    patch("Normal", jc="both", after=0, line=240)
-    patch("BodyText", first_line=300, after=0)
-    patch("FirstParagraph", first_line=300, after=0)
-    patch("Compact", after=0)
+    patch("Normal", jc="both", after=0, exact=BLS_NORMAL)
+    patch("BodyText", first_line=300, after=0)        # parindent 15 pt
+    patch("FirstParagraph", first_line=300, after=0)  # cas indents it too
+    patch("Compact", after=0, exact=BLS_NORMAL)
     patch("BlockText", sz=20)
     patch("Definition", sz=20)
     patch("DefinitionTerm", sz=20)
+    # display math: bovedisplayskip 10 pt around a centred equation whose
+    # number sits at the right margin (tab stops set by cas_docx_post.py)
+    patch("DisplayMath", name="Display Math", sz=20, before=tw(6), after=tw(6),
+          jc="left", exact=None)
 
-    # --- front matter -------------------------------------------------------
-    patch("Title", sz=32, jc="left", before=0, after=120)          # 16 pt
+    # --- highlights page (cas-sc prints it before the title page) -----------
+    # pandoc resolves custom-style by style *name*: names below equal ids.
+    patch("HighlightsTitle", name="HighlightsTitle", sz=28, color="000000",
+          before=0, after=0, exact=tw(17), jc="left", keep_next=True)
+    patch("HighlightsPaperTitle", name="HighlightsPaperTitle", sz=24,
+          bold=True, before=bp(11.06), after=0, exact=BLS_NORMAL, jc="both",
+          keep_next=True)
+    patch("HighlightsAuthors", name="HighlightsAuthors", sz=20,
+          before=bp(5.84), after=0, exact=BLS_NORMAL, jc="left", keep_next=True)
+    patch("Highlight", name="Highlight", sz=20, before=tw(8), after=0,
+          exact=BLS_NORMAL, left=498, hanging=204, jc="left")
+
+    # --- title page ---------------------------------------------------------
+    patch("Title", sz=34, color="000000", jc="left", before=0, after=0,
+          exact=tw(22))                                    # LARGE 17.28/22
+    # the PDF's title baseline sits above where the top margin lets Word put
+    # it: raise the glyphs (layout unchanged) by 6.5 pt
+    set_child(ensure_rpr(get("Title")), "position", RPR_ORDER, val="13")
     patch("Subtitle", sz=24, italic=True, jc="left", after=120)
-    patch("Author", sz=24, jc="left", before=0, after=120)         # 12 pt
+    patch("Author", sz=24, jc="left", before=bp(4.04), after=0, exact=tw(14))
     patch("Date", sz=20, jc="left", after=120)
-    patch("AbstractTitle", sz=22, color="000000", before=160, after=80,
-          jc="left", keep_next=True, border=("top bottom", 6))     # 11 pt caps
-    patch("Abstract", sz=20, before=0, after=80, jc="both",
-          border=("bottom", 6))
+    patch("Affiliation", name="Affiliation", sz=16, italic=True, jc="left",
+          before=bp(10.99), after=bp(10.06), exact=BLS_FOOTNOTE)
+    # ARTICLE INFO | ABSTRACT box: a borderless two-column table built by
+    # cas-docx.lua; labels are letter-spaced caps over a 0.2 pt rule.
+    patch("AbstractTitle", sz=20, color="000000", char_spacing=30, before=0,
+          after=0, exact=tw(13), jc="left", keep_next=True,
+          border=("bottom", 5))
+    patch("Abstract", sz=16, before=0, after=0, jc="both", exact=BLS_FOOTNOTE)
+    patch("Keywords", name="Keywords", sz=16, before=0, after=0, jc="left",
+          exact=BLS_FOOTNOTE)
 
-    # --- headings -----------------------------------------------------------
-    patch("Heading1", sz=22, bold=True, color="000000",
-          before=200, after=100, jc="left", keep_next=True, outline=0)
-    patch("Heading2", sz=21, bold=True, color="000000",
-          before=160, after=80, jc="left", keep_next=True, outline=1)
-    patch("Heading3", sz=20, bold=True, color="000000",
-          before=140, after=60, jc="left", keep_next=True, outline=2)
+    # --- headings (cas-common.sty: section 12/14 bold, subsection 11/13) -----
+    patch("Heading1", sz=24, bold=True, color="000000", before=bp(17.45),
+          after=bp(3.45), exact=tw(14), jc="left", keep_next=True, outline=0)
+    patch("Heading2", sz=22, bold=True, color="000000", before=bp(10.1),
+          after=0, exact=tw(13), jc="left", keep_next=True, outline=1)
+    patch("Heading3", sz=21, bold=True, color="000000", before=bp(10.1),
+          after=0, exact=tw(12), jc="left", keep_next=True, outline=2)
     for lvl in range(4, 10):
         patch(f"Heading{lvl}", sz=20, bold=True, color="000000")
-    patch("SectionNumber", sz=22, bold=True, color="000000")
+    patch("SectionNumber", sz=24, bold=True, color="000000")
 
-    # --- floats / notes / bibliography --------------------------------------
-    patch("TableCaption", sz=20, before=60, after=60, jc="left",
-          keep_next=True)
-    patch("ImageCaption", sz=18, before=60, after=120, jc="left")
-    patch("Caption", sz=18, before=60, after=60, jc="left")
-    patch("FootnoteText", sz=18, after=0, line=240, jc="both")
-    patch("FootnoteReference", sz=18)
-    patch("Bibliography", sz=20, hanging=360, after=100)
+    # --- floats: sffamily small (cm-super sans 9/11) -------------------------
+    patch("TableCaption", font=SANS, sz=18, italic=False, before=tw(6), after=tw(6),
+          exact=BLS_SMALL, jc="left", keep_next=True)
+    patch("ImageCaption", font=SANS, sz=18, italic=False, before=tw(6), after=0,
+          exact=BLS_SMALL, jc="both")
+    patch("Caption", font=SANS, sz=18, italic=False, before=tw(6), after=0,
+          exact=BLS_SMALL, jc="both")
+    patch("TableText", name="Table Text", font=SANS, sz=18, before=0,
+          after=0, exact=BLS_SMALL, jc="left")
+    patch("FigureParagraph", name="Figure", sz=20, before=0, after=0,
+          jc="center", line=240)
+    # Word does not kern unless asked; TeX applies the font's kerns
+    set_child(rpr, "kern", RPR_ORDER, val="2")
+
+    # --- notes / bibliography / links ---------------------------------------
+    patch("FootnoteText", sz=16, after=0, exact=BLS_FOOTNOTE, jc="both",
+          first_line=tw(14.3))
+    patch("FootnoteReference", sz=16)
+    patch("Bibliography", sz=16, hanging=tw(10), before=0, after=0,
+          exact=BLS_BIB, jc="both")
     patch("VerbatimChar", font=MONO, sz=20)
     patch("Hyperlink", color=HYPERLINK_COLOR, underline_none=True)
     patch("TOCHeading", sz=24, bold=True)
 
-    # --- new styles ---------------------------------------------------------
-    if get("Affiliation") is None:
-        st = make_style("Affiliation", "Affiliation")
-        style_font(ensure_rpr(st), sz=18, italic=True)
-        style_para(ensure_ppr(st), before=0, after=0, jc="left")
-        root.append(st)
-    if get("Keywords") is None:
-        st = make_style("Keywords", "Keywords")
-        style_font(ensure_rpr(st), sz=20)
-        style_para(ensure_ppr(st), before=120, after=0, jc="left")
-        root.append(st)
-    if get("HighlightsTitle") is None:
-        st = make_style("HighlightsTitle", "Highlights Title")
-        style_font(ensure_rpr(st), sz=28, color="000000")
-        style_para(ensure_ppr(st), before=160, after=120, jc="left",
-                   keep_next=True)
-        root.append(st)
-    if get("Highlight") is None:
-        st = make_style("Highlight", "Highlight")
-        style_font(ensure_rpr(st), sz=20)
-        style_para(ensure_ppr(st), before=0, after=180, left=300, jc="left")
-        root.append(st)
-    if get("Header") is None:
-        st = make_style("Header", "Header")
-        style_font(ensure_rpr(st), sz=18)
-        style_para(ensure_ppr(st), before=0, after=0, jc="center")
-        root.append(st)
-    if get("Footer") is None:
-        st = make_style("Footer", "Footer")
-        style_font(ensure_rpr(st), sz=18)
-        style_para(ensure_ppr(st), before=0, after=0, jc="left",
-                   tabs_right=TEXT_WIDTH)
-        root.append(st)
+    # --- running heads (sans 9, footer over a full-width 0.2 pt rule) -------
+    patch("Header", name="Header", font=SANS, sz=18, before=0, after=0,
+          exact=BLS_SMALL, jc="center")
+    patch("Footer", name="Footer", font=SANS, sz=18, before=0, after=0,
+          exact=BLS_SMALL, jc="left", tabs_right=TEXT_WIDTH,
+          border=("top", 3))
 
     return ET.tostring(root, encoding="UTF-8", xml_declaration=True)
 
@@ -397,19 +458,25 @@ def empty_header_xml() -> str:
 
 
 def footer_xml(first_author: str) -> str:
-    left = f"{first_author} et al.: Preprint submitted to Elsevier"
-    fld_page = '<w:fldSimple w:instr=" PAGE "><w:r><w:t>1</w:t></w:r></w:fldSimple>'
-    fld_pages = '<w:fldSimple w:instr=" NUMPAGES "><w:r><w:t>1</w:t></w:r></w:fldSimple>'
+    """cas-sc footer: "<author> et al.:" in sans, "Preprint submitted to
+    Elsevier" in italic roman, "Page X of Y" flush right in sans. The page
+    count is the section's: the highlights page before it is unnumbered."""
+    def fld(instr: str) -> str:
+        return (f'<w:fldSimple w:instr=" {instr} "><w:r><w:t>1</w:t></w:r>'
+                '</w:fldSimple>')
+    roman_it = (f'<w:rPr><w:rFonts w:ascii="{FONT}" w:hAnsi="{FONT}" '
+                f'w:cs="{FONT}"/><w:i/></w:rPr>')
     return (
         XMLDECL
         + f'<w:ftr {W_NS}>'
         + '<w:p><w:pPr><w:pStyle w:val="Footer"/></w:pPr>'
-        + f'<w:r><w:t xml:space="preserve">{xml_escape(left)}</w:t></w:r>'
+        + f'<w:r><w:t xml:space="preserve">{xml_escape(first_author)} et al.: </w:t></w:r>'
+        + f'<w:r>{roman_it}<w:t>Preprint submitted to Elsevier</w:t></w:r>'
         + "<w:r><w:tab/></w:r>"
         + '<w:r><w:t xml:space="preserve">Page </w:t></w:r>'
-        + fld_page
+        + fld("PAGE")
         + '<w:r><w:t xml:space="preserve"> of </w:t></w:r>'
-        + fld_pages
+        + fld("SECTIONPAGES")
         + "</w:p></w:ftr>"
     )
 
@@ -421,6 +488,7 @@ SECTPR = f"""<w:sectPr>
 <w:footerReference w:type="first" r:id="rIdCasFtr"/>
 <w:pgSz w:w="{PAGE_W}" w:h="{PAGE_H}"/>
 <w:pgMar w:top="{MARGIN_TOP}" w:right="{MARGIN_LR}" w:bottom="{MARGIN_BOTTOM}" w:left="{MARGIN_LR}" w:header="{HEADER_DIST}" w:footer="{FOOTER_DIST}" w:gutter="0"/>
+<w:pgNumType w:start="1"/>
 <w:cols w:space="720"/>
 <w:titlePg/>
 <w:textDirection w:val="lrTb"/>

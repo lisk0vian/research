@@ -73,6 +73,9 @@ contributes:
     docx:
       reference-doc: reference.docx
       csl: elsevier-harvard.csl
+      # citations link to their reference, styled like the PDF's hyperref
+      # citecolor (Hyperlink style, DarkSlateGrey)
+      link-citations: true
       filters:
         - cas-docx.lua
       number-sections: true

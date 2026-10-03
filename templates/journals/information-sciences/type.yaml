@@ -28,3 +28,18 @@ notes: >
   only permitted for LaTeX submissions).
   Source: Guide for Authors 2/10/2026,
   https://www.sciencedirect.com/journal/information-sciences/publish/guide-for-authors
+# PDF <-> DOCX <-> LaTeX-zip parity (scripts/paper_parity.py). The PDF is the
+# reference; the DOCX is rendered by Word and measured by levels. Thresholds
+# are a ratchet: tighten them as the DOCX converges, never loosen them.
+# Measured 2026-10-02 on c26-2026: 20/20 pages, 99.7 % of words on the PDF
+# page, 58 % identical lines (Word's greedy line breaking vs TeX's paragraph
+# optimiser caps this), word delta p95 57 pt, ink XOR 15 %.
+parity:
+  docx:
+    page_word_match_min: 0.99
+    line_match_min: 0.55
+    word_delta_p95_max_pt: 60
+    ink_xor_max_pct: 16
+  latex_zip:
+    word_delta_max_pt: 0.5
+    hard_px_max: 0

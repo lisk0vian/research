@@ -10,3 +10,18 @@ cite_style: authoryear    # (Allan, 2020; Allan and Jones, 2019; Kramer et al., 
 url: "https://www.sciencedirect.com/journal/engineering-applications-of-artificial-intelligence/publish/guide-for-authors"
 notes: >
   IFAC journal. Double anonymized review (title page + anonymized manuscript separate). Single-column format (desk-reject if not). Abstract max 250 words, must state AI contribution + engineering application, no undefined acronyms in title/abstract. Keywords 1-6. Highlights 3-5 x max 85 chars encouraged. Graphical abstract 531x1328 encouraged. SI units + up to 6 Inspec codes. CRediT required. References authoryear (Allan 2020a, Allan and Jones 2019, Kramer et al. 2023), alphabetical then chronological, LTWA abbreviations. Data Option C: deposit + cite/link dataset, Data statement required. Max 50 pages, <100MB. Source: Guide for Authors 30/9/26, https://www.sciencedirect.com/journal/engineering-applications-of-artificial-intelligence/publish/guide-for-authors
+# PDF <-> DOCX <-> LaTeX-zip parity (scripts/paper_parity.py). The PDF is the
+# reference; the DOCX is rendered by Word and measured by levels. Thresholds
+# are a ratchet: tighten them as the DOCX converges, never loosen them.
+# Measured 2026-10-02 on c26-2026: 20/20 pages, 99.7 % of words on the PDF
+# page, 58 % identical lines (Word's greedy line breaking vs TeX's paragraph
+# optimiser caps this), word delta p95 57 pt, ink XOR 15 %.
+parity:
+  docx:
+    page_word_match_min: 0.99
+    line_match_min: 0.55
+    word_delta_p95_max_pt: 60
+    ink_xor_max_pct: 16
+  latex_zip:
+    word_delta_max_pt: 0.5
+    hard_px_max: 0

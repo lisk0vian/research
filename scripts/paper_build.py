@@ -272,6 +272,23 @@ def patch_docx_heads(repo: Path, paper_dir: Path, docx: Path) -> None:
     else:
         print("  running heads: [warn] patch failed")
         print("  " + "\n  ".join(out.splitlines()[-8:]))
+    # cas layout pass (floats, equation numbers, lists, notes): the OOXML that
+    # neither the reference doc nor the Lua filter can reach.
+    post = tool.parent / "cas_docx_post.py"
+    if post.is_file():
+        cmd = [sys.executable, str(post), str(docx)]
+        pdf = docx.with_suffix(".pdf")
+        if pdf.is_file():
+            # floats go to the PDF's pages (render the pdf first: --format all)
+            cmd += ["--pdf", str(pdf)]
+        latex_zip = docx.with_name(docx.stem + "-latex.zip")
+        if latex_zip.is_file():
+            # references and citations from the PDF's .bbl (identical text)
+            cmd += ["--latex-zip", str(latex_zip)]
+        rc, out = run(cmd)
+        print("  layout: cas_docx_post applied" if rc == 0 else
+              "  layout: [warn] cas_docx_post failed\n  "
+              + "\n  ".join(out.splitlines()[-8:]))
 
 
 def check(repo: Path, slug: str, fmt: str, paper_dir: Path) -> tuple[list[str], list[str], list[str], str, str]:
