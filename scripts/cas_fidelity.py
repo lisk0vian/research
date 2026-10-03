@@ -46,7 +46,6 @@ from __future__ import annotations
 
 import argparse
 import difflib
-import os
 import re
 import shutil
 import subprocess
@@ -55,8 +54,12 @@ import tempfile
 import zipfile
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+from _pdfdiff import find_bbox_tool, run  # noqa: E402
+from _pdfdiff import word_boxes as _word_boxes  # noqa: E402
+
 REPO = Path(__file__).resolve().parents[1]
-_BBOX_TOOL: str | None = None
 JOURNAL_DIR = REPO / "templates" / "journals" / "engineering-applications-of-artificial-intelligence"
 SPECIMEN_DIR = JOURNAL_DIR / "tests" / "specimen"
 CANONICAL_EXT = JOURNAL_DIR / "quarto-extension" / "_extensions"
@@ -103,11 +106,6 @@ class Report:
                 line += f" — {detail}"
             print(line)
         print("  RESULT:", "OK" if self.ok else "FAILED")
-
-
-def run(cmd: list[str], cwd: Path | None = None) -> tuple[int, str]:
-    proc = subprocess.run(cmd, cwd=cwd, capture_output=True, text=True, errors="replace")
-    return proc.returncode, proc.stdout + proc.stderr
 
 
 def sync_extension_to(dest: Path) -> None:
@@ -363,58 +361,10 @@ def check_fonts(rep: Report) -> None:
     rep.add("fonts", ok, detail)
 
 
-PAGE_RE = re.compile(r'<page width="([\d.]+)" height="([\d.]+)">')
-WORD_RE = re.compile(
-    r'<word xMin="([\d.]+)" yMin="([\d.]+)" xMax="([\d.]+)" yMax="([\d.]+)">'
-    r"([^<]*)</word>"
-)
-
-
-def find_bbox_tool() -> str | None:
-    """Some PATHs (Git for Windows) provide an Xpdf pdftotext without -bbox;
-    probe every candidate and return the first one that supports it."""
-    global _BBOX_TOOL  # noqa: PLW0603
-    if _BBOX_TOOL is not None:
-        return _BBOX_TOOL
-    if os.name == "nt":
-        rc, out = run(["where", "pdftotext"])
-    else:
-        rc, out = run(["sh", "-c", "which -a pdftotext"])
-    candidates = [line.strip() for line in out.splitlines() if line.strip()] \
-        if rc == 0 else []
-    if shutil.which("pdftotext"):
-        candidates.append(shutil.which("pdftotext") or "")
-    for cand in dict.fromkeys(candidates):
-        # "-" is the output file in xpdf/Poppler pdftotext and means stdout.
-        rc, out = run([cand, "-bbox", str(REFERENCE_PDF), "-"])
-        if rc == 0 and "<page" in out:
-            _BBOX_TOOL = cand
-            return cand
-    return None
-
-
 def word_boxes(pdf: Path) -> list[list[tuple[str, float, float, float, float]]]:
-    exe = find_bbox_tool()
-    if exe is None:
+    if find_bbox_tool(REFERENCE_PDF) is None:
         raise RuntimeError("no pdftotext with -bbox support on PATH")
-    rc, out = run([exe, "-bbox", str(pdf), "-"])
-    if rc != 0:
-        raise RuntimeError(f"pdftotext -bbox failed for {pdf}")
-    pages: list[list[tuple[str, float, float, float, float]]] = []
-    pos = 0
-    while True:
-        m = PAGE_RE.search(out, pos)
-        if not m:
-            break
-        end = out.find("</page>", m.end())
-        region = out[m.end(): end if end != -1 else len(out)]
-        pages.append([
-            (w.group(5), float(w.group(1)), float(w.group(2)),
-             float(w.group(3)), float(w.group(4)))
-            for w in WORD_RE.finditer(region)
-        ])
-        pos = end if end != -1 else len(out)
-    return pages
+    return _word_boxes(pdf)
 
 
 def check_layout(tol_pt: float, rep: Report) -> None:
@@ -686,7 +636,9 @@ def run_docx_suite(rep: Report) -> None:
         z2.close()
         if short not in header:
             geo.append("short title missing from header1")
-        if f"{first} et al.: Preprint submitted to Elsevier" not in footer \
+        # cas-sc footer: "<author> et al.:" in sans, the rest in italic roman
+        if f"{first} et al.:" not in footer \
+                or "Preprint submitted to Elsevier" not in footer \
                 or " PAGE " not in footer:
             geo.append("footer text/PAGE field missing")
         rep.add("docx geometry + running heads", not geo,
@@ -721,7 +673,8 @@ def run_docx_suite(rep: Report) -> None:
         for needle, why in (
             ("Corresponding author", "cormark note"),
             ("First author footnote text.", "fntext note"),
-            ("Emails: ada@example.org (A. Lovelace)", "email note"),
+            # unmarked note behind the PDF's envelope, as cas-sc prints it
+            ("ada@example.org (A. Lovelace)", "email note"),
             ("ORCID(s): 0000-0001-0002-0003-0004 (A. Lovelace)", "orcid note"),
         ):
             if needle not in fn_text:
@@ -745,8 +698,9 @@ def run_docx_suite(rep: Report) -> None:
 
         # --- Elsevier-Harvard citations + bibliography ----------------------
         cite: list[str] = []
-        if "Reichstein et al." not in full:
-            cite.append("in-text (Reichstein et al., 2019)")
+        # natbib longnamesfirst (the PDF): a first citation lists every author
+        if "Reichstein, Camps-Valls, Stevens" not in full:
+            cite.append("in-text (Reichstein, Camps-Valls, ..., 2019)")
         if "Deep learning and process understanding" not in full:
             cite.append("bibliography entry")
         rep.add("docx citations (elsevier-harvard)", not cite,

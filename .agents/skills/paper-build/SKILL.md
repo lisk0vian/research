@@ -42,7 +42,25 @@ Turn `papers/<slug>/paper/main.qmd` into a submission-ready PDF/DOCX and the
    committed; `.tex`, `.aux`, `.log`, `_files/`, `.docx` and `.zip` are
    gitignored.
 
-4. **On render errors**, map the message to the cause using
+   Render `all` (or the PDF first): the DOCX post-processor
+   (`tools/cas_docx_post.py` for elsevier-cas) reads the PDF to put floats on
+   the same pages and the zip's `.bbl` to copy the references and citations.
+
+4. **Check parity** (DOCX and LaTeX zip against the PDF; needs Word on
+   Windows, else LibreOffice):
+
+   ```bash
+   python scripts/paper_parity.py --slug <slug>
+   ```
+
+   It reports levels L0 pages, L1 words on the same page, L2 identical lines,
+   L3 word positions, L4 ink XOR, plus a strict zip-vs-PDF check, and writes
+   `build/parity/` (report.json, `*-side.png`, `*-overlay.png`: red = PDF only,
+   blue = DOCX only). Read the overlays to see where they differ. Thresholds
+   live under `parity:` in the journal's `type.yaml`. Fonts for Word:
+   `powershell -ExecutionPolicy Bypass -File scripts/install_stix_fonts.ps1`.
+
+5. **On render errors**, map the message to the cause using
    `references/common-errors.md` (math trapped in tables, unwrapped inline math,
    undefined citation key, engine/font mismatch, duplicated section numbers).
    Report the failing line and the fix; do not silently edit the paper body.

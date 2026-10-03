@@ -79,6 +79,7 @@ that know *when* to call them and interview you for the arguments.
 | Add a journal from a link | `python scripts/paper_journal.py --add-journal <slug> --meta meta.json` |
 | Build PDF, DOCX and LaTeX zip | `python scripts/paper_build.py --slug <slug> --format all` |
 | Check environment only | `python scripts/paper_build.py --slug <slug> --check-only` |
+| Measure DOCX/LaTeX-zip vs PDF parity | `python scripts/paper_parity.py --slug <slug>` (Word, else LibreOffice) |
 | Validate the repo | `python scripts/paper_validate.py` |
 | Sparse clone one paper (Colab) | `python scripts/paper_sparse_clone.py --slug <slug> --dest <dir>` |
 | Sync a paper's Drive folder (in place) | `python scripts/paper_drive_sync.py --slug <slug>` |
