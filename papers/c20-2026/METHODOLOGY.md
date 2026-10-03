@@ -280,6 +280,72 @@ deficit is stable between dev and blind, not a confirmatory test. The warm,
 variable blind period is a property of those two years and would also affect a
 recalibration fitted on any earlier window.
 
+### Amendment A3 (2026-10-03): a second, dev-selected system M*₂
+
+Written **before** any of the analyses below is run, and committed as such.
+A2's findings were seen on the blind folds; A3 turns them into a system whose
+every choice is made on the dev folds D1-D3 only, frozen, and then scored on
+B1-B2 once. M* (§5, §7) stays the primary, pre-registered result; M*₂ is
+reported next to it as the dev-selected improvement, with this amendment's
+date. Nothing in A3 may be re-tuned after the blind M*₂ scores are seen.
+
+**A3.1 Chronos, configured correctly** (stage `07e_chronos_variants`,
+temporal experiment, all five folds, TT_mean):
+
+- `Chronos@abs`: as 07b (chronos-t5-small, 512-day context, 100 samples,
+  bfloat16, window mean along each path) but with absolute daily temperature
+  as the context; each path is turned back into anomalies by subtracting C2
+  over its lead days, as in 09d.
+- `ChronosBolt`: amazon/chronos-bolt-small, which returns quantiles rather
+  than paths, forecast at the target's own resolution so no window has to be
+  rebuilt from days: the context is the absolute-temperature series averaged
+  over consecutive 7-day blocks ending on the issue date (one-step and two-step
+  ahead give W1 and W2) and over 14-day blocks (two-step ahead gives W3_4); a
+  block counts with ≥ 5 / 7 or ≥ 10 / 14 valid days, as the target. The C2
+  window mean is subtracted. Bolt is trained on levels 0.1-0.9; the 0.05 and
+  0.95 levels are taken from a normal with the median and the 0.1-0.9 spread
+  ((q90 − q10) / 2.563).
+
+**A3.2 Seed variability** (stage `07f_seed_variability`, descriptive): GBM_L,
+GBM_LG and LSTM_LG re-fitted with four more seeds (base seed + 1..4) in the
+temporal experiment, TT_mean, all folds, with every other setting as in 07 /
+07b. Reported per model, horizon and role: mean, SD, min and max over the five
+seeds of CRPSS_clim and CRPSS_damp, and for each pair of these models in how
+many seeds one beats the other. M* and M*₂ use the base-seed predictions; the
+seeds only say how much of a difference is training noise.
+
+**A3.3 M*₂: members, combination, calibration** (stage `09e_mstar2`).
+Candidate configurations (2 x 2 x 4 = 16):
+
+- *Members:* Ridge_LG, GBM_LG, LSTM_LG and one Chronos — the variant among
+  {Chronos, Chronos@abs, ChronosBolt} with the lowest mean dev CRPS (pooled
+  stations and horizons). Fixed before the grid; the grid also keeps the
+  three-member version without Chronos.
+- *Combination:* Vincentization (quantile average, as 07c) or linear pool
+  (mixture of the members' distributions, quantiles read from the mixture
+  CDF), both with inverse-dev-CRPS weights per horizon.
+- *Calibration,* fitted per horizon: none; the spread factor k (as 09b);
+  conformalised quantiles (for each central pair τ, 1 − τ, an additive
+  widening equal to the τ-coverage quantile of the conformity score
+  max(q_τ − y, y − q_{1−τ}), median unchanged); EMOS, a normal with mean
+  a + b·(combined mean) and variance c + d·(between-member variance of the
+  means), fitted by minimum CRPS.
+
+Selection uses only D1-D3, cross-fitted by fold: weights and calibration are
+fitted on two dev folds and scored on the third, three times. M*₂ is the
+configuration with the lowest cross-fitted dev CRPS (pooled stations and
+horizons) among those whose cross-fitted dev 90 % coverage lies in 0.85-0.95 at
+every horizon; if none does, the one whose worst-horizon coverage is closest to
+0.90, ties broken by CRPS. The winner is refitted on all of D1-D3, written to
+`outputs/models/mstar2.json` with its configuration, and only then scored on
+B1-B2. Every candidate's dev and blind numbers are reported (T13), so the
+selection is visible, but only the frozen winner is tested.
+
+**H5 (blind, pooled stations, per horizon, Holm over the three horizons):**
+(a) M*₂ has a lower CRPS than M* (block bootstrap of the paired difference, as
+H1); (b) M*₂'s 90 % coverage lies in 0.85-0.95 (reported per horizon, not a
+test). H5 is evidence for the dev-selected system, not a replacement of H1-H4.
+
 ## 8. Pre-registered decision rule
 
 Written before any real score exists, so the framing cannot follow the numbers.
