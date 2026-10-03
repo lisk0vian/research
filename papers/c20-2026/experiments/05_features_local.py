@@ -8,7 +8,7 @@ Three properties this stage must guarantee (METHODOLOGY §4, README §12):
 - **Trailing only.** Every window ends at the issuance date d and looks backwards.
   Nothing after d enters a row, otherwise the model reads its own target.
 - **Per-fold anomalies.** The climatology is the fold's own, fitted on its training
-  window (`outputs/climatology/<fold>.json`). A global climatology would let the
+  window (`outputs/climatology/<station>/<fold>.json`). A global climatology would let the
   blind folds see their own test years.
 - **One climatology per variable.** DTR and HR have their own seasonal cycle; DTR
   ranges from ~10 degC in January to ~19 degC in July at this station. Subtracting
@@ -37,6 +37,7 @@ from _common import (
     load_config,
     paths_report,
     progress,
+    read_station_keyed,
     rel_path,
     write_manifest,
 )
@@ -163,9 +164,29 @@ def compute_fold_features(daily: pd.DataFrame, issuances: pd.DataFrame, fold: di
     period = float(clim_cfg.get("period_days", 365.25))
     coverage = float(pred_cfg.get("min_window_coverage", 0.5))
 
-    meta_path = CLIM_JSON_DIR / f"{fold['id']}.json"
-    if not meta_path.is_file():
-        raise SystemExit(f"ERROR: {meta_path} not found — run 03_climatology.py first")
+    # 03 writes one coefficient set per (station, fold). Reading a single
+    # station's anomalies against another's coefficients would leave a seasonal
+    # artefact that the model could learn from, which is exactly the failure
+    # the per-fold climatology exists to prevent.
+    station = None
+    if "station" in daily.columns:
+        codes = [c for c in daily["station"].dropna().unique() if c]
+        if len(codes) > 1:
+            raise SystemExit(
+                f"ERROR: compute_fold_features got {len(codes)} stations ({codes}); "
+                "the caller must pass one station's block"
+            )
+        station = codes[0] if codes else None
+    candidates = ([CLIM_JSON_DIR / station / f"{fold['id']}.json"] if station
+                  else [CLIM_JSON_DIR / f"{fold['id']}.json",
+                        *sorted(CLIM_JSON_DIR.glob(f"*/{fold['id']}.json"))])
+    meta_path = next((p for p in candidates if p.is_file()), None)
+    if meta_path is None:
+        raise SystemExit(
+            f"ERROR: no climatology for fold {fold['id']}"
+            + (f" station {station}" if station else "")
+            + " — run 03_climatology.py first"
+        )
     coef_tt = np.asarray(json.loads(meta_path.read_text(encoding="utf-8"))
                          ["coefficients"]["C2"], dtype="float64")
 
@@ -208,41 +229,56 @@ def main() -> None:
     ensure_dirs()
     print(paths_report())
 
-    daily = pd.read_csv(DAILY_CSV, parse_dates=["date"]).sort_values("date").reset_index(drop=True)
-    issuances = pd.read_csv(ISSUANCES_CSV, parse_dates=["issue_date"])
+    daily = read_station_keyed(DAILY_CSV, parse_dates=["date"])
+    issuances = read_station_keyed(ISSUANCES_CSV, parse_dates=["issue_date"])
     folds = cfg.get("validation", {}).get("folds", [])
 
+    stations = sorted(s for s in daily["station"].unique() if s) if "station" in daily.columns else []
     feature_cols: list[str] = []
     summary: dict[str, dict] = {}
 
-    for fold in progress(folds, desc="features fold", unit="fold", level="fold"):
-        out = compute_fold_features(daily, issuances, fold, cfg)
-        if out.empty:
-            print(f"[{fold['id']}] no issuances")
-            continue
-        path = PROCESSED / f"features_{fold['id']}.csv"
-        atomic_write_csv(out, path)
+    # Sorted by station then time. Every feature below is a lag, a rolling mean
+    # or a difference over consecutive days, so two stations' rows must never
+    # be adjacent. Sorting on date alone interleaves them and the lags silently
+    # start measuring across an elevation gradient.
+    for code in progress(stations, desc="features station", unit="st", level="fold"):
+        block = (daily[daily["station"] == code].sort_values("date").reset_index(drop=True)
+                 if "station" in daily.columns else daily)
+        iss = (issuances[issuances["station"] == code]
+               if "station" in issuances.columns else issuances)
+        for fold in progress(folds, desc=f"features {code}", unit="fold", level="fold"):
+            out = compute_fold_features(block, iss, fold, cfg)
+            if out.empty:
+                print(f"[{code}/{fold['id']}] no issuances")
+                continue
+            out["station"] = code
+            path = PROCESSED / "features" / code / f"{fold['id']}.csv"
+            path.parent.mkdir(parents=True, exist_ok=True)
+            atomic_write_csv(out, path)
 
-        if not feature_cols:
-            feature_cols = [c for c in out.columns
-                            if c not in ("fold", "role", "issue_date", "kind",
-                                         "horizon", "lag_start", "lag_end")]
-        numeric = out[feature_cols]
-        missing = numeric.isna().mean().mul(100).round(1)
-        print(f"[{fold['id']}] {len(out)} rows x {len(feature_cols)} features "
-              f"| missing % max {missing.max():.1f} ({missing.idxmax()}) "
-              f"| wholly-missing: {int((missing == 100).sum())}")
-        summary[fold["id"]] = {
-            "rows": int(len(out)),
-            "n_features": len(feature_cols),
-            "missing_pct": {k: float(v) for k, v in missing.items()},
-            "file": rel_path(path),
-        }
+            if not feature_cols:
+                feature_cols = [c for c in out.columns
+                                if c not in ("fold", "role", "issue_date", "kind",
+                                             "horizon", "lag_start", "lag_end", "station")]
+            numeric = out[feature_cols]
+            missing = numeric.isna().mean().mul(100).round(1)
+            print(f"[{code}/{fold['id']}] {len(out)} rows x {len(feature_cols)} features "
+                  f"| missing % max {missing.max():.1f} ({missing.idxmax()}) "
+                  f"| wholly-missing: {int((missing == 100).sum())}")
+            summary[f"{code}/{fold['id']}"] = {
+                "station": code,
+                "fold": fold["id"],
+                "rows": int(len(out)),
+                "n_features": len(feature_cols),
+                "missing_pct": {k: float(v) for k, v in missing.items()},
+                "file": rel_path(path),
+            }
 
     print(f"\nfeature columns ({len(feature_cols)}): {', '.join(feature_cols)}")
-    print(f"wrote {PROCESSED}/features_<fold>.csv")
+    print(f"wrote {PROCESSED}/features/<station>/<fold>.csv")
     write_manifest({"features": summary,
-                    "feature_files": {k: v["file"] for k, v in summary.items()}})
+                    "feature_files": {k: v["file"] for k, v in summary.items()}},
+                   replace=("features",))
 
 
 if __name__ == "__main__":

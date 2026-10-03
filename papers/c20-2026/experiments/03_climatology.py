@@ -46,6 +46,7 @@ from _common import (
     load_config,
     paths_report,
     progress,
+    read_station_keyed,
     rel_path,
     write_manifest,
 )
@@ -255,60 +256,80 @@ def main() -> None:
     ensure_dirs()
     print(paths_report())
 
-    daily = pd.read_csv(DAILY_CSV, parse_dates=["date"])
+    daily = read_station_keyed(DAILY_CSV, parse_dates=["date"])
     folds = cfg.get("validation", {}).get("folds", [])
     if not folds:
         raise SystemExit("ERROR: config.validation.folds is empty")
 
+    stations = sorted(s for s in daily["station"].unique() if s) if "station" in daily.columns else []
     merged: pd.DataFrame | None = None
     summaries: dict[str, dict] = {}
 
-    for fold in progress(folds, desc="climatology fold", unit="fold", level="fold"):
-        out, meta = compute_fold_climatology(daily, fold, cfg)
-        path = OUTPUTS / "climatology" / f"{fold['id']}.json"
-        atomic_write_json(meta, path)
+    # One climatology per station, per fold. Fitting a single harmonic across
+    # the pooled network is the failure this loop prevents: Pisco at 347 m and
+    # Huancayo at 3298 m are 18 degC apart on any given day of the year, so the
+    # pooled fit is not a noisier version of the right answer, it is a
+    # different answer, and every station is then scored against a reference
+    # that describes mostly the others.
+    for code in progress(stations, desc="station", unit="st", level="fold"):
+        block = daily[daily["station"] == code]
+        for fold in progress(folds, desc=f"climatology {code}", unit="fold", level="fold"):
+            out, meta = compute_fold_climatology(block, fold, cfg)
+            meta["station"] = code
+            path = OUTPUTS / "climatology" / code / f"{fold['id']}.json"
+            path.parent.mkdir(parents=True, exist_ok=True)
+            atomic_write_json(meta, path)
 
-        # Evaluation days belong to exactly one fold: the one that tests them.
-        test_year = fold["test"]
-        mask = out["date"].dt.year == test_year
-        if merged is None:
-            merged = out.loc[mask].copy()
-        else:
-            merged = pd.concat([merged, out.loc[mask]], ignore_index=True)
+            # Evaluation days belong to exactly one fold: the one that tests them.
+            test_year = fold["test"]
+            mask = out["date"].dt.year == test_year
+            piece = out.loc[mask].copy()
+            piece["station"] = code
+            merged = piece if merged is None else pd.concat([merged, piece], ignore_index=True)
 
-        sig = meta["sigma_hq"]
-        sig_txt = ", ".join(
-            f"{h}:" + "/".join(f"{float(v):.2f}" for v in d.values())
-            for h, d in sig.items()
-        )
-        print(f"[{fold['id']}] train {meta['train_window'][0]}..{meta['train_window'][1]} "
-              f"({meta['n_train_days']}d) | var expl. C2 = {meta['variance_explained']['C2']:.3f} "
-              f"| sigma_hq {sig_txt}")
-        summaries[fold["id"]] = {
-            "train_window": meta["train_window"],
-            "n_train_days": meta["n_train_days"],
-            "variance_explained_C2": meta["variance_explained"]["C2"],
-            "sigma_hq": sig,
-            "test_year": test_year,
-        }
+            sig = meta["sigma_hq"]
+            sig_txt = ", ".join(
+                f"{h}:" + "/".join(f"{float(v):.2f}" for v in d.values())
+                for h, d in sig.items()
+            )
+            print(f"[{code}/{fold['id']}] train {meta['train_window'][0]}..{meta['train_window'][1]} "
+                  f"({meta['n_train_days']}d) | var expl. C2 = {meta['variance_explained']['C2']:.3f} "
+                  f"| sigma_hq {sig_txt}")
+            summaries[f"{code}/{fold['id']}"] = {
+                "station": code,
+                "fold": fold["id"],
+                "train_window": meta["train_window"],
+                "n_train_days": meta["n_train_days"],
+                "variance_explained_C2": meta["variance_explained"]["C2"],
+                "sigma_hq": sig,
+                "test_year": test_year,
+            }
 
     assert merged is not None
-    merged = merged.sort_values("date").reset_index(drop=True)
+    merged = merged.sort_values(["station", "date"]).reset_index(drop=True)
     atomic_write_csv(merged, CLIM_CSV)
 
-    print(f"\nevaluation rows (test years only): {len(merged)} "
+    print(f"\nevaluation rows (test years only): {len(merged)} across "
+          f"{merged['station'].nunique()} station(s) "
           f"({merged['date'].min().date()}..{merged['date'].max().date()})")
     print(f"wrote {CLIM_CSV}")
-    print(f"wrote {OUTPUTS / 'climatology'}/<fold>.json")
+    print(f"wrote {OUTPUTS / 'climatology'}/<station>/<fold>.json")
 
     write_manifest({"climatology": summaries,
                     "climatology_files": {
                         "daily_clim": rel_path(CLIM_CSV),
-                        "per_fold": f"{rel_path(OUTPUTS / 'climatology')}/<fold>.json",
-                    }})
-    for h in ("W1", "W2", "W3_4"):
-        if h not in summaries[folds[-1]["id"]]["sigma_hq"]:
-            print(f"WARNING: sigma_hq missing horizon {h}")
+                        "per_fold": f"{rel_path(OUTPUTS / 'climatology')}/<station>/<fold>.json",
+                    }},
+                   replace=("climatology",))
+    # Checked once per (station, fold): a horizon missing from any single
+    # reference would otherwise print five warnings per horizon and be read as
+    # one recurring problem rather than five separate ones.
+    horizons = sorted({h for entry in summaries.values() for h in entry["sigma_hq"]})
+    for key, entry in summaries.items():
+        for h in ("W1", "W2", "W3_4"):
+            if h not in entry["sigma_hq"]:
+                print(f"WARNING: {key} sigma_hq missing horizon {h}")
+    print(f"sigma_hq horizons present: {horizons}")
 
 
 if __name__ == "__main__":

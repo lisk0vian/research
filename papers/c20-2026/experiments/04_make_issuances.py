@@ -38,6 +38,7 @@ from _common import (
     load_config,
     paths_report,
     progress,
+    read_station_keyed,
     rel_path,
     write_manifest,
 )
@@ -74,12 +75,26 @@ def horizon_windows(horizons: dict) -> dict[str, tuple[int, int]]:
     return {h: (int(v[0]), int(v[1])) for h, v in horizons.items()}
 
 
-def load_fold_coefficients(fold_id: str) -> np.ndarray:
-    path = CLIM_JSON_DIR / f"{fold_id}.json"
-    if not path.is_file():
-        raise SystemExit(f"ERROR: {path} not found — run 03_climatology.py first")
-    meta = json.loads(path.read_text(encoding="utf-8"))
-    return np.asarray(meta["coefficients"]["C2"], dtype="float64")
+def load_fold_coefficients(fold_id: str, station: str | None = None) -> np.ndarray:
+    """Read the fold's C2 coefficients, from that station's own climatology.
+
+    03 writes one coefficient set per (station, fold), and they are not
+    interchangeable: two stations 3000 m apart have different harmonic
+    coefficients, so loading the wrong one scores a station against a
+    reference that describes somewhere else. `station=None` falls back to the
+    pre-migration layout, and to the single folder the old layout would have
+    produced, for data that predates the network.
+    """
+    candidates = ([CLIM_JSON_DIR / station / f"{fold_id}.json"] if station
+                  else [CLIM_JSON_DIR / f"{fold_id}.json",
+                        *sorted(CLIM_JSON_DIR.glob(f"*/{fold_id}.json"))])
+    for path in candidates:
+        if path.is_file():
+            meta = json.loads(path.read_text(encoding="utf-8"))
+            return np.asarray(meta["coefficients"]["C2"], dtype="float64")
+    tried = ", ".join(str(c) for c in candidates)
+    raise SystemExit(f"ERROR: no climatology for fold {fold_id} (tried: {tried}) — "
+                     "run 03_climatology.py first")
 
 
 def anomalies_for_window(daily: pd.DataFrame, coef: np.ndarray, start: pd.Timestamp,
@@ -184,7 +199,20 @@ def compute_fold_issuances(daily: pd.DataFrame, fold: dict, cfg: dict) -> pd.Dat
     test_start = pd.Timestamp(fold["test"], 1, 1)
     test_end = pd.Timestamp(fold["test"], 12, 31)
 
-    coef = load_fold_coefficients(fold["id"])
+    # The caller hands in one station's block, so the code is recoverable from
+    # it. Passing it explicitly would be clearer, but inferring keeps the
+    # existing per-station signature and its tests intact.
+    station = None
+    if "station" in daily.columns:
+        codes = [c for c in daily["station"].dropna().unique() if c]
+        if len(codes) > 1:
+            raise SystemExit(
+                f"ERROR: compute_fold_issuances got {len(codes)} stations "
+                f"({codes}); the caller must pass one station's block, or the "
+                "climatology coefficients loaded below belong to the wrong site"
+            )
+        station = codes[0] if codes else None
+    coef = load_fold_coefficients(fold["id"], station)
     # Panel spans the training window and the test year: a target may reach from
     # one into the other, and the embargo decides whether that is allowed.
     panel = AnomalyPanel(anomalies_for_window(daily, coef, train_lo, test_end, period))
@@ -241,20 +269,32 @@ def main() -> None:
     ensure_dirs()
     print(paths_report())
 
-    daily = pd.read_csv(DAILY_CSV, parse_dates=["date"])
+    daily = read_station_keyed(DAILY_CSV, parse_dates=["date"])
     folds = cfg.get("validation", {}).get("folds", [])
     if not folds:
         raise SystemExit("ERROR: config.validation.folds is empty")
 
-    frames = [compute_fold_issuances(daily, f, cfg)
-              for f in progress(folds, desc="issuances fold", unit="fold", level="fold")]
+    # One issuance set per station. Issuances are calendar dates, so the whole
+    # network could in principle share one set; but the target a given issuance
+    # points at is station-specific, so a shared frame keyed on issue_date would
+    # carry one station's validity flag into another station's training pool.
+    stations = sorted(s for s in daily["station"].unique() if s) if "station" in daily.columns else []
+    frames = []
+    for code in progress(stations, desc="issuances station", unit="st", level="fold"):
+        block = daily[daily["station"] == code] if "station" in daily.columns else daily
+        for f in progress(folds, desc=f"issuances {code}", unit="fold", level="fold"):
+            part = compute_fold_issuances(block, f, cfg)
+            if not part.empty:
+                part["station"] = code
+            frames.append(part)
     issuances = pd.concat([f for f in frames if not f.empty], ignore_index=True)
     out_path = PROCESSED / "issuances.csv"
     atomic_write_csv(issuances, out_path)
 
     weekday_name = cfg.get("issuance", {}).get("weekday", "monday")
     embargo = cfg.get("validation", {}).get("embargo_days", 28)
-    print(f"issuances: {len(issuances)} rows | weekday={weekday_name} embargo={embargo}d")
+    print(f"issuances: {len(issuances)} rows across {issuances['station'].nunique()} station(s) "
+          f"| weekday={weekday_name} embargo={embargo}d")
     for fold in folds:
         sub = issuances[issuances["fold"] == fold["id"]]
         if sub.empty:
@@ -274,21 +314,31 @@ def main() -> None:
               f"({eval_rows['issue_date'].min().date()}..{eval_rows['issue_date'].max().date()})")
     print(f"wrote {out_path}")
 
+    # Keyed by (station, fold): a per-fold total across the network would hide
+    # a station whose targets never became valid.
     summary = {
-        f["id"]: {
+        f"{code}/{f['id']}": info
+        for code in sorted(issuances["station"].unique())
+        for f in folds
+        for info in [{
+            "station": code,
+            "fold": f["id"],
             "eval_issue_dates": int(issuances[(issuances["fold"] == f["id"])
-                                               & (issuances["kind"] == "eval")]["issue_date"].nunique()),
+                                              & (issuances["station"] == code)
+                                              & (issuances["kind"] == "eval")]["issue_date"].nunique()),
             "train_rows": int(((issuances["fold"] == f["id"])
+                               & (issuances["station"] == code)
                                & (issuances["kind"] == "train")).sum()),
             "valid_targets": {
                 str(h): int(g["valid_target"].sum())
-                for h, g in issuances[issuances["fold"] == f["id"]].groupby("horizon")
+                for h, g in issuances[(issuances["fold"] == f["id"])
+                                      & (issuances["station"] == code)].groupby("horizon")
             },
-        }
-        for f in folds
+        }]
     }
     write_manifest({"issuances": summary,
-                    "issuance_files": {"issuances": rel_path(out_path)}})
+                    "issuance_files": {"issuances": rel_path(out_path)}},
+                   replace=("issuances",))
 
 
 if __name__ == "__main__":
