@@ -46,9 +46,40 @@ from _harmonic import doy_fractional, eval_harmonic
 from _panel import fast_mode, read_eval_index
 
 TARGET = "TT_mean"
+# v1: adds the CRPS of each variant (daily and per window), the net effect of
+# calibration and median accuracy together.
+RESULTS_VERSION = 1
 FOLD = "D3"  # the last dev fold: nothing here touches the blind folds again
 VARIANTS = [("bfloat16", "anomaly"), ("float32", "anomaly"),
             ("bfloat16", "absolute"), ("float32", "absolute")]
+
+
+def crps_samples(samples: np.ndarray, y: np.ndarray) -> np.ndarray:
+    """CRPS of a sample forecast, row by row: E|X - y| - E|X - X'| / 2.
+
+    samples (n, S), y (n,). The second term uses the sorted-sample identity
+    E|X - X'| = 2 / S^2 * sum_i (2i - S - 1) x_(i), exact for the empirical
+    distribution and O(S log S) instead of O(S^2).
+    """
+    s = np.sort(samples, axis=1)
+    m = s.shape[1]
+    w = 2 * np.arange(1, m + 1) - m - 1
+    spread = 2.0 / m ** 2 * (s * w).sum(axis=1)
+    return np.abs(s - y[:, None]).mean(axis=1) - 0.5 * spread
+
+
+def crps_daily_and_windows(paths: np.ndarray, obs: np.ndarray,
+                           windows: dict[str, tuple[int, int]]) -> dict[str, float]:
+    """Mean CRPS over the daily leads (finite outcomes) and per window mean."""
+    out = {}
+    ok = np.isfinite(obs)
+    daily = [crps_samples(paths[ok[:, t], :, t], obs[ok[:, t], t]) for t in range(obs.shape[1])]
+    out["daily"] = float(np.concatenate(daily).mean())
+    for h, (a, b) in windows.items():
+        full = ok[:, a - 1:b].all(axis=1)
+        out[h] = float(crps_samples(paths[full, :, a - 1:b].mean(axis=2),
+                                    obs[full, a - 1:b].mean(axis=1)).mean()) if full.any() else np.nan
+    return out
 
 
 def window_coverage(paths: np.ndarray, obs: np.ndarray, a: int, b: int) -> tuple[float, float]:
@@ -66,6 +97,9 @@ def window_coverage(paths: np.ndarray, obs: np.ndarray, a: int, b: int) -> tuple
 def variant_rows(label: str, paths: np.ndarray, obs: np.ndarray,
                  windows: dict[str, tuple[int, int]], d09c) -> list[dict]:
     rows = d09c.summarise(paths, obs, windows, label)
+    for scope, value in crps_daily_and_windows(paths, obs, windows).items():
+        rows.append({"role": label, "check": "crps", "scope": scope, "paths": value,
+                     "observed": np.nan, "metric": "CRPS (degC; lower is better)"})
     for h, (a, b) in windows.items():
         cov, rmse = window_coverage(paths, obs, a, b)
         rows.append({"role": label, "check": "window", "scope": h, "paths": cov,
@@ -157,7 +191,7 @@ def main() -> None:
 
     table = pd.DataFrame(rows).rename(columns={"role": "variant"})
     path = atomic_write_csv(table.round(4), TABLES / "T11_chronos_sensitivity.csv")
-    show = table[table["metric"].str.startswith(("cov90", "path SD"))]
+    show = table[table["metric"].str.startswith(("cov90", "path SD", "CRPS"))]
     print(show.pivot_table(index=["check", "scope", "metric"], columns="variant", values="paths")
           .round(3).to_string())
     write_manifest({"chronos_sensitivity_09d": {

@@ -137,7 +137,7 @@ def _t10():
 @section("T11 Chronos precision and scale (amendment A2, post hoc, D3)")
 def _t11():
     t11 = pd.read_csv(TABLES / "T11_chronos_sensitivity.csv")
-    show = t11[t11["metric"].str.startswith(("cov90", "path SD"))]
+    show = t11[t11["metric"].str.startswith(("cov90", "path SD", "CRPS"))]
     print(show.pivot_table(index=["check", "scope", "metric"], columns="variant",
                            values="paths").round(3).to_string())
 

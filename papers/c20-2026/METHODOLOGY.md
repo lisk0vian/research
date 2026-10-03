@@ -224,6 +224,20 @@ Secondary analyses added (stage `09b_calibration`, table T9):
   A technical cause would show as a variant with much wider, better-covering
   paths. Any such variant stays a sensitivity analysis: 07b, the Ensemble and
   M* keep the pre-registered configuration.
+  **Result: the cause is the input, not the precision.** bfloat16 and float32
+  give the same paths. Given absolute temperature, Chronos' daily spread rises
+  from 0.17-0.20 °C to 0.86-0.98 °C against a median RMSE of 1.1-1.3 °C, and
+  its 90 % coverage from 0.19-0.22 to 0.76-0.78 daily and 0.76-0.80 for the
+  window means (anomaly input: 0.21-0.29), close to the other members. Path
+  persistence also falls back to near the real errors (lag-1 0.77 against
+  0.74; anomaly input 0.83). The price is a less accurate window median (RMSE
+  0.80 against 0.78 °C at W1, 0.80 against 0.70 °C at W3_4): with absolute
+  input the model also has to forecast the seasonal cycle the anomaly input had
+  removed. The mechanism is not isolated (Chronos' mean scaling of a series
+  centred on zero, or an anomaly series simply looking like noise), but the
+  effect is: Chronos' mis-calibration in this study comes from the input form
+  chosen in 07b, not from the model itself. The CRPS of each variant, which
+  weighs calibration and median accuracy together, is in T11.
 
 What this cannot say: k was conceived after the blind coverage was seen, so a
 blind coverage near 0.90 after recalibration is evidence that the spread

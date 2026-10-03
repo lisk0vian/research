@@ -91,3 +91,29 @@ def test_window_coverage_ignores_contexts_with_a_missing_day():
     obs[:, 3] = np.nan                       # every W1 window broken
     assert np.isnan(d09d.window_coverage(paths, obs, 1, 7)[0])
     assert np.isfinite(d09d.window_coverage(paths, obs, 8, 14)[0])
+
+
+def test_crps_samples_matches_the_direct_pairwise_formula():
+    d09d = importlib.import_module("09d_chronos_sensitivity")
+    rng = np.random.default_rng(7)
+    x, y = rng.normal(size=(5, 30)), rng.normal(size=5)
+    direct = (np.abs(x - y[:, None]).mean(axis=1)
+              - 0.5 * np.abs(x[:, :, None] - x[:, None, :]).mean(axis=(1, 2)))
+    assert np.allclose(d09d.crps_samples(x, y), direct)
+
+
+def test_crps_samples_recovers_the_gaussian_closed_form():
+    """CRPS(N(0,1), 0) = 2*phi(0) - 1/sqrt(pi) = 0.2337."""
+    d09d = importlib.import_module("09d_chronos_sensitivity")
+    rng = np.random.default_rng(8)
+    x = rng.normal(size=(1, 200000))
+    assert d09d.crps_samples(x, np.zeros(1))[0] == pytest.approx(0.2337, abs=0.003)
+
+
+def test_too_narrow_samples_score_worse_than_calibrated_ones():
+    d09d = importlib.import_module("09d_chronos_sensitivity")
+    rng = np.random.default_rng(9)
+    y = rng.normal(size=2000)
+    good = rng.normal(size=(2000, 100))
+    narrow = 0.2 * rng.normal(size=(2000, 100))
+    assert d09d.crps_samples(narrow, y).mean() > d09d.crps_samples(good, y).mean()
