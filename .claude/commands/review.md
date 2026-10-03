@@ -43,7 +43,10 @@ argument-hint: "<slug> <selector: paper | code | gate | <agent> | plan | full>"
    main.qmd errors out.
 
 4. Launch lines (use ONLY the RESOLVED ones, parallel, isolated —
-   no reviewer reads another report or reviews/):
+   no reviewer reads another report or reviews/). Spawn each as a
+   SUBAGENT by name with its task prompt (native mechanism:
+   subagent/task tool in OpenCode, Task(subagent_type=...) in
+   Claude Code; @ means file reference, never agents):
 
    Task(subagent_type=rev-design) — Methodology examiner. Read paper/main.qmd +
    manifest.yaml (+METHODOLOGY.md if any). Major only if it

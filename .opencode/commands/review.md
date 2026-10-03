@@ -42,37 +42,40 @@ description: Review a paper's code or manuscript with peer subagents (asks scope
    main.qmd errors out.
 
 4. Launch lines (use ONLY the RESOLVED ones, parallel, isolated —
-   no reviewer reads another report or reviews/):
+   no reviewer reads another report or reviews/). Spawn each as a
+   SUBAGENT by name with its task prompt (native mechanism:
+   subagent/task tool in OpenCode, Task(subagent_type=...) in
+   Claude Code; @ means file reference, never agents):
 
-   @rev-design — Methodology examiner. Read paper/main.qmd +
+   Spawn subagent `rev-design` with task: Methodology examiner. Read paper/main.qmd +
    manifest.yaml (+METHODOLOGY.md if any). Major only if it
    invalidates a named conclusion or blocks reproduction.
    Return YAML findings, ids rN-design-nn.
 
-   @rev-refs — Literature reviewer. Read paper/main.qmd +
+   Spawn subagent `rev-refs` with task: Literature reviewer. Read paper/main.qmd +
    paper/references.bib. Flag unsupported central claims.
    Return YAML findings, ids rN-refs-nn.
 
-   @rev-style — Clarity + journal guide. Read paper/main.qmd.
+   Spawn subagent `rev-style` with task: Clarity + journal guide. Read paper/main.qmd.
    Blocking editorial issues only. YAML, ids rN-style-nn.
 
-   @peer-plan — Colleague. Read experiments/, config.yaml,
+   Spawn subagent `peer-plan` with task: Colleague. Read experiments/, config.yaml,
    outputs/, manifest.yaml. Does the pipeline answer the
    question and support the hypotheses? YAML, rN-plan-nn.
 
-   @peer-results — Colleague. Same inputs. Do outputs suffice
+   Spawn subagent `peer-results` with task: Colleague. Same inputs. Do outputs suffice
    to write and support conclusions, or what is missing?
    YAML, rN-results-nn.
 
-   @peer-reach — Colleague. Same inputs + journal target.
+   Spawn subagent `peer-reach` with task: Colleague. Same inputs + journal target.
    Q1 level (novelty, rigor, fit) and exactly what is missing.
    YAML, rN-reach-nn.
 
-   @gate-claims — Comptroller. packet.yaml + manifest claims +
+   Spawn subagent `gate-claims` with task: Comptroller. packet.yaml + manifest claims +
    paper/main.qmd + outputs/. Every number equals its source;
    code_hashes rule. YAML, ids rN-claims-nn, two-sided evidence.
 
-   @gate-merge — Managing editor, LAST, only if >=2 reports.
+   Spawn subagent `gate-merge` with task: Managing editor, LAST, only if >=2 reports.
    Read raw/*.yaml + packet.yaml (+ prior rounds). Deduplicate,
    keep contradictions visible, discard failed evidence with
    reason. Return consolidated.yaml content (merged_from +

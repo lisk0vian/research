@@ -259,6 +259,7 @@ def test_review_command_twins_match():
         for n in ("rev-design", "rev-refs", "rev-style", "peer-plan",
                   "peer-results", "peer-reach", "gate-claims", "gate-merge"):
             core = core.replace(f"Task(subagent_type={n})", f"@{n}")
+            core = core.replace(f"Spawn subagent `{n}` with task:", f"@{n} —")
         return core
 
     assert body(opencode) == body(claude)
