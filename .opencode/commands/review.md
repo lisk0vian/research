@@ -3,27 +3,34 @@ description: Review a paper's code or manuscript with peer subagents (asks scope
 ---
 
 0. SLUG is mandatory. Take it from $ARGUMENTS (`/review <slug>
-   <selector>`); if absent, ask with the real papers/* list and
-   wait. Everything below runs on papers/<slug>/ only.
+   <selector>`). If present and matching papers/*, use it WITHOUT
+   asking — write SLUG=<slug> and continue. Only if absent or
+   invalid, ask with the real papers/* list and wait. Everything
+   below runs on papers/<slug>/ only.
 
-1. Resolve SELECTOR to an explicit agent list FIRST (ask with
-   options, recommended first, if absent/unclear; max 2 rounds):
+1. Resolve SELECTOR to an explicit agent list FIRST. If present
+   and valid (group, agent, list or preset below), use it WITHOUT
+   asking — write RESOLVED=[...] and continue. Only if absent,
+   invalid or ambiguous, ask with options (recommended first;
+   max 2 rounds):
    paper=[rev-design,rev-refs,rev-style]
    code=[peer-plan,peer-results,peer-reach]
    gate=[gate-claims] (+gate-merge only if >=2 reports total)
    <agent>=[that one]   a,b=[a,b]
    presets: plan=[peer-plan] manuscript=[rev-design,rev-refs,rev-style]
    claims=[gate-claims] full=[all 7]+gate-merge last.
-   Write RESOLVED=[...] down. Launch ONLY those lines from step 4,
-   in parallel. Nothing resolved = nothing launched.
+   Launch ONLY those lines from step 4, in parallel.
+   Nothing resolved = nothing launched.
 
 2. Read papers/<slug>/ context FIRST: DESIGN_DECISIONS.md,
    METHODOLOGY.md, experiments/config.yaml, manifest.yaml
    (whichever exist). State what you read. Classify and say so:
    SIMPLE (recommendation + minimal plan the user validates and
    applies) vs COMPLEX (propose round: scope + agents, wait yes).
-   ALWAYS ask the path with options via the session question tool
-   before acting, even when the hint names agents.
+   Ask the path with options via the session question tool only
+   for what step 0-1 left unresolved (missing/invalid/ambiguous)
+   or for the SIMPLE-vs-ROUND decision — never re-ask what the
+   user already stated explicitly.
 
 3. CHAT (default): return each verdict here. Write NO files.
    ROUND (explicit only): paper_review.py --slug S --round N
