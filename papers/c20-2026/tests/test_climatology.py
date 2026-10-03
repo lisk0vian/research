@@ -195,7 +195,7 @@ def test_quarter_of_wraps_december_into_djf():
 def test_sigma_hq_has_four_quarters_per_horizon():
     idx = pd.date_range("2020-01-01", "2025-12-31", freq="D")
     resid = np.sin(idx.dayofyear.to_numpy() / 365.25 * 2 * np.pi)
-    sig = clim.seasonal_sigma_hq(idx, resid, (1, 7))
+    sig = clim.seasonal_sigma_hq(idx, resid, (1, 7), "2020-01-01", "2025-12-31")
     assert set(sig) == {"0", "1", "2", "3"}
     assert all(v > 0 for v in sig.values())
 
@@ -205,23 +205,39 @@ def test_sigma_hq_seasons_with_different_scales():
     idx = pd.date_range("2020-01-01", "2025-12-31", freq="D")
     scale = np.where(idx.month.isin([12, 1, 2]), 3.0, 1.0)
     resid = scale * np.sin(idx.dayofyear.to_numpy() / 365.25 * 4 * np.pi)
-    sig = clim.seasonal_sigma_hq(idx, resid, (1, 7))
+    sig = clim.seasonal_sigma_hq(idx, resid, (1, 7), "2020-01-01", "2025-12-31")
     assert sig["0"] > sig["1"] * 2
 
 
 def test_sigma_hq_horizon_specific():
-    # Sigma must grow with lead time when noise does.
-    idx = pd.date_range("2020-01-01", "2025-12-31", freq="D")
-    resid = np.random.default_rng(0).normal(size=len(idx))
-    s1 = clim.seasonal_sigma_hq(idx, resid, (1, 7))
-    s2 = clim.seasonal_sigma_hq(idx, resid, (15, 28))
-    assert abs(np.mean(list(s1.values())) - np.mean(list(s2.values()))) < 0.2
+    # Noisy first ten days of the train: W1 keeps three of them (Jan 8-10),
+    # W3_4 drops all ten (needs t >= Jan 29). Same data, different horizons,
+    # different sigmas — the old mask returned identical numbers for both.
+    idx = pd.date_range("2020-01-01", "2020-12-31", freq="D")
+    resid = np.zeros(len(idx))
+    resid[:10] = 50.0
+    s1 = clim.seasonal_sigma_hq(idx, resid, (1, 7), "2020-01-01", "2020-12-31")
+    s2 = clim.seasonal_sigma_hq(idx, resid, (15, 28), "2020-01-01", "2020-12-31")
+    assert s1["0"] > 1.0
+    assert s2["0"] < 1e-9
+
+
+def test_sigma_hq_ignores_days_past_the_train_end():
+    # A spike in the test year must not move sigma: sigma is a train statistic
+    # (§12), and 08 will score test years against it.
+    idx = pd.date_range("2020-01-01", "2021-12-31", freq="D")
+    clean = np.random.default_rng(0).normal(size=len(idx))
+    spiked = clean.copy()
+    spiked[idx == "2021-06-15"] = 1e6
+    sig_clean = clim.seasonal_sigma_hq(idx, clean, (1, 7), "2020-01-01", "2020-12-31")
+    sig_spiked = clim.seasonal_sigma_hq(idx, spiked, (1, 7), "2020-01-01", "2020-12-31")
+    assert sig_spiked == sig_clean
 
 
 def test_sigma_hq_falls_back_when_a_quarter_is_too_small():
     # Only one day of residuals: every quarter must still return a finite value.
     idx = pd.to_datetime(["2021-07-01"])
-    sig = clim.seasonal_sigma_hq(idx, np.array([1.0]), (1, 7))
+    sig = clim.seasonal_sigma_hq(idx, np.array([1.0]), (1, 7), "2021-01-01", "2021-12-31")
     # NaN here is correct: a single sample has no SD, and a one-sample pooled SD
     # would be a fabricated noise scale. 03 warns on it instead of inventing one.
     assert np.isnan(sig["0"])

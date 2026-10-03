@@ -105,31 +105,31 @@ def horizon_windows(horizons: dict) -> dict[str, tuple[int, int]]:
 
 
 def seasonal_sigma_hq(resid_dates, residuals: np.ndarray, horizon: tuple[int, int],
-                      quarters=range(4), label: str = "") -> dict[str, float]:
+                      train_start: pd.Timestamp, train_end: pd.Timestamp,
+                      quarters=range(4)) -> dict[str, float]:
     """Residual SD per quarter, using only residuals from that horizon's window.
 
-    `residuals` are the anomaly residuals of the days inside (lag_start, lag_end]
-    of each issuance, so the SD reflects the noise scale the model must beat at
-    that lead time. Quarters with too few samples fall back to the pooled SD.
+    A residual at day `t` belongs to horizon (lag0, lag1) only when the whole
+    issuance window [t-lag1, t-lag0] sits inside the training window and `t`
+    itself is a training day. Edge days whose window sticks out are dropped, so
+    longer horizons keep fewer days — that difference between horizons is the
+    point, not a side effect. Quarters with too few samples fall back to the
+    pooled in-window SD.
     """
     idx = pd.DatetimeIndex(resid_dates)
-    doy = doy_fractional(idx)
     lag0, lag1 = horizon
-    # A day t belongs to this horizon's window when (t - issuance) in [lag0, lag1].
-    in_window = np.zeros(len(idx), dtype=bool)
-    # One pass per offset day, and each pass formats the whole index to
-    # strings. For W3_4 that is 14 string formats of every day in the training
-    # window, which is the slowest thing this stage does, so it gets the bar.
-    keys = pd.Index(idx.strftime("%Y-%m-%d"))
-    offsets = range(lag0, lag1 + 1)
-    for offset in progress(offsets, desc=f"sigma {label or horizon[0]}",
-                           unit="d", total=lag1 - lag0 + 1, level="step"):
-        shifted = idx - pd.Timedelta(days=offset)
-        in_window |= pd.Index(shifted.strftime("%Y-%m-%d")).isin(keys)
+    start = pd.Timestamp(train_start)
+    end = pd.Timestamp(train_end)
+    in_window = (
+        (idx - pd.Timedelta(days=lag1) >= start)
+        & (idx - pd.Timedelta(days=lag0) <= end)
+        & (idx >= start)
+        & (idx <= end)
+    )
 
     qu = quarter_of(idx)
     out: dict[str, float] = {}
-    pooled = residuals[np.isfinite(residuals)]
+    pooled = residuals[in_window & np.isfinite(residuals)]
     fallback = float(np.std(pooled, ddof=1)) if pooled.size > 1 else np.nan
     for q in quarters:
         sel = in_window & (qu == q) & np.isfinite(residuals)
@@ -221,7 +221,7 @@ def compute_fold_climatology(daily: pd.DataFrame, fold: dict, cfg: dict) -> tupl
     resid_dates = out.loc[out["valid"] & out["A_C2"].notna(), "date"]
     resid = out.loc[out["valid"] & out["A_C2"].notna(), "A_C2"].to_numpy(dtype="float64")
     windows = horizon_windows(cfg.get("target", {}).get("horizons", {"W1": [1, 7]}))
-    sigma = {h: seasonal_sigma_hq(resid_dates, resid, win, label=h)
+    sigma = {h: seasonal_sigma_hq(resid_dates, resid, win, train_start, train_end)
              for h, win in windows.items()}
 
     meta = {
