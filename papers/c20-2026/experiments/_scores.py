@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Jerremi Aron Chancan Labajos
 """Scoring primitives shared by 07 (model selection), 08 (metrics) and 09 (tests).
 
 Every model, deterministic or not, is stored on the same 19-level quantile grid

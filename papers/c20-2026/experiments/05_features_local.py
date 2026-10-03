@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Jerremi Aron Chancan Labajos
 """Local predictors X_L (design §7.2). All dated <= d, as anomalies vs own climatology.
 
 TT lags/means/A0, DTR/TTmax/TTmin, HR, log1p RR sums, target-midpoint

@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Jerremi Aron Chancan Labajos
 """Export human-readable extracts of the INEI population input.
 
 The canonical input is data/external/population.xlsx (a binary workbook, kept

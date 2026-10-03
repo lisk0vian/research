@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Jerremi Aron Chancan Labajos
 """NOAA CFSv2 2 m temperature at the five stations, as horizon-window means.
 
 Amendment A1 of the design (METHODOLOGY.md): an open dynamical reference for the

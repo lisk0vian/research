@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Jerremi Aron Chancan Labajos
 """The progress protocol contract, not pixels.
 
 What can break without anyone noticing: the event format a reader parses, the

@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Jerremi Aron Chancan Labajos
 """Tests for fetch_source.py: provenance, not just downloading a file.
 
 The network is monkeypatched everywhere. These tests never contact the portal,

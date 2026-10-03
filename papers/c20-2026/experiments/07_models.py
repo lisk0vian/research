@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Jerremi Aron Chancan Labajos
 """Reference and statistical/ML models, direct per horizon (design §5).
 
 Models

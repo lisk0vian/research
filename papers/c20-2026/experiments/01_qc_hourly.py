@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Jerremi Aron Chancan Labajos
 """Hourly quality control (design §3.1). Reads config.qc_hourly.
 
 Flags out-of-range values, TT steps > threshold and stuck-sensor runs.

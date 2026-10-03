@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Jerremi Aron Chancan Labajos
 """Tests for manifest accumulation and the station list contract.
 
 `write_manifest` used `data.update(payload)`, a shallow merge. With one

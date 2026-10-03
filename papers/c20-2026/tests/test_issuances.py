@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Jerremi Aron Chancan Labajos
 """Tests for 04_make_issuances.py: calendar, targets, embargo, anti-leakage.
 
 The property that matters most is that no target day is at or before its own

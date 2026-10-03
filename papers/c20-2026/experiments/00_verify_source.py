@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Jerremi Aron Chancan Labajos
 """V1-V6 source verification (design §2.1). Reads config.yaml + data/raw/dataset.csv.
 
 Checks timezone (V1), hour convention (V2), missing codes (V3), coverage (V4),

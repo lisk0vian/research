@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Jerremi Aron Chancan Labajos
 """Tests for paper_drive_sync.py: target discovery, in-place uploads, clash refusal.
 
 The invariant that matters: a target with a known Drive id must be uploaded with

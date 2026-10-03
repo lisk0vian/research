@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Jerremi Aron Chancan Labajos
 """paper_parity.py — measure how close a paper's DOCX and LaTeX zip are to its PDF.
 
 The PDF that `paper_build.py` renders (pdfLaTeX, cas-sc) is the reference.

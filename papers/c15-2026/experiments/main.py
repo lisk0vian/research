@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Jerremi Aron Chancan Labajos
 import argparse
 
 # Carga .env primero para que src.paths vea GDRIVE_* y DATA_DIR/OUTPUT_DIR

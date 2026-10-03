@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Jerremi Aron Chancan Labajos
 """Smoke tests for the scripts: scaffold, journal retarget, format block."""
 
 from __future__ import annotations

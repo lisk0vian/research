@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Jerremi Aron Chancan Labajos
 """Panel features computed only with the information available in each fold (no leakage)."""
 import numpy as np
 import pandas as pd

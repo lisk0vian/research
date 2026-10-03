@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Jerremi Aron Chancan Labajos
 # reviews/round-{{ROUND}}/responses.yaml
 # Response to each comment in comments.yaml, with the commit that implements it.
 # The formal response letter to the journal is GENERATED from comments.yaml +

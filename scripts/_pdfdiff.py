@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Jerremi Aron Chancan Labajos
 """Shared PDF comparison helpers (word boxes, lines, rasters, pixel diffs).
 
 Used by scripts/cas_fidelity.py (specimen vs the official CAS sample) and

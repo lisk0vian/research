@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Jerremi Aron Chancan Labajos
 """Consolidation Stage — 2019.csv … 2026.csv -> consolidated.csv + silver parquet.
 
 Datalake layers (declared in config.yaml:storage, all under DATA_DIR):

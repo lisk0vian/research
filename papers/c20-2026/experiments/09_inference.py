@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Jerremi Aron Chancan Labajos
 """Hypothesis tests and skill intervals on the blind folds (design §8).
 
 Population: blind folds B1-B2, temporal experiment, TT_mean. Stations are pooled

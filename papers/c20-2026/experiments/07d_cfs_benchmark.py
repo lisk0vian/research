@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Jerremi Aron Chancan Labajos
 """CFS_BC: the calibrated NOAA CFSv2 reference for the blind folds (amendment A1).
 
 The raw CFSv2 2 m temperature of a 1 degree cell is not a forecast of a station

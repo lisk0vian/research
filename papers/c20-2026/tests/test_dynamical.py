@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Jerremi Aron Chancan Labajos
 """CFSv2 reference (stages 06b, 07d, H4): planning, aggregation, calibration.
 
 Light by construction: the GRIB decoder (eccodes, absent locally) is never called;

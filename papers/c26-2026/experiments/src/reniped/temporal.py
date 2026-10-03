@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Jerremi Aron Chancan Labajos
 """Temporal transfer (Section 4.5): the train model assigns states in a later year."""
 import numpy as np
 import pandas as pd

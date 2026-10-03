@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Jerremi Aron Chancan Labajos
 """Quantile-averaged ensemble and the frozen choice of the primary model M*.
 
 Ensemble: the members' quantiles are averaged level by level (Vincentization),

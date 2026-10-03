@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Jerremi Aron Chancan Labajos
 """The modelling panel and the prediction contract shared by stages 07-10.
 
 One row of the panel is one (station, fold, issue_date, horizon, kind): the

@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Jerremi Aron Chancan Labajos
 """Guard rails for the c26-2026 tests.
 
 Two invariants that must hold without anyone having to remember them:

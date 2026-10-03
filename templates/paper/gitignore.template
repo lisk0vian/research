@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Jerremi Aron Chancan Labajos
 # .gitignore del repo research-hub
 
 # Extensiones Quarto: se regeneran con `quarto add`, no se versionan

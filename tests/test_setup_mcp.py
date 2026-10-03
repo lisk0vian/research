@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Jerremi Aron Chancan Labajos
 """setup_mcp.py: the Claude Code registration (`--claude`) and the unchanged OpenCode path.
 
 No test starts `claude` or touches the real `~/.claude.json`: a fake runner records the

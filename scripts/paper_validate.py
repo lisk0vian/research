@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Jerremi Aron Chancan Labajos
 """paper_validate.py — enforce the repository structure contract.
 
 Runs standalone (`python scripts/paper_validate.py`) and is imported by the test

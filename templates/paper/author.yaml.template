@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Jerremi Aron Chancan Labajos
 # authors/{{AUTHOR_ID}}.yaml
 # SINGLE record for one coauthor, reused by every paper they appear on.
 # If email or affiliation changes, fix it here once and it applies everywhere.

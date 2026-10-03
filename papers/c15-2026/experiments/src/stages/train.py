@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Jerremi Aron Chancan Labajos
 """Train Stage — real temporal training on gold matrices from split.
 
 Method (declared in config.yaml, never paper numbers):

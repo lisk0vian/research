@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Jerremi Aron Chancan Labajos
 """Analysis plan frozen for peer review (v3.3.2) and its SHA-256 lock.
 
 The plan is fixed before the pipeline runs and its hash is recorded. This documents that

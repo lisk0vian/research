@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Jerremi Aron Chancan Labajos
 """Shared helpers for the repository scripts (repo root discovery, YAML I/O).
 
 Every script in this folder is plain, editable Python: no hidden agent logic.

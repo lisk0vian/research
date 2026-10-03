@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Jerremi Aron Chancan Labajos
 """paper_drive_sync.py — push a paper's Colab assets to Drive, in place.
 
 The notebook and the pipeline code must be updated **in place** on Drive, not

@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Jerremi Aron Chancan Labajos
 """Ordered orchestrator for stages 00-10, with per-stage logging.
 
 Runs 00→10 in order, or a named subset. Every stage is launched through

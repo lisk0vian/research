@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Jerremi Aron Chancan Labajos
 name: build
 
 # Render changed papers to PDF + DOCX + LaTeX zip and upload as artifacts.

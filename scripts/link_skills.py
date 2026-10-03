@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Jerremi Aron Chancan Labajos
 """link_skills.py — mirror .agents/skills/* into .claude/skills/* as links.
 
 The canonical skills live in `.agents/skills/`. Claude reads them from

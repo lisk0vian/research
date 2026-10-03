@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Jerremi Aron Chancan Labajos
 """Audit of territorial-identity leakage (Section 4.6): does a clustering recover the states of the
 phenomenon or merely the identity of each territory? Null models respect the panel structure."""
 import numpy as np

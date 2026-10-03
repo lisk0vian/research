@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Jerremi Aron Chancan Labajos
 """Tests for the test guard rails themselves.
 
 These meta-tests keep the invariants in conftest.py honest: that a test cannot

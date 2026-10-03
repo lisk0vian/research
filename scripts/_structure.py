@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Jerremi Aron Chancan Labajos
 """The canonical contract for a paper folder.
 
 Single place that defines what "correct structure" means. Both `paper_new.py`

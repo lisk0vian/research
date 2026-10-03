@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Jerremi Aron Chancan Labajos
 """paper_layout_check.py — prove a rendered paper respects the journal layout.
 
 Three layers, cheapest and most definitive first. Exit 1 on any FAIL.

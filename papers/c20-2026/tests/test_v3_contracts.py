@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Jerremi Aron Chancan Labajos
 """Design v3 contracts that would otherwise only fail on Colab.
 
 Cheap by construction: tiny in-memory frames, no stage subprocesses. Each test

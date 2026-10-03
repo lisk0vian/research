@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Jerremi Aron Chancan Labajos
 """Harmonic climatology primitives, shared by 03 (fitting) and 04 (applying).
 
 `03` fits the coefficients and stores them per fold; `04` reconstructs the same

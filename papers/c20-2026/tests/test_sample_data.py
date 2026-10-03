@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Jerremi Aron Chancan Labajos
 """The synthetic data generator and the coverage check it exercises.
 
 The generator exists so the pipeline can be run locally without the real

@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Jerremi Aron Chancan Labajos
 """Orchestration of the full pipeline. Each stage receives and returns the context `ctx`.
 
 Stages and manuscript sections:

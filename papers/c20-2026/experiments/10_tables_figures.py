@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Jerremi Aron Chancan Labajos
 """Contract tables and figures (design §9), read from outputs/ only.
 
 Tables: T1 completeness (00), T2 blind skill + 95 % CI (09), T3 hypotheses (09),

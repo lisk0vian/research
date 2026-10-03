@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Jerremi Aron Chancan Labajos
 # templates/journals/{{JOURNAL_SLUG}}/type.yaml
 # Metadata for a target journal. Does NOT store the .cls unless the journal has
 # no official Quarto extension (in that case, see raw-bundle/).

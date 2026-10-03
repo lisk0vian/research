@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Jerremi Aron Chancan Labajos
 """Feature Engineering Stage — 14 declared derived vars (OUR inferred formulas).
 
 Reads silver consolidated via the consolidation manifest (artifact_path),

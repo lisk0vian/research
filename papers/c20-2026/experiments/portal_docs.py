@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Jerremi Aron Chancan Labajos
 """Convert the portal's .xlsx dictionary and .docx metadata into plain Markdown.
 
 Both formats are zip archives of XML, and both are read here with nothing but

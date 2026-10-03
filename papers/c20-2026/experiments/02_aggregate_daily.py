@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Jerremi Aron Chancan Labajos
 """Daily aggregation on the local civil day (design §3.2).
 
 Builds TT_mean/max/min/DTR, HR mean and RR_sum with the completeness rules from

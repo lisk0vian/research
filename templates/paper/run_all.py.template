@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Jerremi Aron Chancan Labajos
 """Run the pipeline stages in order: python run_all.py [--mode smoke] [--only 03] [--force]
 
 Stages are the `NN_name.py` files in this folder (00_..., 01_..., 01b_...), each

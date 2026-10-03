@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Jerremi Aron Chancan Labajos
 """Autoregistro de stages — import side-effects for @register_stage."""
 
 # Import concrete stages so get_registry() sees all names (order = execution order for --stage all)

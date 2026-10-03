@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Jerremi Aron Chancan Labajos
 """Tests of the critical components of the pipeline (synthetic data, < 1 min).
 
 Run from the repository root:  python -m pytest -q papers/c26-2026/tests

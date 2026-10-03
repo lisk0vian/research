@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Jerremi Aron Chancan Labajos
 """Shared pytest fixtures for the repository structure tests."""
 
 from __future__ import annotations

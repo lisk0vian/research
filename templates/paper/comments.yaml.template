@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Jerremi Aron Chancan Labajos
 # reviews/round-{{ROUND}}/comments.yaml
 # Comments from the journal's HUMAN editor/reviewers.
 # Each comment is a structured entry so it can be cross-referenced in responses.yaml.

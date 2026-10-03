@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Jerremi Aron Chancan Labajos
 """Tests for the c20-2026 early pipeline (00 verify, 01 QC, 02 aggregate).
 
 The real dataset is gitignored, so these tests build a synthetic hourly frame

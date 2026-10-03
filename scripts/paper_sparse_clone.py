@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Jerremi Aron Chancan Labajos
 """paper_sparse_clone.py — shallow clone of this repo limited to one paper.
 
 `git clone` of the whole repo pulls every tracked folder (the legacy projects

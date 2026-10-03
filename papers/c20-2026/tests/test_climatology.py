@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Jerremi Aron Chancan Labajos
 """Tests for 03_climatology.py: harmonic fit, C1 window, sigma_hq, terciles.
 
 The key property under test is that every fold fits its climatology on its own
