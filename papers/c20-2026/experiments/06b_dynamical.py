@@ -63,6 +63,7 @@ UA = "Mozilla/5.0 (X11; Linux x86_64) c20-2026 research pipeline"
 STEP_H = 6          # hours between messages
 TIMES_PER_DAY = 4   # 00, 06, 12, 18 UTC
 KELVIN = 273.15
+MAX_BROKEN_SHARE = 0.05  # above this share of dates failing, 06b fails instead of skipping
 
 
 # --- planning (pure, unit-tested) ---------------------------------------------
@@ -188,21 +189,73 @@ def _get(url: str, headers: dict | None = None, retries: int = 3, timeout: int =
     raise RuntimeError(f"giving up on {url}: {last}")
 
 
+def framed(raw: bytes, msgs: list[tuple[int, int, int]]) -> bool:
+    """True when every (hour, start, end) slice is one whole GRIB message."""
+    return all(raw[s:s + 4] == b"GRIB" and raw[e - 4:e] == b"7777" for _, s, e in msgs)
+
+
+def split_messages(blob: bytes) -> list[bytes]:
+    """Walk a GRIB2 file by the total length in each Section 0 header."""
+    out, off = [], 0
+    while off < len(blob):
+        if blob[off:off + 4] != b"GRIB" or blob[off + 7:off + 8] != b"\x02":
+            raise ValueError(f"no GRIB2 header at byte {off}")
+        length = int.from_bytes(blob[off + 8:off + 16], "big")
+        msg = blob[off:off + length]
+        if length < 16 or len(msg) != length or msg[-4:] != b"7777":
+            raise ValueError(f"truncated GRIB message at byte {off}")
+        out.append(msg)
+        off += length
+    return out
+
+
+def reframe_from_file(blob: bytes, idx: list[tuple[int, int]], hours: list[int]
+                      ) -> tuple[bytes, list[tuple[int, int, int]]]:
+    """The needed messages of a whole file, located without trusting idx offsets.
+
+    The archive sometimes holds a .grb2 that was rewritten after its .idx: the
+    records are the same, in the same order, but the offsets drift by a few
+    hundred bytes, so every slice taken from the idx cuts mid-message (seen on
+    2021-03-22). The hours still come from the idx, matched by position.
+    """
+    parts = split_messages(blob)
+    if len(parts) != len(idx):
+        raise ValueError(f"file has {len(parts)} messages, its idx lists {len(idx)}")
+    by_hour = {h: p for (h, _), p in zip(sorted(idx, key=lambda r: r[1]), parts)}
+    out, msgs, pos = [], [], 0
+    for h in sorted(hours):
+        p = by_hour[h]
+        out.append(p)
+        msgs.append((h, pos, pos + len(p)))
+        pos += len(p)
+    return b"".join(out), msgs
+
+
 def fetch_member(base: str, date: pd.Timestamp, cycle: str, member: int, var: str,
                  max_lead_days: int, retries: int) -> tuple[bytes, list[tuple[int, int, int]]] | None:
-    """Download the needed byte range of one (date, member); None if not archived."""
+    """Download the needed messages of one (date, member); None if not archived.
+
+    One range read when the idx matches the file (the norm); the whole file,
+    walked header by header, when it does not.
+    """
     url = file_url(base, date, cycle, member, var)
     idx_raw = _get(url + ".idx", retries=retries)
     if idx_raw is None:
         return None
-    start, end, msgs = plan_range(parse_idx(idx_raw.decode("utf-8", "replace")),
-                                  needed_hours(max_lead_days))
+    idx = parse_idx(idx_raw.decode("utf-8", "replace"))
+    hours = needed_hours(max_lead_days)
+    start, end, msgs = plan_range(idx, hours)
     raw = _get(url, headers={"Range": f"bytes={start}-{end}"}, retries=retries)
     if raw is None:
         return None
     if len(raw) != end - start + 1:
         raise RuntimeError(f"short read for {url}: {len(raw)} of {end - start + 1} bytes")
-    return raw, msgs
+    if framed(raw, msgs):
+        return raw, msgs
+    blob = _get(url, retries=retries)
+    if blob is None:
+        return None
+    return reframe_from_file(blob, idx, hours)
 
 
 def _eccodes():
@@ -334,6 +387,7 @@ def main(argv: list[str] | None = None) -> None:
           f"({len(members)} members x ~9 MB each)")
 
     missing: list[str] = []
+    unreadable: list[str] = []
     t0 = time.perf_counter()
     nbytes = 0
     with ThreadPoolExecutor(max_workers=workers) as pool:
@@ -349,7 +403,12 @@ def main(argv: list[str] | None = None) -> None:
             # long as anything references it, and the dict would hold all of them
             # (~8 GB for a full run) until the loop ends.
             d, m = futures.pop(fut)
-            res = fut.result()
+            try:
+                res = fut.result()
+            except Exception as exc:  # noqa: BLE001 - one broken file must not end the stage
+                res = None
+                print(f"WARNING {d:%Y-%m-%d} member {m}: {type(exc).__name__}: {exc}")
+                unreadable.append(f"{d:%Y-%m-%d}/m{m}: {type(exc).__name__}: {exc}")
             del fut
             got.setdefault(d, {})[m] = res
             if res is not None:
@@ -359,11 +418,22 @@ def main(argv: list[str] | None = None) -> None:
                 if all(v is None for v in fetched.values()):
                     missing.append(f"{d:%Y-%m-%d}")
                     continue
-                daily = process_date(d, cfg, stations, members, fetched)
+                try:
+                    daily = process_date(d, cfg, stations, members, fetched)
+                except Exception as exc:  # noqa: BLE001
+                    print(f"WARNING {d:%Y-%m-%d}: not decodable, left out: {type(exc).__name__}: {exc}")
+                    unreadable.append(f"{d:%Y-%m-%d}: {type(exc).__name__}: {exc}")
+                    missing.append(f"{d:%Y-%m-%d}")
+                    continue
                 atomic_write_csv(daily, cache_path(d))
                 del fetched, res
     print(f"downloaded {nbytes / 1e6:.0f} MB in {time.perf_counter() - t0:.0f} s; "
-          f"{len(missing)} dates absent from the archive")
+          f"{len(missing)} dates absent or unreadable, {len(unreadable)} problem(s)")
+    # A few broken archive files are a fact of the archive; many are a bug here.
+    broken_dates = {u.split("/")[0].split(":")[0] for u in unreadable}
+    if todo and len(broken_dates) > max(2, MAX_BROKEN_SHARE * len(todo)):
+        raise SystemExit(f"ERROR: {len(broken_dates)} of {len(todo)} dates failed to download "
+                         f"or decode; first problems:\n  " + "\n  ".join(unreadable[:10]))
 
     if args.probe:
         p = cache_path(dates[0])
@@ -383,7 +453,8 @@ def main(argv: list[str] | None = None) -> None:
           f"members per row min {windows['n_members'].min() if len(windows) else 0}")
     write_manifest({"dynamical": {
         "file": rel_path(OUT), "source": dyn["source"], "dates": len(dates),
-        "members": members, "absent_dates": missing, "fast_mode": fast_mode(),
+        "members": members, "absent_dates": missing, "unreadable": unreadable,
+        "fast_mode": fast_mode(),
         "note": "6-hourly CFSv2 00Z, UTC-day means, bilinear to station; calibrated in 07d"}},
         replace=("dynamical",))
 

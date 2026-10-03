@@ -276,3 +276,65 @@ def test_07d_main_joins_windows_to_the_panel_and_writes_the_prediction_contract(
     assert np.corrcoef(out["mean"], ev["A_C2_target"].to_numpy())[0, 1] > 0.8   # the signal survives
     diag = pd.read_csv(tmp_path / "T8_cfs_calibration.csv")
     assert diag.loc[0, "corr_train"] > 0.8 and diag.loc[0, "n_eval"] == len(eval_dates)
+
+
+# --- archive files whose .idx no longer matches the .grb2 (seen on 2021-03-22) -----
+
+def _grib(payload: bytes) -> bytes:
+    """A minimal GRIB2-framed message: Section 0 with the total length, then 7777."""
+    body = payload + b"7777"
+    total = 16 + len(body)
+    return b"GRIB" + b"\x00\x00" + b"\x00" + b"\x02" + total.to_bytes(8, "big") + body
+
+
+def test_split_messages_walks_section0_lengths():
+    parts = [_grib(b"a" * 10), _grib(b"bb" * 7), _grib(b"")]
+    assert d06.split_messages(b"".join(parts)) == parts
+
+
+def test_split_messages_rejects_a_broken_file():
+    blob = _grib(b"x" * 10)
+    with pytest.raises(ValueError):
+        d06.split_messages(blob[:-1])
+    with pytest.raises(ValueError):
+        d06.split_messages(b"junk" + blob)
+
+
+def test_framed_detects_slices_that_cut_mid_message():
+    a, b = _grib(b"a" * 20), _grib(b"b" * 20)
+    raw = a + b
+    assert d06.framed(raw, [(6, 0, len(a)), (12, len(a), len(raw))])
+    assert not d06.framed(raw, [(6, 3, len(a) + 3)])
+
+
+def test_stale_idx_is_reframed_from_the_whole_file(monkeypatch):
+    """The idx offsets drift; the hours come from the idx by position."""
+    hours = d06.needed_hours(1)                       # 24, 30, 36, 42
+    all_hours = [6, 12, 18, *hours, 48]
+    parts = {h: _grib(f"h{h}".encode() * 5) for h in all_hours}
+    blob = b"".join(parts[h] for h in all_hours)
+    stale = []                                         # every offset 3 bytes off
+    pos = 0
+    for h in all_hours:
+        stale.append(f"{len(stale) + 1}:{pos + 3}:d=2021032200:TMP:2 m above ground:{h} hour fcst:")
+        pos += len(parts[h])
+    idx_text = "\n".join(stale).encode()
+
+    def fake_get(url, headers=None, retries=3, timeout=120):
+        if url.endswith(".idx"):
+            return idx_text
+        if headers and "Range" in headers:
+            a, b = (int(x) for x in headers["Range"].split("=")[1].split("-"))
+            return blob[a:b + 1]
+        return blob
+
+    monkeypatch.setattr(d06, "_get", fake_get)
+    raw, msgs = d06.fetch_member("http://x", pd.Timestamp("2021-03-22"), "00", 1, "tmp2m", 1, 1)
+    assert [h for h, _, _ in msgs] == hours
+    assert [raw[s:e] for _, s, e in msgs] == [parts[h] for h in hours]
+
+
+def test_reframe_refuses_when_message_count_disagrees_with_idx():
+    blob = _grib(b"a") + _grib(b"b")
+    with pytest.raises(ValueError, match="idx lists"):
+        d06.reframe_from_file(blob, [(6, 0), (12, 10), (18, 20)], [6])
