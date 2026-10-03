@@ -23,6 +23,9 @@ matplotlib>=3.7,<4.0
 # Deep stage (07b). Colab ships torch with CUDA; installing it again would
 # replace the GPU build, so it is listed for local use and the notebook skips it.
 torch>=2.1
+# GRIB2 decoding for the CFSv2 reference (06b). Binary wheels exist for Linux/macOS
+# (Colab); on Windows install eccodes through conda.
+eccodes>=2.36
 # Chronos-T5 zero-shot. The 1.x API (ChronosPipeline sample paths) is what 07b
 # uses; 2.x reorganised the pipelines.
 chronos-forecasting>=1.4,<2.0

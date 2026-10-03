@@ -18,6 +18,9 @@ rather than counted as five independent samples.
 Holm within each family; unadjusted and adjusted p are both reported. Block
 length sensitivity (4/13 weeks) is reported next to the primary 8.
 
+- H4 (amendment A1): M* against the calibrated CFSv2 reference, per horizon:
+  ΔCRPS = CRPS(CFS_BC) − CRPS(M*) > 0 by block bootstrap on the dates both scored.
+
 Also T2: every model's blind skill (MSSS/CRPSS vs Clim and Damp) with 95 %
 percentile intervals, and the LOSO generalisation gap per held-out station.
 """
@@ -117,6 +120,32 @@ def holm(pvalues: list[float]) -> list[float]:
         running = max(running, (m - rank) * p[i])
         adj[i] = min(1.0, running)
     return adj.tolist()
+
+
+# --- H4: against the dynamical reference ---------------------------------------------
+
+def h4_rows(scored: pd.DataFrame, primary: str, horizons: dict, block: int, B: int,
+            seed: int, reference: str = "CFS_BC", min_dates: int = 10) -> list[dict]:
+    """One-sided test that `primary` has lower CRPS than the dynamical reference.
+
+    The paired statistic is the per-date sum over stations of CRPS(reference) −
+    CRPS(primary), so a positive mean favours the observation-only model. Dates are
+    resampled in blocks, the same dates for every station.
+    """
+    rows = []
+    if reference not in set(scored["model"]):
+        return rows
+    for h in horizons:
+        d = paired_by_date(scored, reference, primary, h, ["crps"])
+        if len(d) < min_dates:
+            continue
+        diff = (d["crps_a"] - d["crps_b"]).to_numpy()
+        point, reps = bootstrap_mean(diff, block, B, seed)
+        rows.append({"test": f"dCRPS {reference} - {primary}", "horizon": h, "statistic": point,
+                     "p_value": one_sided_p(reps, point),
+                     "ci_low": float(np.percentile(reps, 2.5)),
+                     "ci_high": float(np.percentile(reps, 97.5)), "n_dates": int(len(d))})
+    return rows
 
 
 # --- data shaping ----------------------------------------------------------------
@@ -240,6 +269,10 @@ def main() -> None:
             se = newey_west_se(cw, nw_bandwidth(len(cw), overlap_order(*horizons[h2])))
             z = cw.mean() / se if se > 0 else np.nan
             add("H2-complement", f"CW Damp vs {primary}", h2, z, norm_sf(z))
+
+    # H4 (amendment A1): M* against the calibrated CFSv2 reference, blind folds.
+    for row in h4_rows(scored, primary, horizons, block, B, seed):
+        add("H4", row.pop("test"), row.pop("horizon"), row.pop("statistic"), row.pop("p_value"), row)
 
     t3 = pd.DataFrame(tests)
     if not t3.empty:

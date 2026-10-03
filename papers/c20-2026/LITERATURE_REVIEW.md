@@ -18,6 +18,13 @@ Keys in brackets are the citation keys of `paper/references.bib`.
 - **6 manual entries** have no CrossRef DOI and were checked against OpenAlex:
   Chronos (arXiv preprint), LightGBM (NeurIPS 2017), Holm 1979 (JSTOR DOI), and
   the three data sources (SENAMHI dataset, CPC weekly Niño SST, PSL ROMI).
+- **Repository DOI check.** `python scripts/doi_validate.py --slug c20-2026 --check --ci`
+  passes with 0 errors. It prints 11 "not found in CrossRef" warnings, none of
+  them a wrong reference: 10 are AMS DOIs whose suffix contains `<...>`
+  (for example `10.1175/1520-0493(1988)116<2417:SSBOTM>2.0.CO;2`), which the
+  checker truncates at the `<` before looking them up; each of those was resolved
+  by its full DOI during this work. The eleventh is Holm 1979, a JSTOR DOI that
+  CrossRef does not hold and OpenAlex does.
 - **Claims, not only existence.** For the references a design choice actually
   depends on (ROMI, Chronos, Allen 2023, Miller & Wang 2019, the adaptive bias
   correction paper), the abstract was read to confirm the paper says what we
@@ -178,6 +185,7 @@ are unaffected.
 | Pooled LSTM over sites with static descriptors | [Hochreiter1997, Kratzert2019hess] |
 | Probabilistic deep forecasters (context for the LSTM design) | [SalinasDeepAR2020, Lim2021] |
 | Zero-shot foundation model | [Ansari2024, Liang2024] |
+| Dynamical reference (open NOAA CFSv2, amendment A1) | [Saha2014, NOAACFSv2Open]; bias-corrected against station observations as in [Monhart2018, Mouatadid2023abc] |
 | Quantile averaging (Vincentization) for the ensemble | [Genest1992, Lichtendahl2013, Busetti2017, BatesGranger1969] |
 
 Distributional neural networks for station temperature are established in
@@ -214,7 +222,7 @@ of this file.
 
 | # | Recommendation | Why | Cost | Priority |
 |---|---|---|---|---|
-| R1 | Add the dynamical benchmark: ECMWF S2S reforecasts of 2 m temperature interpolated to the five stations, as a model and as a predictor (hybrid) | It is the state of the art the field compares against [Vitart2017, Monhart2018, Mouatadid2023abc, Chen2024, Slater2023]. Without it a reviewer can call the benchmark incomplete, and the hybrid is where the literature finds the largest gains | ECMWF account, extraction for 5 points × 2015–2024, a new stage | **High**: needs the author's decision |
+| R1 | **Partly implemented (2026-10-03).** Dynamical benchmark: the ECMWF S2S route needs an ECDS account (the author declined), so NOAA CFSv2 from the open AWS bucket is used instead, as a benchmark on the blind folds only (amendment A1). The ECMWF model and the hybrid remain a stated limitation. Original recommendation: ECMWF S2S reforecasts of 2 m temperature interpolated to the five stations, as a model and as a predictor (hybrid) | It is the state of the art the field compares against [Vitart2017, Monhart2018, Mouatadid2023abc, Chen2024, Slater2023]. Without it a reviewer can call the benchmark incomplete, and the hybrid is where the literature finds the largest gains | ECMWF account, extraction for 5 points × 2015–2024, a new stage | **High**; decided: CFSv2 benchmark only |
 | R2 | **Implemented.** LOSO with elevation only (`@elev`) and with no static features (`@none`), next to the full variant | With 4 training stations, lat/lon act as station IDs [Kratzert2019hess needs many sites] | small: one config flag | Medium |
 | R3 | **Implemented.** Skill conditioned on active MJO (ROMI amplitude ≥ 1), season and ENSO phase: table T7 and figure F3 | "Windows of opportunity" is how the field reads conditional skill [Mariotti2020]; Allen et al. give the formal tool [Allen2023] | small: stage 10 | Medium |
 | R4 | **Implemented.** Takahashi E and C indices (official IGP monthly series, ERSSTv5, known 10 days after month end) [Takahashi2011, IGPECIndex] as the `@EC` sensitivity of Ridge_LG and GBM_LG | They are near-orthogonal by construction and were built for Peru [Takahashi2011]; Niño 1+2 and 3.4 are collinear | small: stage 06 | Low |

@@ -22,7 +22,7 @@ the pre-registered decision rule (§8 there) written before any real score.
 | `06`–`10` | **implemented**: Niño + ROMI, Clim/Damp/Pers/Ridge/GBM, LSTM, Chronos, ensemble, metrics, H1–H3, LOSO, T1–T6, F1–F6 |
 | Tests | 343, about 50 s locally, no real data, no training |
 | Real-data run | **not yet.** First run happens on Colab (notebook §4b: smoke run, then full) |
-| `references.bib` | **rebuilt**, 94 verified entries; the design checked against the literature in `LITERATURE_REVIEW.md` (R2–R4 implemented; R1, the ECMWF S2S benchmark, still open) |
+| `references.bib` | **rebuilt**, 94 verified entries; the design checked against the literature in `LITERATURE_REVIEW.md` (R2–R4 implemented; R1 partly: CFSv2 benchmark on the blind folds instead of ECMWF, amendment A1 in `METHODOLOGY.md`) |
 | `paper/main.qmd` | owned by the author; title/highlights/abstract still describe v2 (§7.6) |
 
 **Resume here.** Sync `experiments/` and the notebook to Drive in place,

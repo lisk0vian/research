@@ -99,6 +99,7 @@ Direct strategy, one prediction per horizon, all on the 19-level quantile grid
 | LSTM_LG | deep | pooled; 60-day sequence of daily anomalies + G + static; pinball loss, all horizons jointly; early stopping on embargoed tail |
 | Chronos | foundation, zero-shot | Chronos-T5-small on daily TT_mean anomalies; window means per sample path |
 | Ensemble | combination | level-wise quantile average, weights ∝ 1/CRPS on D1–D3 |
+| CFS_BC | dynamical reference (amendment A1) | NOAA CFSv2, 4 members of the Monday 00Z run, 2 m temperature interpolated to the station; calibrated by train-only anomaly regression. Blind folds only; never a candidate for M* nor an ensemble member |
 
 M* = lowest mean dev CRPS among {Ridge_LG, GBM_LG, LSTM_LG, Ensemble}.
 
@@ -140,6 +141,30 @@ replicates.
 - **H3** M* has probabilistic skill: CRPSS_clim > 0 per horizon, Holm over
   three; secondary criterion 90 % coverage in [0.85, 0.95].
 
+- **H4** (amendment A1) M* against the dynamical reference: ΔCRPS =
+  CRPS(CFS_BC) − CRPS(M*) > 0 per horizon on B1–B2, one-sided block bootstrap
+  on the dates both scored, Holm over three horizons. A non-rejection is
+  reported as is; it does not change the decision rule below.
+
+### Amendment A1 (2026-10-03, before any real score)
+
+R1 of the literature review asked for an ECMWF S2S benchmark and a hybrid.
+ECMWF S2S needs an account on the ECMWF Data Store, which the author declined,
+so A1 uses the open NOAA CFSv2 archive instead and drops the hybrid:
+
+- **Scope.** Blind folds only. The bucket's first forecast is 2018-10-31, which
+  leaves 8 months of history before D1 and 3.7 / 4.7 years before B1 / B2.
+- **Why not a hybrid.** CFS as a predictor cannot be trained in D1-D2, and M* is
+  chosen on D1-D3; a model that exists only in some dev folds cannot compete.
+- **Calibration.** Per station and horizon, on training Mondays only: remove the
+  CFS window-mean climatology (harmonic, K = 2, fitted on the CFS forecasts
+  themselves), regress the observed anomaly on the CFS anomaly, Gaussian
+  residual by quarter as for Damp.
+- **What this cannot say.** CFSv2 is not the ECMWF system the S2S literature
+  treats as the reference, and 1° grid cells do not resolve the stations.
+  Results against CFS_BC are evidence about observation-only models versus a
+  dynamical system, not versus the state of the art.
+
 ## 8. Pre-registered decision rule
 
 Written before any real score exists, so the framing cannot follow the numbers.
@@ -178,7 +203,8 @@ in `manifest.yaml` pointing at one of these files.
 
 ## 11. Limitations stated in the paper
 
-Five stations in one country; 9.5 years, so climatologies rest on 4.5–8.5
+No ECMWF benchmark and no hybrid (dynamical forecasts as predictors); the only
+dynamical reference is the open CFSv2, on the blind folds. Five stations in one country; 9.5 years, so climatologies rest on 4.5–8.5
 training years and few ENSO events (La Niña 2020–23, El Niño 2023–24); no wind,
 pressure or ERA5 predictors; hourly-mean temperature for the frost index; no
 dynamical S2S benchmark (ECMWF reforecasts are future work); skill as a lower

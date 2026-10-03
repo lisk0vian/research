@@ -21,9 +21,11 @@ real data, no model training); nobody waits on a pipeline run on a laptop.
 | `04_make_issuances` | `data/processed/issuances.csv` | CPU |
 | `05_features_local` | `data/processed/features/<station>/<fold>.csv` | CPU |
 | `06_features_largescale` | `data/processed/largescale_daily.csv` (Niño 3.4/1+2, ROMI, as-of) | CPU, network |
+| `06b_dynamical` | `data/processed/cfs_windows.csv` (NOAA CFSv2 at the stations, open data, range requests) | CPU, network |
 | `07_models` | `outputs/models/preds_<exp>_<model>.csv`, `eval_index_<exp>.csv` | CPU |
 | `07b_deep` | LSTM_LG and Chronos predictions | **GPU** |
 | `07c_ensemble` | Ensemble predictions, `outputs/models/primary_model.json` (M*) | CPU |
+| `07d_cfs_benchmark` | `CFS_BC` predictions (blind folds), `T8_cfs_calibration.csv` | CPU |
 | `08_metrics` | `outputs/models/scored_<exp>.csv`, `outputs/tables/metrics_long.csv` | CPU |
 | `09_inference` | `T2_blind_skill.csv`, `T3_hypotheses.csv`, `T5_loso_gap.csv` | CPU |
 | `10_tables_figures` | `T4_murphy.csv`, `T6_secondary_targets.csv`, `T7_conditional_skill.csv`, `outputs/figures/F1-F6.png` | CPU |

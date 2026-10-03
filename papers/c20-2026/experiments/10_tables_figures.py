@@ -35,12 +35,13 @@ from _common import (
 from _panel import MODELS_DIR
 
 TARGET = "TT_mean"
-ORDER = ["Clim", "Pers", "Damp", "Ridge_L", "Ridge_LG", "GBM_L", "GBM_LG",
+ORDER = ["Clim", "Pers", "Damp", "CFS_BC", "Ridge_L", "Ridge_LG", "GBM_L", "GBM_LG",
          "LSTM_LG", "Chronos", "Ensemble"]
 # Colour-blind-safe (Okabe-Ito), fixed per model across every figure.
 COLORS = {"Clim": "#999999", "Pers": "#000000", "Damp": "#E69F00", "Ridge_L": "#56B4E9",
           "Ridge_LG": "#0072B2", "GBM_L": "#8FD3B6", "GBM_LG": "#009E73",
-          "LSTM_LG": "#CC79A7", "Chronos": "#D55E00", "Ensemble": "#332288"}
+          "LSTM_LG": "#CC79A7", "Chronos": "#D55E00", "Ensemble": "#332288",
+          "CFS_BC": "#882255"}
 
 
 def _plt():

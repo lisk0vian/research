@@ -193,7 +193,8 @@ else:
     # torch NO se reinstala: Colab ya trae la build con CUDA, y pip la
     # reemplazaria por una que puede no ver la GPU.
     pkgs = ["pandas>=2.0", "pyyaml>=6.0", "tqdm>=4.66", "lightgbm>=4.0",
-            "scikit-learn>=1.3", "matplotlib>=3.7", "chronos-forecasting>=1.4,<2.0"]
+            "scikit-learn>=1.3", "matplotlib>=3.7", "chronos-forecasting>=1.4,<2.0",
+            "eccodes>=2.36"]
     r = subprocess.run([sys.executable, "-m", "pip", "install", "--quiet", *pkgs])
     if r.returncode != 0:
         raise RuntimeError(f"pip install fallo con exit={r.returncode}; no se escribe la marca")
@@ -212,9 +213,10 @@ Todas las etapas `00`→`10` están implementadas. Orden y costo aproximado en C
 | Bloque | Etapas | Dónde | Notas |
 |---|---|---|---|
 | Datos | `00`–`06` | CPU | minutos; `06` baja Niño (CPC) y ROMI (NOAA PSL) con caché |
+| Dinámico | `06b_dynamical` | CPU, red | CFSv2 abierto de NOAA (sin registro): ~9 MB por corrida y miembro por lectura de rangos; cacheado por fecha. Corré primero `--probe` |
 | Modelos | `07_models` | CPU | Clim/Damp/Pers/Ridge/GBM, temporal + LOSO; el más largo en CPU |
 | Deep | `07b_deep` | **GPU** | LSTM pooled + Chronos zero-shot |
-| Cierre | `07c`–`10` | CPU | ensamble, M\\* congelado, métricas, tests H1–H3, tablas y figuras |
+| Cierre | `07c`–`10` | CPU | ensamble, M\\* congelado, `07d` (CFS_BC), métricas, tests H1–H4, tablas y figuras |
 
 **Primero un smoke run** (`--fast`): presupuestos mínimos, termina rápido y prueba el cableado de punta a punta. Sus números **no se citan**; después corré la versión completa.
 
@@ -279,6 +281,16 @@ def paso(*etapas, **kw):
 # paso(desde="00", hasta="07_models")  # bloque CPU
 # paso("07b_deep")                     # bloque GPU
 # paso(desde="07c_ensemble", hasta="10_tables_figures")
+'''),
+
+    ("code", '''# 0) Sanidad del CFSv2 (una fecha, un miembro): decodifica GRIB, interpola a las
+# estaciones y chequea unidades. Si falla, no sigas: el resto no depende de esto,
+# pero 07d y H4 si. Esperable: sesgo de varios grados (rejilla de 1 grado).
+import subprocess
+r = subprocess.run([sys.executable, "06b_dynamical.py", "--probe"],
+                   cwd="/content/c20-2026/experiments", capture_output=True, text=True)
+print(r.stdout[-2500:], r.stderr[-1500:])
+print(f"[probe exit={r.returncode}]")
 '''),
 
     ("code", '''# 1) Smoke run: todo el pipeline con presupuestos minimos (no citable).
@@ -399,6 +411,7 @@ Todo sale de `outputs/` (tablas CSV y figuras PNG). Cada número del manuscrito 
 - **T2**: skill ciego (B1–B2) de cada modelo vs Clim y Damp, con IC 95 % (block bootstrap, estaciones juntas).
 - **T3**: hipótesis H1 (valor de Niño/MJO), H2 (M\\* vs Damp en W3–4), H3 (skill probabilístico), con p de Holm.
 - **T5**: LOSO, cuánto skill se pierde al no entrenar con la estación, vs altitud (con variantes de descriptores estáticos, R2).
+- **T8** (`T8_cfs_calibration.csv`): cuánta señal tiene el CFSv2 (correlación de su anomalía con la observada, pendiente) antes de mirar cualquier skill.
 - **T7**: skill condicionado a estación del año, fase ENSO y MJO activo (R3, descriptivo).
 - Modelos `@EC`: sensibilidad con índices E/C de Takahashi (R4); nunca entran a M\\* ni al ensamble."""),
 

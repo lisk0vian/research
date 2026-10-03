@@ -219,9 +219,30 @@ inference:
   h3: block_bootstrap_crpss_clim
   bootstrap: {type: moving_block, unit: weekly_issuance, block_weeks: 8, block_sensitivity: [4, 13], B: 10000}
   hac: {kernel: bartlett, bandwidth: "max(floor(4*(n/100)^(2/9)), overlap_order)"}
-  multiplicity: {method: holm, families: {H1: 3, H2: 1, H3: 3}}
+  multiplicity: {method: holm, families: {H1: 3, H2: 1, H3: 3, H4: 3}}
   alpha: 0.05
   secondary_calibration_criterion: {interval: 0.90, coverage_range: [0.85, 0.95]}
+# R1 (LITERATURE_REVIEW.md), amended 2026-10-03 before any real score. A dynamical
+# reference for the observation-only models: NOAA CFSv2 from the open AWS bucket
+# (no registration; ECMWF S2S needs an ECDS account, which the author declined).
+# Benchmark only, on the blind folds: the bucket starts 2018-10-31, so D1/D2 have
+# too little history to calibrate it, and a hybrid (CFS as a predictor) is not
+# trainable in the dev folds. ECMWF and the hybrid stay a stated limitation.
+dynamical:
+  enabled: true
+  source: NOAA_CFSv2_open
+  bucket_url: "https://noaa-cfs-pds.s3.amazonaws.com"
+  variable: tmp2m
+  cycle: "00"            # Monday 00Z matches the weekly issuance
+  members: [1, 2, 3, 4]  # the four 00Z members; each runs >= 93 days (28 needed)
+  start: "2018-10-31"    # first cfs.* prefix in the bucket
+  folds: [B1, B2]
+  clim_harmonics_K: 2    # CFS window-mean climatology, from <= ~4.7 training years
+  workers: 8
+  retries: 3
+  qc_range_degC: [-45, 45]
+  fast: {n_dates: 40, members: [1], min_train: 8, clim_harmonics_K: 1}  # every ~7th Monday
+
 extensions_enabled: {E1_LSTM_TFT: true, E2_multistation: true, E3_S2S_benchmark: false,
                      E4_long_climatology: false, E5_Tmin: true}
 
