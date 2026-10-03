@@ -116,14 +116,18 @@ print(f"pasos declarados: {steps}")"""),
 
 `fetch_source.py` resuelve el recurso del portal por API en vez de tener una URL fija —el portal republica estos paquetes con enlaces nuevos— y escribe `data/SOURCE.json` con el id del paquete, la URL exacta, un **sha256**, los bytes, la fecha, y el inventario de estaciones leído del archivo mismo.
 
-Es idempotente: si el CSV ya está y el hash coincide, no vuelve a bajarlo. `--check` verifica sin red; `--force` re-baja.
+El nombre del archivo sale de `config.source.file`, que es el mismo que leen las etapas: si el fetch escribiera un nombre y las etapas leyeran otro, la corrida entera usaría el archivo viejo sin decirlo.
 
-El CSV va a `data/raw/` (gitignored, son ~400k filas). `SOURCE.json` va a `data/` arriba, que sí se versiona: la procedencia es chica y revisable, los datos no."""),
+**Si el portal no resuelve** (pasa: `www.datos.gob.pe` dio NXDOMAIN desde Colab), descargalo vos en el navegador y subilo a `Drive/c20-2026/data/raw/senamhi.csv`. Después corré `--adopt`, que registra la procedencia completa sin red: checksum, columnas, inventario de estaciones y cobertura. Lo único que queda sin registro es de dónde se descargó, y eso queda escrito en el `SOURCE.json`.
+
+El CSV va a `data/raw/` (gitignored). `SOURCE.json` va a `data/` arriba, que sí se versiona: la procedencia es chica y revisable, los datos no."""),
 
     ("code", """%%bash
 # El compute corre en los servidores de Colab, no en tu maquina.
 # %%bash debe ser la PRIMERA linea de la celda; si no, Colab la parsea como Python.
 cd /content/c20-2026/experiments
+# Si el portal no resuelve, bajalo a mano y usá esto en vez de la línea siguiente:
+#   python fetch_source.py --adopt
 python fetch_source.py
 """),
 
@@ -143,13 +147,33 @@ print(f"sha256  : {loc['sha256']}")
 print(f"bajado  : {info['retrieved_at']}")
 print(f"columnas: {len(info['columns'])} -> {info['columns'][:8]}")
 print()
+def _stations_in_config():
+    import yaml
+    cfg = yaml.safe_load(open("/content/c20-2026/experiments/config.yaml",
+                              encoding="utf-8"))
+    return [s["ubigeo"] for s in (cfg.get("stations") or [])]
+
+
 print(f"{'UBIGEO':>8} {'filas':>10}  cobertura")
 for s in info["stations"]:
     flag = "  <- leading zero recuperado" if s["needs_padding"] else ""
-    print(f"{s['ubigeo']:>8} {s['rows']:>10,}  {s.get('first','?')}..{s.get('last','?')}{flag}")
+    span = (f"{s.get('first')}..{s.get('last')}" if s.get("first")
+            else "DESCONOCIDA (sin columna de tiempo)")
+    print(f"{s['ubigeo']:>8} {s['rows']:>10,}  {span}{flag}")
 print()
-print(f"config declara {info['declared']['declared_stations']} estaciones / "
-      f"cobertura {info['declared']['declared_coverage']}")
+present = [s["ubigeo"] for s in info["stations"]]
+print(f"config declara {len(_stations_in_config())} estación(es) | "
+      f"el archivo trae {len(present)}")
+absent = [c for c in _stations_in_config() if c not in present]
+extra = [c for c in present if c not in _stations_in_config()]
+if absent:
+    print(f"[REVIEW] declaradas pero AUSENTES en el archivo: {', '.join(absent)}")
+    print("          -> la etapa 00 va a marcar REVIEW_station_mismatch hasta")
+    print("             que la config y los datos coincidan. Es el chequeo")
+    print("             funcionando, no fallando.")
+if extra:
+    print(f"[REVIEW] en el archivo pero no declaradas: {', '.join(extra)}")
+print(f"cobertura declarada en config: {info['declared']['declared_coverage']}")
 print("[info] si la cobertura real no llega al final del train, los folds se recortan")"""),
 
     ("code", """# Dependencias. Con marca: si ya se instalaron en ESTE runtime, no se repite.
