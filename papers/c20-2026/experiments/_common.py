@@ -52,7 +52,31 @@ CONFIG_PATH = Path(os.environ.get("EXP_CONFIG") or BASE / "experiments" / "confi
 
 DATA_DIR = Path(os.environ.get("DATA_DIR", BASE / "data"))
 OUTPUTS = Path(os.environ.get("OUTPUT_DIR", BASE / "outputs"))
-RAW_CSV = DATA_DIR / "raw" / "dataset.csv"
+
+
+def _declared_raw_name() -> str:
+    """The raw filename the config declares, defaulting to the old fixed one.
+
+    Hardcoding `dataset.csv` here while `fetch_source.py` writes whatever
+    `source.file` says is the worst kind of mismatch: the fetch succeeds, the
+    stages run, every log looks healthy, and stages 00-05 read a completely
+    different file than the one just downloaded. Both names come from config now,
+    so the fetch and the readers cannot drift apart.
+
+    Config is read defensively rather than through `load_config`, which is
+    defined further down and would make this a forward reference.
+    """
+    try:
+        cfg = yaml.safe_load(CONFIG_PATH.read_text(encoding="utf-8")) or {}
+    except (OSError, yaml.YAMLError):
+        return "dataset.csv"
+    name = (cfg.get("source") or {}).get("file")
+    if name is None:
+        return "dataset.csv"
+    return str(name).strip() or "dataset.csv"
+
+
+RAW_CSV = DATA_DIR / "raw" / _declared_raw_name()
 PROCESSED = DATA_DIR / "processed"
 TABLES = OUTPUTS / "tables"
 FIGURES = OUTPUTS / "figures"

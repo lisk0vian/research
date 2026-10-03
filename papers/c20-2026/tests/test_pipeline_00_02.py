@@ -353,7 +353,12 @@ def test_paths_follow_env_when_set(monkeypatch, tmp_path):
     try:
         assert mod.DATA_DIR == tmp_path / "ddata"
         assert mod.OUTPUTS == tmp_path / "oout"
-        assert mod.RAW_CSV == tmp_path / "ddata" / "raw" / "dataset.csv"
+        # The filename comes from config.source.file, not from a constant.
+        # This test used to assert `dataset.csv`; asserting the configured name
+        # instead is the point, because the failure it prevents is the stages
+        # reading a different file than fetch_source.py just downloaded.
+        assert mod.RAW_CSV == tmp_path / "ddata" / "raw" / mod._declared_raw_name()
+        assert mod.RAW_CSV.name == "senamhi.csv"
         assert mod.TABLES == tmp_path / "oout" / "tables"
         assert "[drive]" in mod.paths_report()
     finally:

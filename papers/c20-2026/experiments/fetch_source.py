@@ -47,10 +47,22 @@ SCHEMA_VERSION = 1
 # the hourly temperature series this paper uses. Failing here is much cheaper
 # than failing in 03 with a KeyError on a column nobody remembered.
 REQUIRED_FAMILIES = {
-    "timestamp": ("fecha", "date", "datetime", "fec", "corte"),
+    "timestamp": ("fecha", "date", "datetime", "fec"),
     "station": ("ubigeo", "codigo", "station", "estacion", "station_code"),
     "temperature": ("temp", "tt", "temperature", "tmedia", "temp_media"),
 }
+
+# Columns that look like a timestamp and are not. FECHA_CORTE is the date the
+# provider cut its snapshot, identical on every row; read_hourly drops it for
+# exactly that reason. Matching it as the observation time reports the whole
+# record as covering a single day, which is worse than reporting nothing: it is
+# the one number the reader uses to decide whether the declared folds fit.
+NOT_A_TIMESTAMP = ("fecha_corte", "fec_corte", "snapshot", "cut_date")
+
+# The pipeline builds its timestamp from these components when present, which
+# is what read_hourly does. Preferred over any single date column so the
+# inventory and the stages agree on what a row's time is.
+TIME_PARTS = ("year", "month", "day", "hour")
 
 
 class FetchError(RuntimeError):
@@ -180,11 +192,22 @@ def check_families(columns: list[str]) -> dict[str, str]:
     lowered = {c.strip().lower(): c for c in columns}
     found: dict[str, str] = {}
     for family, candidates in REQUIRED_FAMILIES.items():
+        if family == "timestamp":
+            # The observation time is either a single date column or the
+            # year/month/day/hour components, and read_hourly builds it from the
+            # components when they are present. Accepting either keeps the
+            # requirement the same as the pipeline's.
+            if all(p in lowered for p in TIME_PARTS):
+                found[family] = "components:" + ",".join(TIME_PARTS)
+                continue
+            pool = {c: n for c, n in lowered.items() if c not in NOT_A_TIMESTAMP}
+        else:
+            pool = lowered
         hit = None
         for tier in (lambda c, k: c == k,
                      lambda c, k: c.startswith(k),
                      lambda c, k: k in c):
-            hits = [(c, lowered[c]) for c in lowered for k in candidates if tier(c, k)]
+            hits = [(c, pool[c]) for c in pool for k in candidates if tier(c, k)]
             if hits:
                 hit = min(hits, key=lambda t: (len(t[0]), t[0]))[1]
                 break
@@ -199,8 +222,17 @@ def check_families(columns: list[str]) -> dict[str, str]:
     return found
 
 
-def station_inventory(path: Path, station_col: str, time_col: str) -> list[dict]:
+def station_inventory(path: Path, station_col: str, time_col: str | None) -> list[dict]:
     """Per-station row counts and date coverage, read from the file.
+
+    `time_col` may be None, in which case coverage is reported as unknown rather
+    than guessed. A wrong coverage range is worse than a missing one: the
+    reader's next decision is whether the declared folds fit inside the data,
+    and a single-day answer to that question looks like a fact.
+
+    When year/month/day/hour are present they are used to build the timestamp,
+    exactly as `read_hourly` does, so the coverage reported here is the
+    coverage the stages will actually see.
 
     `ubigeo` is reported raw and zero-padded to six digits because the portal
     serves that column as a float: codes below 100000 arrive as `40514.0`, and
@@ -210,11 +242,19 @@ def station_inventory(path: Path, station_col: str, time_col: str) -> list[dict]
     """
     import pandas as pd
 
-    frame = pd.read_csv(
-        path,
-        usecols=lambda c: c.strip() in {station_col, time_col},
-        dtype=str,
-    )
+    header = [c.strip().lower() for c in read_header(path)]
+    have_parts = all(p in header for p in TIME_PARTS)
+    if have_parts:
+        wanted = {station_col, *TIME_PARTS}
+        time_source = "components:" + ",".join(TIME_PARTS)
+    elif time_col:
+        wanted = {station_col, time_col}
+        time_source = time_col
+    else:
+        wanted = {station_col}
+        time_source = ""
+
+    frame = pd.read_csv(path, usecols=lambda c: c.strip() in wanted, dtype=str)
     out: list[dict] = []
     for raw, group in frame.groupby(frame[station_col].astype(str), sort=True):
         code = raw.strip()
@@ -224,11 +264,23 @@ def station_inventory(path: Path, station_col: str, time_col: str) -> list[dict]
             "ubigeo": padded,
             "rows": int(len(group)),
             "needs_padding": padded != code,
+            "time_source": time_source,
         }
-        stamps = pd.to_datetime(group[time_col], errors="coerce", format="mixed")
-        if stamps.notna().any():
+        if have_parts:
+            stamps = pd.to_datetime(dict(
+                year=group["year"], month=group["month"],
+                day=group["day"], hour=group["hour"]), errors="coerce")
+        elif time_col:
+            stamps = pd.to_datetime(group[time_col], errors="coerce", format="mixed")
+        else:
+            stamps = None
+        if stamps is not None and stamps.notna().any():
             entry["first"] = str(stamps.min().date())
             entry["last"] = str(stamps.max().date())
+        else:
+            entry["first"] = None
+            entry["last"] = None
+            entry["coverage_known"] = False
         out.append(entry)
     return out
 
@@ -309,10 +361,14 @@ def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--check", action="store_true",
                     help="verify the local file against SOURCE.json, no network")
+    ap.add_argument("--adopt", action="store_true",
+                    help="record provenance for a file already on disk, no network")
     ap.add_argument("--force", action="store_true",
                     help="re-download even if the file is already present")
     ap.add_argument("--timeout", type=int, default=120)
     args = ap.parse_args(argv)
+    if args.check and args.adopt:
+        ap.error("--check and --adopt are mutually exclusive")
 
     cfg = load_config()
     src = cfg.get("source", {})
@@ -326,7 +382,10 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.check:
         if not dest.is_file():
-            raise FetchError(f"{dest} is not there; run without --check to fetch it")
+            raise FetchError(
+                f"{dest} is not there; run without --check to fetch it, or "
+                "place the file by hand and run --adopt to record it"
+            )
         digest, total = sha256_of(dest)
         state = compare(recorded, digest)
         print(f"[check] {dest.name} sha256={digest[:16]} bytes={total:,} "
@@ -334,24 +393,46 @@ def main(argv: list[str] | None = None) -> int:
         if state == "differ":
             print("[warn] the file on disk does not match SOURCE.json", file=sys.stderr)
             return 1
+        if state == "unrecorded":
+            print("[info] no provenance on record; run --adopt to build it",
+                  file=sys.stderr)
         return 0
 
-    if dest.is_file() and not args.force:
+    # --adopt and the download path share everything from here: once the bytes
+    # are on disk, recording them is the same work either way. Only the
+    # catalogue half differs, and a file that arrived by hand has no catalogue
+    # answer to record, which is stated rather than faked.
+    pkg: dict = {}
+    resource: dict = {}
+    if args.adopt:
+        if not dest.is_file():
+            raise FetchError(
+                f"{dest} is not there. --adopt records a file that is already "
+                "in data/raw/; it does not download one."
+            )
         digest, total = sha256_of(dest)
-        state = compare(recorded, digest)
-        if state == "match":
-            print(f"[skip] {dest.name} present, sha256 matches SOURCE.json")
+        print(f"[adopt] {dest.name} present: {total:,} bytes sha256={digest[:16]}")
+        if recorded and compare(recorded, digest) == "match":
+            print("[skip] provenance already recorded and unchanged")
             return 0
-        reason = ("no provenance recorded yet" if state == "unrecorded"
-                  else "sha256 differs from SOURCE.json")
-        print(f"[info] {dest.name} present but {reason}; re-fetching")
+    else:
+        if dest.is_file() and not args.force:
+            digest, total = sha256_of(dest)
+            state = compare(recorded, digest)
+            if state == "match":
+                print(f"[skip] {dest.name} present, sha256 matches SOURCE.json")
+                return 0
+            reason = ("no provenance recorded yet" if state == "unrecorded"
+                      else "sha256 differs from SOURCE.json")
+            print(f"[info] {dest.name} present but {reason}; re-fetching "
+                  f"(pass --adopt to record it instead of downloading)")
 
-    found = resolve_resource(cfg, args.timeout)
-    pkg, resource = found["package"], found["resource"]
-    url = resource["url"]
-    print(f"fetching {resource.get('name') or url}")
-    digest, total = download(url, dest, args.timeout)
-    print(f"[ok] {total:,} bytes sha256={digest[:16]}")
+        found = resolve_resource(cfg, args.timeout)
+        pkg, resource = found["package"], found["resource"]
+        url = resource["url"]
+        print(f"fetching {resource.get('name') or url}")
+        digest, total = download(url, dest, args.timeout)
+        print(f"[ok] {total:,} bytes sha256={digest[:16]}")
 
     columns = read_header(dest)
     families = check_families(columns)
@@ -359,15 +440,33 @@ def main(argv: list[str] | None = None) -> int:
     if not stations:
         raise FetchError("the file parses but contains no station rows")
 
+    declared = [s["ubigeo"] for s in (cfg.get("stations") or [])]
     for s in stations:
         span = f"{s.get('first', '?')}..{s.get('last', '?')}"
         flag = "  <- leading zero recovered" if s["needs_padding"] else ""
         print(f"  {s['ubigeo']}  {s['rows']:>9,} rows  {span}{flag}")
-    print(f"  {len(stations)} station(s); "
-          f"config declares {cfg.get('station', {}).get('n_stations', '?')}")
+    if declared:
+        absent = sorted(set(declared) - {s["ubigeo"] for s in stations})
+        extra = sorted({s["ubigeo"] for s in stations} - set(declared))
+        print(f"  config declares {len(declared)} station(s): {', '.join(declared)}")
+        if absent:
+            print(f"  [REVIEW] declared but absent from the file: {', '.join(absent)}")
+        if extra:
+            print(f"  [REVIEW] present but not declared: {', '.join(extra)}")
+        if absent or extra:
+            print("  [REVIEW] stage 00 will refuse to score these until config "
+                  "and data agree. That is the check working, not failing.")
 
     payload = build_source_json(pkg, resource, dest, digest, total, columns,
                                 stations, cfg)
+    if args.adopt:
+        payload["notes"].insert(0, (
+            "Recorded with --adopt: the file was placed in data/raw/ by hand "
+            "because the catalogue host did not resolve, so no resource URL or "
+            "catalogue metadata is on record. The checksum, byte count, columns "
+            "and station inventory below are measured from the file itself and "
+            "are complete; only the provenance of the download is missing."
+        ))
     write_source_json(payload)
     print(f"[ok] provenance -> {source_json_path()}")
     write_manifest({
