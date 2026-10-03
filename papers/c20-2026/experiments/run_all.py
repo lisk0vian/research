@@ -26,6 +26,7 @@ and `outputs/logs/status.json` records what each stage did.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import os
 import subprocess
 import sys
@@ -161,6 +162,13 @@ def write_run_meta(stages: list[str], config: Path | None, entries: dict[str, di
     Drive id per file holds forever, and a timestamped name would mint a new
     Drive file - and a new Colab url - on every run. When run_id directories
     arrive, this file moves to `_runs/<run_id>/run_meta.json` unchanged.
+
+    `code_hashes` maps each experiments/*.py plus config.yaml to its sha256,
+    with CRLF normalized to LF so a Windows edit and its Colab copy hash
+    equal. On Colab there may be no git checkout, so `git_commit` can be None:
+    traceability then rests on `code_hashes`. `splits` is copied from
+    manifest_index.json (written where the splits are created, in
+    04_make_issuances.py), not reconstructed here.
     """
     payload = {
         "finished_at": _now_iso(),
@@ -170,6 +178,8 @@ def write_run_meta(stages: list[str], config: Path | None, entries: dict[str, di
         "config": rel_path(config) if config else "experiments/config.yaml",
         "git_commit": _git("rev-parse", "--short", "HEAD"),
         "git_dirty": bool(_git("status", "--porcelain", "--", "experiments")),
+        "code_hashes": _code_hashes(),
+        "splits": _splits_from_manifest(),
         "versions": _installed_versions(),
         "results": {
             s: {"exit_code": i["exit_code"], "elapsed_s": round(float(i["elapsed_s"]), 2)}
@@ -179,6 +189,41 @@ def write_run_meta(stages: list[str], config: Path | None, entries: dict[str, di
                 "Drive file per run, and a new Drive file means a new Colab url.",
     }
     return atomic_write_json(payload, OUTPUTS / "run_meta.json")
+
+
+def _normalized_hash(path: Path) -> str:
+    """sha256 of a text file with CRLF normalized to LF."""
+    data = path.read_bytes().replace(b"\r\n", b"\n")
+    return hashlib.sha256(data).hexdigest()
+
+
+def _code_hashes() -> dict[str, str]:
+    """sha256 per experiments/*.py plus config.yaml, keyed by paper-relative path."""
+    exp = BASE / "experiments"
+    out: dict[str, str] = {}
+    if exp.is_dir():
+        for p in sorted(exp.glob("*.py")):
+            if p.is_file():
+                out[rel_path(p)] = _normalized_hash(p)
+    cfg = BASE / "experiments" / "config.yaml"
+    if cfg.is_file():
+        out[rel_path(cfg)] = _normalized_hash(cfg)
+    return out
+
+
+def _splits_from_manifest() -> dict:
+    """Split bounds as recorded where the splits were created (04), if present."""
+    import json as _json
+
+    idx = OUTPUTS / "manifest_index.json"
+    if not idx.is_file():
+        return {}
+    try:
+        data = _json.loads(idx.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    splits = data.get("splits") if isinstance(data, dict) else None
+    return dict(splits) if isinstance(splits, dict) else {}
 
 
 def _now_iso() -> str:

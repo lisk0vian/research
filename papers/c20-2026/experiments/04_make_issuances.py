@@ -307,6 +307,45 @@ def compute_fold_issuances(daily: pd.DataFrame, fold: dict, cfg: dict) -> pd.Dat
     return out
 
 
+def _split_bounds(issuances: pd.DataFrame, folds: list[dict], cfg: dict) -> dict:
+    """Per-fold train/test bounds, written where the splits are created.
+
+    The auditor checks with facts that train ends before test starts, without
+    touching raw data: min/max issue dates, row counts, and the gap between
+    the last train target end and the first eval target start.
+    """
+    embargo = int(cfg.get("validation", {}).get("embargo_days", 28))
+    out: dict = {}
+    for f in folds:
+        fid = f["id"]
+        sub = issuances[issuances["fold"] == fid]
+        if sub.empty:
+            continue
+        tr = sub[sub["kind"] == "train"]
+        ev = sub[sub["kind"] == "eval"]
+        _, _, test_start, test_end = fold_windows(f, cfg)
+        gap_days = None
+        if not tr.empty and not ev.empty:
+            try:
+                train_max_end = pd.Timestamp(tr["target_end"].max())
+                eval_min_start = pd.Timestamp(ev["target_start"].min())
+                gap_days = int((eval_min_start - train_max_end).days)
+            except (TypeError, ValueError):
+                gap_days = None
+        out[fid] = {
+            "train_min": str(pd.Timestamp(tr["issue_date"].min()).date()) if not tr.empty else None,
+            "train_max": str(pd.Timestamp(tr["issue_date"].max()).date()) if not tr.empty else None,
+            "test_min": str(pd.Timestamp(ev["issue_date"].min()).date()) if not ev.empty else None,
+            "test_max": str(pd.Timestamp(ev["issue_date"].max()).date()) if not ev.empty else None,
+            "n_train": int(len(tr)),
+            "n_eval": int(ev["issue_date"].nunique()) if not ev.empty else 0,
+            "gap_days": gap_days,
+            "embargo_days": embargo,
+            "test_window": [str(test_start.date()), str(test_end.date())],
+        }
+    return out
+
+
 def main() -> None:
     cfg = load_config()
     for required in (DAILY_CSV,):
@@ -386,8 +425,9 @@ def main() -> None:
         }]
     }
     write_manifest({"issuances": summary,
+                    "splits": _split_bounds(issuances, folds, cfg),
                     "issuance_files": {"issuances": rel_path(out_path)}},
-                   replace=("issuances",))
+                   replace=("issuances", "splits"))
 
 
 if __name__ == "__main__":
