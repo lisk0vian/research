@@ -1,21 +1,31 @@
 # Methodology — C20-2026 (design v2.0)
 
 > **SUPERSEDED IN PART — revision pending.** This document still describes the
-> single-station Huancayo design (2018–2025). That design has been replaced. The
-> study of record is **five SENAMHI GBON/RBON stations over a 2054 m altitude
-> gradient, 2015–2024**, with cross-station generalisation (leave-one-station-out)
-> as the engineering contribution. `E2_multistation` is no longer disabled.
+> single-station Huancayo design (2018–2025) and the IGP-LAMAR variable names
+> (`TT`, `RR`, `FF`, `DD`, `PP` as pressure in hPa). Both are wrong for the data
+> of record. The study of record is **five SENAMHI GBON/RBON stations over a
+> 2054 m altitude gradient, 2015–2024**, with cross-station generalisation
+> (leave-one-station-out) as the engineering contribution. `E2_multistation` is
+> no longer disabled.
 >
 > What changes: §1 question and scope, §4 predictors (wind and accumulated rain
-> unavailable; large-scale set is Niño 3.4, Niño 1+2 and RMM; ERA5 deferred), §6
-> validation (fold window 2015–2024, plus a separate LOSO experiment), §10
-> extensions (E2 reopened), §11 open decisions (D1 reversed, D5 no longer
-> pending). What does not: §2 notation, §3 temporal design, §5 models, §7 metrics,
-> §8 inference.
+> **do not exist in the file**; the large-scale set is Niño 3.4 and Niño 1+2;
+> RMM dropped and ERA5 deferred), §6 validation (fold window 2015–2024, five
+> rolling 12-month windows, plus a separate LOSO experiment), §10 extensions
+> (E2 reopened), §11 open decisions (D1 reversed, D5 no longer pending). What
+> does not: §2 notation, §3 temporal design, §5 models, §7 metrics, §8
+> inference.
 >
-> Do not implement from this file as it stands. The evidence behind each change,
-> the rejected alternatives, and the full revision checklist are in
-> [`DESIGN_DECISIONS.md`](DESIGN_DECISIONS.md).
+> The variable names in §4 are the sharpest instance: the source file carries
+> `TEMP`, `HR` and `PP`, where **`PP` is precipitation in mm/h**, not pressure in
+> hPa. Implementing §4 as written nulls the entire precipitation column and the
+> run still exits 0.
+>
+> Do not implement from this file as it stands. The verified station list, the
+> measured schema and the properties of the data are in
+> [`DESIGN_DECISIONS.md`](DESIGN_DECISIONS.md) §9; the evidence behind each
+> change, the rejected alternatives, and the current resume order are in §1 and
+> §7 of the same file.
 
 English methodology extract. The Spanish original (full design, v2.0, 2026-09-28)
 lives outside the repo at `C:\Users\Aron\Downloads\README.md` and remains the

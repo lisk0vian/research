@@ -1,13 +1,22 @@
-# Experiments for papers/c20-2026 (design v2.0, single station Huayao)
+# Experiments for papers/c20-2026 (design v2.0, five SENAMHI stations)
 
 All modules read `config.yaml`. No hardcoded constants. Nothing here edits the
 manuscript; numbers go to `../outputs/` as CSV/JSON only.
 
-> **This folder is single-station and will be refactored.** The design of record
-> is five SENAMHI stations (2015–2024) with a station loop on top; see
-> [`../DESIGN_DECISIONS.md`](../DESIGN_DECISIONS.md) §6 for the exact list of
-> hardcoded locations and why the 112 tests here can survive the change. Stages
-> `00`–`05` below ran on the Huancayo record and will have to run again.
+> **The station refactor is done; the variable layer is not.** Stages `00`–`05`
+> now carry a station key end to end and run green on five stations. They still
+> expect the previous provider's schema: `read_hourly` builds its timestamp from
+> `year/month/day/hour`, and `NUMERIC_VARS` is `TT, HR, RR, PP, FF, DD`.
+>
+> The data of record has none of that. It has `FECHA`+`HORA` instead of the
+> four component columns, `TEMP` instead of `TT`, no `RR`/`FF`/`DD` at all, and
+> **`PP` is precipitation in mm/h rather than pressure in hPa** — so the config's
+> `PP: [640, 720]` range currently nulls the entire precipitation column while
+> the run still exits 0.
+>
+> Fix that before running anything against the real file.
+> [`../DESIGN_DECISIONS.md`](../DESIGN_DECISIONS.md) §1 lists the resume order
+> and §9 the measurements behind it.
 
 ## Order
 

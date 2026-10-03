@@ -7,17 +7,56 @@ feature layer, so it records *why* rather than results.
 Read this before changing anything in `experiments/`. Several decisions below
 contradict `METHODOLOGY.md`; §7 lists what still has to be revised.
 
-## 1. Status
+## 1. Status and where to resume
 
-| Stage | State |
+Read §9 before touching the config. The data of record is not the data the
+config describes, and running the pipeline as it stands destroys data silently.
+
+| | State |
 |---|---|
-| `00`–`05` implemented and run | yes, on the **Huancayo** record |
+| Phase 0, provenance | **done.** `fetch_source.py` downloads and records checksum, columns and a station inventory. `portal_docs.py` renders the provider's dictionary and metadata as Markdown. 309 tests |
+| Phase 1, station key | **done.** Six changes across `00`–`05`; five station-boundary bugs found and fixed. `00`–`05` run green on 5 synthetic stations |
+| Variable layer | **broken against the real file.** `read_hourly` expects `year/month/day/hour`; the file has `FECHA`+`HORA`. See §9 |
+| QC ranges | **actively destructive.** `PP: [640,720]` is pressure in hPa from the old provider; in the new file `PP` is precipitation in mm/h, so 100% of it is nulled. See §9 |
+| `config.stations[]` | **four of five entries were invented** and have been corrected against the real file (§9). Verify before trusting any station attribute not in §9 |
 | `06`–`10` | stubs (`NotImplementedError`) |
-| Design of record | **multi-station, SENAMHI** — not yet implemented |
-| Data of record | **not yet downloaded**; the pipeline still runs on Huancayo |
 | `references.bib` | 34 of 36 entries are network community-detection papers |
-| `paper/main.qmd` | 19 lines of prose out of 132, no research question |
-| `manifest.yaml` | untouched scaffold; its only claim points at a path that does not exist |
+| `paper/main.qmd` | owned by the author; not touched here |
+
+**Resume here.** In priority order, because the first two lose data silently
+and the rest merely do not exist yet:
+
+1. Map source columns to internal names in `config.variables`, so `PP` cannot
+   mean two different things, and derive `NUMERIC_VARS` from it.
+2. Recalibrate the QC ranges against the real distribution. The current
+   temperature range was set for a station 1150 m lower than the highest one.
+3. Teach `read_hourly` to build its timestamp from `FECHA`+`HORA`.
+4. Then: Phase 2 (three targets, rolling folds, embargo at 42 days for W5_6),
+   `06`, `08` metrics, `07` models, LOSO, `09`, `10`.
+
+### Settled, do not reopen
+
+Data is SENAMHI GBON/RBON. Five stations, 2054 m of gradient, one provider
+deliberately so instrument is not confounded with station. Station loop on top,
+per-station API unchanged. Five rolling 12-month folds. Three targets
+(`TT_mean` primary, `Tmin`/`Tmax` secondary). Frost as an index from hourly-mean
+temperature, declared as such. Niño 3.4 and 1+2; ERA5 deferred; **RMM dropped**
+— no NOAA-hosted RMM text file exists, the only live source needs a browser
+User-Agent and carries an unresolved licence. Metrics before models. LOSO is the
+AI contribution. Target venue EAAI, whose abstract must state an AI contribution
+and an engineering application. `paper/main.qmd` is the author's.
+
+### Open, needs a decision
+
+- **Horizons.** W1 = 1–14 d as context outside the claim, W3_4 = 15–28 d,
+  W5_6 = 29–42 d, following the USBR Rodeo convention. Not yet confirmed. W5_6
+  forces the embargo to 42 days, not 28.
+- **Model roster.** `Persistence++`-like linear as primary, XGBoost secondary,
+  LSTM as a pre-registered negative control on pooled data only, AdaHedgeD
+  ensemble. Not yet confirmed.
+- **The threshold.** What happens to the EAAI target if nothing beats damped
+  persistence. Should be written down *before* the numbers exist.
+- **Coverage vs claim.** Five stations in one country is narrow for Q1.
 
 The split state is deliberate and temporary: the pipeline on disk is
 single-station because that is what was run, while the design of record is
@@ -280,26 +319,51 @@ decision 13 prefers the loop.
    `journal: pending` (§11) while the format block and `manifest.yaml` both name
    EAAI. Sections 2, 4, 6 and 10 need updating; the fold table changes to the
    2015–2024 window; three targets replace one.
-2. **Download the SENAMHI file to Drive** and split it per station with `UBIGEO`
-   zero-padded to 6 digits.
+2. **`config.variables` and the QC ranges.** The two entries that destroy data
+   silently. §9 has the measurements.
 3. **`pytest.ini` sets `testpaths = tests`**, so CI runs the repository suite but
-   never the paper's 112 tests.
+   never the paper's 309.
 4. **`manifest.yaml` is scaffold.** Its single claim cites
    `experiments/exp-01/results/metrics.json`, which does not exist, and its only
    figure points at `media/image2.png`, which does not exist either.
-5. **`references.bib` needs a 30–50 entry rebuild.** None of the load-bearing
-   citations are present: Clark-West 2007, Murphy 1988, Newey–West, Niño indices,
-   Madden–Rolin for RMM, Hersbach, plus the SENAMHI dataset itself.
+5. **`references.bib` needs a 30–50 entry rebuild.** Verified and ready:
+   Mouatadid et al. 2021 NeurIPS workshop (no DOI, citable by URL) defines
+   `Climatology++` and `Persistence++`; Mouatadid et al. 2023 NeurIPS D&B is
+   `SubseasonalClimateUSA`, arXiv:2109.10399v4, the benchmark our numbers will be
+   compared to; Hwang et al. 2019 KDD `10.1145/3292500.3330674`; He et al. 2021
+   AAAI `10.1609/aaai.v35i1.16090`; Toth & Buizzard `10.1002/qj.2619`; Vitart et
+   al. 2017 BAMS `10.1175/BAMS-D-16-0017.1`; Robertson et al. 2023 WAF
+   `10.1175/WAF-D-22-0160.1`; Miller & Wang 2019 `10.1175/jcli-d-18-0389.1`;
+   Allen et al. 2023 `10.1002/qj.4478`; Brier 1950; Newey & West 1987
+   `10.2307/1913610`; Murphy 1993 `10.1175/1520-0434(1993)008<0281:wiagfa>2.0.co;2`.
+
+   Still missing and not obtainable without institutional access: Kuhn & Johnson
+   2013, Clark & West 2007, Hersbach 2000. Google Scholar is blocked by anti-bot;
+   the arXiv HTTP API and Crossref work and were used for all of the above.
+
+   Two corrections to earlier claims in this file: `Climatology++` and
+   `Persistence++` are **not** from KDD 2019 — that paper never mentions them.
+   And "weeks 2–6" is **not** a WMO definition; WMO/WIPPS says a minimum of four
+   weeks, and the 3–4 / 5–6 windows come from the USBR Rodeo.
 6. **`paper/main.qmd` describes a third design** that exists nowhere else — an
    anomaly-decomposition ablation with raw and residual arms, horizons of 1, 2, 3
    and 4 weeks. It has no research question, 19 lines of prose out of 132, and
    `Results`, `Discussion` and `Conclusions` are empty. The author owns it.
-7. **ERA5 remains `TO_CONFIRM_D4`** and the RMM provider was resolved to
-   CPC/CIRES but never exercised.
-8. **The honest risk.** §3.2 predicts that `Damp` will not be beaten. That is a
+7. **ERA5 remains deferred by decision, not by blocker.** RMM was dropped after
+   the search in §3 found no NOAA-hosted RMM text file; do not revisit it without
+   a new reason.
+8. **A provider email was committed and has been removed.** `lamar@igp.gob.pe`
+   sat in `data/docs/metadata.md` from commit `207cc0a` in a public repository.
+   `portal_docs.py` now redacts contact addresses on conversion.
+   `papers/c15-2026/data/metadata.md` has the same problem and is untouched.
+   `paper_validate.py` has no email rule; adding one needs a decision about
+   `authors/*.yaml`, which holds five author emails by schema.
+9. **The honest risk.** §3.2 predicts that `Damp` will not be beaten. That is a
    publishable result, but it is a skill paper rather than an AI paper, and
-   EAAI is a harder sell for it. The floor is Q1; a Q2/Q3 outcome is the more
-   likely one.
+   EAAI's abstract must state an AI contribution. If the cross-station transfer
+   and the Niño predictors both come back empty, the honest move is to reframe
+   for a climate venue, where a rigorous negative is a first-class result. That
+   decision should be written down before the numbers exist.
 ## 8. Run observability
 
 Two decisions were taken because the compute runs in Colab and the runtime is
@@ -341,3 +405,79 @@ horizon returned the same numbers); it was replaced by a vectorised train-window
 containment check, and the bar went with it. Stages `01` and `02` are
 vectorised pandas and carry no bar: a progress indicator over an instant
 operation is decoration.
+
+## 9. The dataset, verified
+
+Everything here was measured from the bytes, not from a registry page. Two
+earlier claims in this file were made against the wrong station set and are
+corrected here; both are flagged rather than silently overwritten.
+
+### Where it lives
+
+The working host is **`datosabiertos.gob.pe`**. `datos.gob.pe` returns NXDOMAIN
+and is not the portal this dataset is on. The host sits behind a WAF that
+answers a default script User-Agent with HTTP 418 and an interstitial page, so
+every request needs a browser User-Agent. Package
+`b884a001-f444-4c87-91b2-bee1891e6eb7`, ODC-By, metadata modified 2025-09-08.
+The CSV is 48.14 MB; the package also ships the variable dictionary (.xlsx) and
+the metadata (.docx), which `portal_docs.py` renders as Markdown.
+
+### Shape
+
+416,273 rows, 16 columns, hourly. Coverage **2015-01-01 to 2024-06-30**, 24
+observations per day, roughly 83,253 rows per station — unusually balanced.
+`FECHA_CORTE` is 20240630 throughout: the day the provider generated the file,
+not an observation time, which is why it is excluded from timestamp detection.
+
+| Code | Station | Network | Department | Elevation |
+|---|---|---|---|---|
+| `150701` | MATUCANA | GBON | Lima | 2421 m |
+| `040114` | SAN_JOSE_DE_UZUNA | RBON | Arequipa | 3269 m |
+| `230201` | CANDARAVE | RBON | Tacna | 3410 m |
+| `151007` | CARANIA | GBON | Lima | 3840 m |
+| `040514` | IMATA | RBON | Arequipa | 4475 m |
+
+Columns: `ID, ESTACION, FECHA, HORA, LONGITUD, LATITUD, ALTITUD, TEMP, HR, PP,
+RED, DEPARTAMENTO, PROVINCIA, DISTRITO, UBIGEO, FECHA_CORTE`.
+
+`UBIGEO` is the district code, served as float64: `40514.0` and `40114.0` arrive
+without their leading zero, so the six-digit padding in
+`_common.normalize_ubigeo` is load-bearing, not decoration.
+
+### Three things the config gets wrong
+
+1. **There are no `year`/`month`/`day`/`hour` columns.** `FECHA` is `yyyymmdd`
+   and `HORA` is `hhmmss`. `read_hourly` builds its timestamp from the four
+   component columns and will `KeyError` on this file.
+2. **`PP` means precipitation here, not pressure.** The provider's dictionary
+   reads *"Precipitación total horaria (unidad: milimetros por hora)"*. The
+   config inherited `PP: [640, 720]` in hPa from the previous provider, which
+   puts **100% of the precipitation column outside the QC range** — every value
+   nulled, exit code 0, no warning. Rename the mapped column rather than
+   relying on anyone remembering which `PP` this is.
+3. **No `RR`, `FF` or `DD`.** Wind and rainfall-amount predictors do not exist,
+   so `u`/`v`, `RR_sum`, `RR_n_hours` and the QC ranges for those go away.
+   Decision 10 in §4 is now forced by the data rather than chosen.
+
+The temperature range needs recalibrating too, and not because the new file is
+strange: `TEMP: [-15, 35]` was set for a station at 3329 m, and IMATA at 4475 m
+records −16.7 °C. Thirteen legitimate values are currently discarded as out of
+range. Observed range overall is −16.7 to 26.3 °C.
+
+### Measured properties
+
+Lapse rate **−5.75 °C/km** by linear regression over the five station means
+(pairwise −3.17 to −8.51). Hourly temperature autocorrelation **0.947** at lag 1,
+0.931 at lag 24, 0.788 at lag 168, on 79,171 observations from MATUCANA.
+
+Both correct earlier figures in this file. The previous −5.98 °C/km and
+0.707–0.713 autocorrelation were measured against a different, wrong station
+set and are wrong for this network.
+
+### `TEMP` is an hourly mean
+
+The dictionary says *"Temperatura promedio horaria"*. The daily minimum of
+hourly means is not the daily minimum, so the frost Brier score understates the
+risk. That is why decision 12 in §4 calls it a **frost index** and requires the
+limitation to be stated: it is now backed by the provider's own documentation
+rather than by our reading of it.
