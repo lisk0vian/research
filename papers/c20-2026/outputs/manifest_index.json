@@ -401,5 +401,11 @@
         "elapsed_s": 1.24
       }
     }
+  },
+  "docs": {
+    "generated": [
+      "data\\docs\\data_dictionary.md",
+      "data\\docs\\metadata.md"
+    ]
   }
 }
