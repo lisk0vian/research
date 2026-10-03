@@ -2,7 +2,6 @@
 name: gate-merge
 description: Managing editor that deduplicates findings into the consolidated report. Runs last, after all reviewers.
 access: read-only
-model_tier: strong
 ---
 
 # gate-merge

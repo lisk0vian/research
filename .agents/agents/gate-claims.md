@@ -2,7 +2,6 @@
 name: gate-claims
 description: Numbers comptroller. Use to check every manuscript number against outputs and the packet.
 access: read-only
-model_tier: strong
 ---
 
 # gate-claims

@@ -2,7 +2,6 @@
 name: peer-reach
 description: Research colleague judging Q1 level. Use to ask what is missing for top-tier publication.
 access: read-only
-model_tier: strong
 ---
 
 # peer-reach

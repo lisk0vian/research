@@ -2,7 +2,6 @@
 name: rev-refs
 description: Literature reviewer. Use to check that claims are backed and references are correct.
 access: read-only
-model_tier: light
 ---
 
 # rev-refs

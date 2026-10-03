@@ -2,7 +2,6 @@
 name: peer-plan
 description: Research colleague judging whether the pipeline answers the question. Use to validate readiness before writing.
 access: read-only
-model_tier: strong
 ---
 
 # peer-plan

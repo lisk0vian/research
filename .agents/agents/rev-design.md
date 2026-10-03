@@ -2,7 +2,6 @@
 name: rev-design
 description: External methodology examiner. Use to stress-test design, validation and inference before submission.
 access: read-only
-model_tier: strong
 ---
 
 # rev-design

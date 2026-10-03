@@ -2,7 +2,6 @@
 name: rev-style
 description: Clarity and journal-guide editor. Use to check prose and target-venue compliance.
 access: read-only
-model_tier: light
 ---
 
 # rev-style

@@ -228,10 +228,10 @@ Registry:
 ### Review subagents
 
 Canonical reviewers live in `.agents/agents/*.md` (neutral front-matter:
-`name, description, access: read-only, model_tier: strong|light`, body in
-English). `scripts/link_agents.py` generates `.claude/agents/*.md` and
-`.opencode/agents/*.md` (both gitignored); tier mapping lives in
-`.agents/agents/models.yaml` (`inherit` = session model, explicit). Three
+`name, description, access: read-only`, body in English).
+`scripts/link_agents.py` generates `.claude/agents/*.md` and
+`.opencode/agents/*.md` (both gitignored) with no pinned model: every
+subagent inherits the session model on both tools. Three
 groups: manuscript (`rev-design`, `rev-refs`, `rev-style`), code peers
 (`peer-plan`, `peer-results`, `peer-reach`), gate (`gate-claims`,
 `gate-merge` last). Deterministic checks (leakage patterns, split gaps,

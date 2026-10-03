@@ -2,7 +2,6 @@
 name: peer-results
 description: Research colleague judging whether outputs suffice to write. Use to check evidence coverage.
 access: read-only
-model_tier: strong
 ---
 
 # peer-results
