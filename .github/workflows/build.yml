@@ -1,0 +1,201 @@
+name: build
+
+# Render changed papers to PDF + DOCX + LaTeX zip and upload as artifacts.
+# Comments on PRs with a download table; cancels superseded runs.
+
+on:
+  pull_request:
+    paths:
+      - "papers/*/paper/main.qmd"
+      - "papers/*/paper/references.bib"
+      - "papers/*/paper/media/**"
+  push:
+    branches: [main, master]
+    paths:
+      - "papers/*/paper/main.qmd"
+      - "papers/*/paper/references.bib"
+      - "papers/*/paper/media/**"
+  workflow_dispatch:
+    inputs:
+      slug:
+        description: "Paper slug (e.g. c15-2026). Leave empty to build all changed."
+        required: false
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: build-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ── Job 1: detect which papers changed ──────────────────────────────────
+  detect:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0   # full history for diff
+
+      - name: Detect changed papers
+        id: set-matrix
+        run: |
+          set -euo pipefail
+
+          # Manual dispatch with explicit slug
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" && -n "${{ inputs.slug }}" ]]; then
+            echo 'matrix=[{"slug":"${{ inputs.slug }}"}]' >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # Determine base ref for diff
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            BASE="origin/${{ github.base_ref }}"
+          else
+            BASE="HEAD~1"
+          fi
+
+          # Find changed main.qmd / references.bib / media/ and extract slugs
+          SLUGS=$(git diff --name-only "$BASE" HEAD -- \
+            'papers/*/paper/main.qmd' \
+            'papers/*/paper/references.bib' \
+            'papers/*/paper/media/**' \
+            2>/dev/null \
+            | grep -oP 'papers/\K[^/]+' \
+            | sort -u \
+            || true)
+
+          if [[ -z "$SLUGS" ]]; then
+            echo 'matrix=[]' >> "$GITHUB_OUTPUT"
+          else
+            JSON=$(printf '%s\n' "$SLUGS" | jq -R . | jq -sc '[{slug: .[]}]')
+            echo "matrix=$JSON" >> "$GITHUB_OUTPUT"
+          fi
+
+  # ── Job 2: build each changed paper ─────────────────────────────────────
+  build:
+    needs: detect
+    if: needs.detect.outputs.matrix != '[]'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        paper: ${{ fromJson(needs.detect.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install Python dependencies
+        run: pip install pyyaml
+
+      - name: Setup Quarto
+        uses: quarto-dev/quarto-actions/setup@v2
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tinytex: true
+
+      - name: Build paper
+        id: build
+        run: |
+          set -euo pipefail
+          slug="${{ matrix.paper.slug }}"
+          echo "::group::Building $slug"
+          python scripts/paper_build.py --slug "$slug" --format all
+          echo "::endgroup::"
+          echo "slug=$slug" >> "$GITHUB_OUTPUT"
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v6
+        with:
+          name: paper-${{ matrix.paper.slug }}
+          path: |
+            papers/${{ matrix.paper.slug }}/build/${{ matrix.paper.slug }}.pdf
+            papers/${{ matrix.paper.slug }}/build/${{ matrix.paper.slug }}.docx
+            papers/${{ matrix.paper.slug }}/build/${{ matrix.paper.slug }}-latex.zip
+          if-no-files-found: warn
+          retention-days: 90
+
+  # ── Job 3: comment on PR with download links ────────────────────────────
+  comment:
+    needs: build
+    if: github.event_name == 'pull_request' && always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Build comment body
+        id: body
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const runId = context.runId;
+            const repo = `${context.repo.owner}/${context.repo.repo}`;
+            const artifactsUrl = `https://github.com/${repo}/actions/runs/${runId}#artifacts`;
+
+            // Parse matrix results from build job
+            // We detect slugs from the matrix output of detect job
+            const detectMatrix = ${{ needs.detect.outputs.matrix || '[]' }};
+
+            // Get artifacts from this run
+            const { data: artifacts } = await github.rest.actions.listWorkflowRunArtifacts({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              run_id: runId,
+            });
+
+            const artifactByName = {};
+            for (const a of artifacts.artifacts) {
+              artifactByName[a.name] = a;
+            }
+
+            let rows = '';
+            for (const entry of detectMatrix) {
+              const slug = entry.slug;
+              const artName = `paper-${slug}`;
+              const art = artifactByName[artName];
+              if (art) {
+                const dlUrl = `https://github.com/${repo}/actions/runs/${runId}/artifacts/${art.id}`;
+                rows += `| ${slug} | ✅ | [⬇ PDF](${dlUrl}) | [⬇ DOCX](${dlUrl}) | [⬇ LaTeX](${dlUrl}) |\n`;
+              } else {
+                rows += `| ${slug} | ❌ | — | — | — |\n`;
+              }
+            }
+
+            const marker = '<!-- paper-build-artifacts -->';
+            const body = [
+              marker,
+              '### 📦 Paper build artifacts',
+              '',
+              '| Paper | Status | PDF | DOCX | LaTeX |',
+              '|-------|--------|-----|------|-------|',
+              rows.trim(),
+              '',
+              `> Los artifacts están disponibles en la pestaña [Checks → Artifacts](${artifactsUrl}). Se eliminan después de 90 días.`,
+            ].join('\n');
+
+            core.setOutput('body', body);
+
+      - name: Find existing comment
+        id: find-comment
+        uses: peter-evans/find-comment@v4
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-author: 'github-actions[bot]'
+          body-includes: '<!-- paper-build-artifacts -->'
+
+      - name: Create or update comment
+        uses: peter-evans/create-or-update-comment@v5
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-id: ${{ steps.find-comment.outputs.comment-id }}
+          edit-mode: replace
+          body: ${{ steps.body.outputs.body }}
