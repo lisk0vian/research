@@ -264,6 +264,55 @@ def test_review_command_twins_match():
     assert body(opencode) == body(claude)
 
 
-def test_link_agents_check_passes():
-    proc = _run("scripts/link_agents.py", "--check")
+def test_link_agents_check_passes(tmp_path: Path):
+    repo = tmp_path / "repo"
+    canon = repo / ".agents" / "agents"
+    canon.mkdir(parents=True)
+    (canon / "models.yaml").write_text(
+        "strong:\n  claude: opus\n  opencode: inherit\n", encoding="utf-8"
+    )
+    (canon / "peer-plan.md").write_text(
+        "---\nname: peer-plan\ndescription: Test colleague.\n"
+        "access: read-only\nmodel_tier: strong\n---\n\n# peer-plan\n",
+        encoding="utf-8",
+    )
+    proc = _run("scripts/link_agents.py", "--root", str(repo))
     assert proc.returncode == 0, proc.stdout
+    assert (repo / ".claude" / "agents" / "peer-plan.md").is_file()
+    assert (repo / ".opencode" / "agents" / "peer-plan.md").is_file()
+    proc = _run("scripts/link_agents.py", "--root", str(repo), "--check")
+    assert proc.returncode == 0, proc.stdout
+
+
+def test_link_agents_check_catches_stale(tmp_path: Path):
+    repo = tmp_path / "repo"
+    canon = repo / ".agents" / "agents"
+    canon.mkdir(parents=True)
+    (canon / "models.yaml").write_text(
+        "strong:\n  claude: opus\n  opencode: inherit\n", encoding="utf-8"
+    )
+    (canon / "peer-plan.md").write_text(
+        "---\nname: peer-plan\ndescription: Test colleague.\n"
+        "access: read-only\nmodel_tier: strong\n---\n\n# peer-plan\n",
+        encoding="utf-8",
+    )
+    assert _run("scripts/link_agents.py", "--root", str(repo)).returncode == 0
+    (repo / ".claude" / "agents" / "peer-plan.md").write_text("tampered\n", encoding="utf-8")
+    proc = _run("scripts/link_agents.py", "--root", str(repo), "--check")
+    assert proc.returncode != 0
+    assert "stale" in proc.stdout
+
+
+def test_link_agents_check_fails_on_unmapped_tier(tmp_path: Path):
+    repo = tmp_path / "repo"
+    canon = repo / ".agents" / "agents"
+    canon.mkdir(parents=True)
+    (canon / "models.yaml").write_text("light:\n  claude: haiku\n", encoding="utf-8")
+    (canon / "peer-plan.md").write_text(
+        "---\nname: peer-plan\ndescription: Test colleague.\n"
+        "access: read-only\nmodel_tier: strong\n---\n\n# peer-plan\n",
+        encoding="utf-8",
+    )
+    proc = _run("scripts/link_agents.py", "--root", str(repo), "--check")
+    assert proc.returncode != 0
+    assert "unmapped" in proc.stdout
