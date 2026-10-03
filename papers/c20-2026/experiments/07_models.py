@@ -202,8 +202,11 @@ def predict_gbm(train: pd.DataFrame, evals: pd.DataFrame, cols: list[str], targe
         pool = train[train["horizon"] == h]
         if len(pool) < 100:
             continue
-        X, y = pool[cols].to_numpy(float), pool[a].to_numpy(float)
-        Xe = evals.loc[idx, cols].to_numpy(float)
+        # Named frames on both sides. With bare arrays, LightGBM 4.6 still records
+        # feature names at fit time and scikit-learn then warns on every predict
+        # (~5,000 per run), burying the stage log.
+        X, y = pool[cols].astype(float), pool[a].to_numpy(float)
+        Xe = evals.loc[idx, cols].astype(float)
         mu[idx] = lgb.LGBMRegressor(objective="regression", **params).fit(X, y).predict(Xe)
         for j, tau in enumerate(levels):
             model = lgb.LGBMRegressor(objective="quantile", alpha=tau, **params)

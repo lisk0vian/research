@@ -197,6 +197,20 @@ def test_gbm_quantiles_do_not_cross(panel, cfg):
     assert np.all(np.diff(q, axis=1) >= 0) and np.isfinite(mu).all()
 
 
+def test_gbm_predict_raises_no_feature_name_warning(panel):
+    """Colab logged one 'X does not have valid feature names' per predict, ~5,000 a run."""
+    import warnings
+
+    block = panel[panel["fold"] == "B1"]
+    train = _panel.target_rows(block, "TT_mean", "train")
+    evals = _panel.target_rows(block, "TT_mean", "eval").reset_index(drop=True)
+    params = {"n_estimators": 5, "learning_rate": 0.1, "num_leaves": 4,
+              "min_child_samples": 10, "verbose": -1, "random_state": 0, "n_jobs": 1}
+    with warnings.catch_warnings():
+        warnings.simplefilter("error", UserWarning)
+        m07.predict_gbm(train, evals, ["A0_7d", "elev_m"], "TT_mean", [0.5], params)
+
+
 def test_eval_index_holds_one_truth_per_key(panel):
     idx = _panel.build_eval_index(panel, "temporal", "TT_mean")
     assert not idx.duplicated(["station", "fold", "issue_date", "horizon"]).any()
