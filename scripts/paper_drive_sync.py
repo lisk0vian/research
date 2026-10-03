@@ -44,13 +44,21 @@ NOTEBOOK_MIME = "application/x-ipynb+json"
 
 # Files that go to Drive/<folder>/code/, mirrored into /content by the notebook.
 CODE_SUFFIXES = {".py", ".yaml", ".yml", ".txt", ".md", ".jsonc", ".json"}
-EXCLUDED_NAMES = {".env", ".env.example", ".sync_history.json"}
+EXCLUDED_NAMES = {".env", ".env.example", ".sync_history.json", "AGENTS.md", "CLAUDE.md"}
 EXCLUDED_PARTS = {"__pycache__", ".ipynb_checkpoints", ".git"}
 SKIP_PREFIXES = (".env", ".gitignore", "opencode.jsonc")
 
 NB_REMOTE_NAME = "experiments.ipynb"
 NB_REMOTE_DIR = ""  # notebook sits at the Drive folder root
-LOGS_REMOTE_DIR = "outputs/logs"  # matches outputs/logs/ in the paper layout
+
+# The shared Colab runtime (COLAB.md). It lives once in scripts/ and is uploaded
+# next to every paper's code that has a colab.yaml, so no copy can drift.
+RUNTIME_LOCAL = Path("scripts") / "_colab_runtime.py"
+RUNTIME_REMOTE = "code/_colab_runtime.py"
+# .drive_ids.json key holding the id of the Drive code/ folder, the parent of
+# any code file created for the first time. Without it a new file would land in
+# the project root, where the notebook never copies from.
+CODE_FOLDER_KEY = "code/"
 
 
 def ids_path(paper: Path) -> Path:
@@ -175,33 +183,17 @@ def target_specs(paper: Path) -> list[dict]:
             "mime_type": None,
             "is_notebook": False,
         })
-    specs.extend(log_specs(paper))
-    return specs
-
-
-def log_specs(paper: Path) -> list[dict]:
-    """Stage logs, uploaded only when they exist.
-
-    They do not exist before the first Colab run, so a sync on a fresh clone is
-    code-only. Once a run has happened they are pulled back to Drive, where they
-    are the durable record of what the run did: a recycled runtime takes the
-    console output with it, but not the file.
-
-    Only files that are present are listed, so a partly-run pipeline syncs the
-    logs it produced and no phantom placeholders are created for the rest.
-    """
-    specs: list[dict] = []
-    logs = paper / "outputs" / "logs"
-    if not logs.is_dir():
-        return specs
-    for p in sorted(logs.glob("*.log")):
+    runtime = paper.parents[1] / RUNTIME_LOCAL
+    if (paper / "experiments" / "colab.yaml").is_file() and runtime.is_file():
         specs.append({
-            "remote": f"{LOGS_REMOTE_DIR}/{p.name}",
-            "remote_dir": LOGS_REMOTE_DIR,
-            "local": p,
+            "remote": RUNTIME_REMOTE,
+            "remote_dir": "code",
+            "local": runtime,
             "mime_type": None,
             "is_notebook": False,
         })
+    # outputs/ (logs included) is never a target: Colab writes it on Drive, and
+    # a local copy pushed over it would erase the record of the real run.
     return specs
 
 
@@ -226,6 +218,8 @@ def plan(paper: Path, remote_names: set[str] | None = None) -> tuple[list[dict],
     for spec in target_specs(paper):
         file_id = ids.get(spec["remote"])
         entry = {**spec, "file_id": file_id}
+        if spec["remote_dir"] == "code" and ids.get(CODE_FOLDER_KEY):
+            entry["parent_override"] = ids[CODE_FOLDER_KEY]
         if remote_names is not None:
             live = remote_names.get(spec["remote"])
             present = spec["remote"] in remote_names
@@ -370,7 +364,32 @@ def main() -> int:
         print("or delete the Drive copy first if it is genuinely obsolete.")
         return 1
 
-    needs_create = [u["remote"] for u in changed if not u["file_id"]]
+    if (paper / "experiments" / "colab.yaml").is_file():
+        from paper_notebook import check as notebook_check
+
+        problems = notebook_check(paper, args.slug)
+        if problems:
+            print("\nRefusing to sync: the notebook is out of date (COLAB.md):", file=sys.stderr)
+            for p in problems:
+                print(f"  {p}", file=sys.stderr)
+            return 1
+
+    needs_create = [u for u in changed if not u["file_id"]]
+    code_without_parent = [u["remote"] for u in needs_create
+                           if u["remote_dir"] == "code" and not u.get("parent_override")]
+    if code_without_parent:
+        print("\nRefusing to print calls:", file=sys.stderr)
+        print("  new code file(s) need the id of the Drive code/ folder, or they would be",
+              file=sys.stderr)
+        print("  created in the project root, where the notebook never copies from:",
+              file=sys.stderr)
+        for r in code_without_parent[:8]:
+            print(f"    {r}", file=sys.stderr)
+        print("  record it once (listFolder on the project folder shows it):", file=sys.stderr)
+        print(f"    python scripts/paper_drive_sync.py --slug {args.slug} "
+              f"--record {CODE_FOLDER_KEY} <code-folder-id>", file=sys.stderr)
+        return 1
+    needs_create = [u["remote"] for u in needs_create if not u.get("parent_override")]
     if needs_create and not folder_id:
         sys.stdout.flush()  # keep the agent's read of this ordered as printed
         # Emitting parentFolderId:"" would hand the MCP a malformed call, and the
