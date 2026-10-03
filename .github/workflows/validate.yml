@@ -54,3 +54,25 @@ jobs:
         # this gate runs 51 tests in ~5s against ~66s for plain `pytest -q`.
         # Both stay collected locally and must pass before a release.
         run: pytest -q -m "not slow"
+
+  doi-check:
+    runs-on: ubuntu-latest
+    # Runs on every PR that touches papers/scripts, on push to main, and on manual trigger
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Validate DOIs
+        # Non-blocking: preprint DOIs (arXiv, bioRxiv) are skipped,
+        # network errors are tolerated. Only real not_found DOIs fail.
+        run: python scripts/doi_validate.py --ci --json --quiet --timeout 15 --delay 0.2
+
+      - name: Upload DOI report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: doi-audit
+          path: doi_validate_report.json
