@@ -61,6 +61,7 @@ SKILL_REGISTRY = [
     "util-office-to-md",
     "util-search",
     "grilling",
+    "paper-zenodo",
 ]
 
 # Files matching these are never committed (scanned via `git ls-files`).
