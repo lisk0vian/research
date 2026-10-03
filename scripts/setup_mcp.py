@@ -55,8 +55,10 @@ Claude Code part
 - It is idempotent: a server already registered with the same spec is left alone,
   a stale one is replaced, a missing one is added.
 
-A running Claude Code process never picks up a server registered after it started:
-relaunch the conversation (`claude --resume <session-id>`) afterwards. The startup
+A running Claude Code process never picks up a server registered after it started.
+Conversations run as background sessions in a daemon, and `claude --resume <id>` only
+re-attaches to one that is still alive, so `/exit` does not restart it: run
+`claude respawn <session-id>` (then `claude attach <session-id>`). The startup
 timeouts in the template are OpenCode's and have no per-server equivalent here;
 `gdrive` connects in about 3 s, far inside Claude Code's default.
 
@@ -411,7 +413,8 @@ def run_claude(repo: Path, example: dict, *, scope: str = "local", only: list[st
     if changed:
         out("Registered servers load when a Claude Code session starts. A conversation already "
             "running will not see them:")
-        out("relaunch it with `claude --resume <session-id>`, from the directory it was started in.")
+        out("relaunch it: `claude respawn <session-id>`, then `claude attach <session-id>` "
+            "(`/exit` and `claude --resume` only re-attach to the live process).")
     return 1 if failures else 0
 
 

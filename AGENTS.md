@@ -184,8 +184,11 @@ Canonical skills live in `.agents/skills/` (committed). Agent paths:
   Windows. Scope `local` (default) is this project only; `--scope user` covers
   every project; `project` is not offered because `.mcp.json` would commit the
   Drive folder ids. **A Claude Code process that is already running never loads
-  a server registered after it started**: relaunch the conversation
-  (`claude --resume <session-id>`). To see whether a session loaded one, look for
+  a server registered after it started**, and `/exit` followed by
+  `claude --resume <id>` does not restart it either (conversations live as
+  background sessions in a daemon; `--resume` re-attaches). Restart it with
+  `claude respawn <session-id>`, then `claude attach <session-id>`. To see whether
+  a session loaded one, look for
   its id in `%LOCALAPPDATA%\claude-cli-nodejs\Cache\<project>\mcp-logs-<server>\`.
 
 Registry:
