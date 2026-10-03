@@ -236,8 +236,14 @@ Secondary analyses added (stage `09b_calibration`, table T9):
   removed. The mechanism is not isolated (Chronos' mean scaling of a series
   centred on zero, or an anomaly series simply looking like noise), but the
   effect is: Chronos' mis-calibration in this study comes from the input form
-  chosen in 07b, not from the model itself. The CRPS of each variant, which
-  weighs calibration and median accuracy together, is in T11.
+  chosen in 07b, not from the model itself. The CRPS, which weighs calibration
+  and median accuracy together, makes absolute input a net gain: 0.70 against
+  0.81-0.82 daily, 0.46 against 0.53-0.54 at W1 and 0.52-0.53 against 0.60 at
+  W2 (13-14 % lower), and a tie at W3_4 (0.47 against 0.47-0.48), where better
+  calibration just offsets the less accurate median. Precision again makes no
+  difference. Absolute input would have been the better pre-registered choice;
+  it is reported as such, and the pre-registered Chronos, Ensemble and M* are
+  not re-run with it.
 
 What this cannot say: k was conceived after the blind coverage was seen, so a
 blind coverage near 0.90 after recalibration is evidence that the spread
