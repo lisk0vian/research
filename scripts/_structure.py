@@ -52,6 +52,7 @@ SKILL_REGISTRY = [
     "paper-build",
     "paper-journal",
     "paper-validate",
+    "paper-colab",
     "paper-search",
     "paper-humanize",
     "util-docx",

@@ -21,6 +21,7 @@ research/
 ├── scripts/                # the reproducible automation (plain Python)
 ├── tests/                  # structure + script tests
 ├── AGENTS.md               # this file
+├── COLAB.md                # how to run a pipeline on Colab + rules for notebooks
 ├── README.md               # project index
 └── <LEGACY PROJECTS>/      # pre-standardization work (see section 7)
 ```
@@ -83,6 +84,7 @@ that know *when* to call them and interview you for the arguments.
 | Validate the repo | `python scripts/paper_validate.py` |
 | Sparse clone one paper (Colab) | `python scripts/paper_sparse_clone.py --slug <slug> --dest <dir>` |
 | Sync a paper's Drive folder (in place) | `python scripts/paper_drive_sync.py --slug <slug>` |
+| Generate a paper's Colab notebook | `python scripts/paper_notebook.py --slug <slug>` (`--check` for drift) |
 | Check CAS sample fidelity | `python scripts/cas_fidelity.py` (add `--docx` for the Word suite) |
 | Verify Claude skill links | `python scripts/link_skills.py --check` |
 | Link skills for Claude | `python scripts/link_skills.py` |
@@ -93,6 +95,15 @@ that know *when* to call them and interview you for the arguments.
 A new paper typically follows: `paper_new.py` → literature search
 (`paper-search`) → pipeline in `experiments/` writing to `outputs/` →
 `paper_build.py` → `reviews/round-N/`.
+
+### Colab notebooks — read COLAB.md
+
+A paper whose pipeline runs on Colab has `experiments/colab.yaml`, and its
+notebook is **generated** from it by `scripts/paper_notebook.py`. It is never
+hand-edited. **`COLAB.md`** (repo root) is the guide for people and the rule set
+for agents: how to run, the six-cell skeleton, the single
+`outputs/logs/errors.log`, resume, keeping a session alive, and the rules for
+changing a notebook or a pipeline. Read it before touching any of these.
 
 ### Drive sync for Colab notebooks — always in place
 
@@ -107,7 +118,9 @@ implementation.
 `scripts/paper_drive_sync.py` enforces this. Drive file ids live in
 `papers/<slug>/.drive_ids.json` (gitignored, see `.drive_ids.json.example`),
 never hardcoded in code or committed. Resolve a new id once with the `gdrive`
-MCP, record it with `--record`, and from then on every sync is in place.
+MCP, record it with `--record`, and from then on every sync is in place. New
+code files are created inside Drive `code/`, whose folder id is recorded once as
+`--record code/ <folder-id>`. `outputs/` is never uploaded: Colab owns it.
 
 ## 4. Manifest contract
 
@@ -199,6 +212,7 @@ Registry:
 | `paper-build` | Render PDF/DOCX via `scripts/paper_build.py` |
 | `paper-journal` | Set/change the journal via `scripts/paper_journal.py` |
 | `paper-validate` | Run `scripts/paper_validate.py` |
+| `paper-colab` | Generate, sync and debug a Colab notebook (reads `COLAB.md`) |
 | `paper-search` | Literature search, citation verification, BibTeX |
 | `paper-humanize` | Rewrite AI-drafted prose into natural academic writing |
 | `util-docx` | Create/edit Word (`.docx`) files |
