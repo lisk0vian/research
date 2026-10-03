@@ -98,18 +98,53 @@ def test_ensemble_collapse_counts_members_and_spread():
     assert out["F_mean"] == 13.0 and out["n_members"] == 4 and out["F_sd"] == pytest.approx(2.5819889)
 
 
+class FakeGaussianCodes:
+    """What eccodes reports for a CFSv2 `regular_gg` message, on a toy grid.
+
+    Uneven latitudes, north to south, and no `jDirectionIncrementInDegrees`:
+    the real T126 grid has none, which is what broke the first Colab run. The
+    value of row i is i degC, so a station's result says which row it read.
+    """
+    LATS = np.array([80.0, 50.0, 10.0, -12.5, -40.0, -75.0])
+    LONS = np.arange(0.0, 360.0, 45.0)
+
+    def __init__(self, values_c=None):
+        self.values_c = values_c
+
+    def codes_new_from_message(self, b): return 1
+
+    def codes_get(self, gid, key):
+        keys = {"Ni": len(self.LONS), "Nj": len(self.LATS), "gridType": "regular_gg"}
+        if key not in keys:
+            raise KeyError(f"Key/value not found: {key}")
+        return keys[key]
+
+    def codes_get_array(self, gid, key):
+        lat2d, lon2d = np.meshgrid(self.LATS, self.LONS, indexing="ij")
+        return {"latitudes": lat2d.ravel(), "longitudes": lon2d.ravel()}[key]
+
+    def codes_get_values(self, gid):
+        if self.values_c is not None:
+            return np.full(self.LATS.size * self.LONS.size, self.values_c + d06.KELVIN)
+        rows = np.repeat(np.arange(self.LATS.size, dtype=float), self.LONS.size)
+        return rows + d06.KELVIN
+
+    def codes_release(self, gid): pass
+
+
+def test_decoder_reads_a_gaussian_grid(monkeypatch):
+    monkeypatch.setattr(d06, "_eccodes", lambda: FakeGaussianCodes())
+    out = d06.decode_stations(b"x" * 10, [(24, 0, 10)],
+                              [{"code": "A", "lat": -12.5, "lon": -45.0},   # row 3 exactly
+                               {"code": "B", "lat": 30.0, "lon": 90.0}],    # halfway rows 1-2
+                              (-45.0, 45.0))
+    assert out[0, 0] == pytest.approx(3.0)
+    assert out[0, 1] == pytest.approx(1.5)
+
+
 def test_decoder_rejects_values_that_are_not_celsius(monkeypatch):
     """K -> degC is the one unit assumption; a wrong one must fail loudly."""
-    class FakeCodes:
-        def codes_new_from_message(self, b): return 1
-        def codes_get(self, gid, key):
-            return {"Ni": 360, "Nj": 181, "latitudeOfFirstGridPointInDegrees": 90.0,
-                    "longitudeOfFirstGridPointInDegrees": 0.0, "iDirectionIncrementInDegrees": 1.0,
-                    "jDirectionIncrementInDegrees": 1.0, "jScansPositively": 0}[key]
-        def codes_get_values(self, gid): return np.full(360 * 181, 5.0)  # already degC: -268 after K->C
-        def codes_release(self, gid): pass
-
-    monkeypatch.setattr(d06, "_eccodes", lambda: FakeCodes())
+    monkeypatch.setattr(d06, "_eccodes", lambda: FakeGaussianCodes(values_c=5.0 - d06.KELVIN))
     with pytest.raises(RuntimeError, match="outside"):
         d06.decode_stations(b"x" * 10, [(24, 0, 10)], [{"code": "A", "lat": -12.0, "lon": -76.0}],
                             (-45.0, 45.0))

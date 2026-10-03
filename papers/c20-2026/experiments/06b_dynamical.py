@@ -214,7 +214,14 @@ def _eccodes():
 
 def decode_stations(raw: bytes, msgs: list[tuple[int, int, int]], stations: list[dict],
                     qc_range: tuple[float, float]) -> np.ndarray:
-    """(n_steps, n_stations) in degC from the GRIB2 messages of one range read."""
+    """(n_steps, n_stations) in degC from the GRIB2 messages of one range read.
+
+    The CFSv2 time series are on a T126 Gaussian grid (`regular_gg`), whose
+    latitudes are not evenly spaced and which has no
+    `jDirectionIncrementInDegrees`. So the axes are read from the per-point
+    `latitudes`/`longitudes` arrays, which eccodes computes for any grid and
+    which come in the same scan order as the values.
+    """
     ec = _eccodes()
     out = np.full((len(msgs), len(stations)), np.nan)
     geom = None
@@ -222,14 +229,11 @@ def decode_stations(raw: bytes, msgs: list[tuple[int, int, int]], stations: list
         gid = ec.codes_new_from_message(raw[s:e])
         try:
             if geom is None:
-                ni, nj = ec.codes_get(gid, "Ni"), ec.codes_get(gid, "Nj")
-                lat0 = ec.codes_get(gid, "latitudeOfFirstGridPointInDegrees")
-                lon0 = ec.codes_get(gid, "longitudeOfFirstGridPointInDegrees")
-                di = ec.codes_get(gid, "iDirectionIncrementInDegrees")
-                dj = ec.codes_get(gid, "jDirectionIncrementInDegrees")
-                north_up = not ec.codes_get(gid, "jScansPositively")
-                lats = lat0 - dj * np.arange(nj) if north_up else lat0 + dj * np.arange(nj)
-                lons = lon0 + di * np.arange(ni)
+                ni, nj = int(ec.codes_get(gid, "Ni")), int(ec.codes_get(gid, "Nj"))
+                plat = np.asarray(ec.codes_get_array(gid, "latitudes"), dtype="float64")
+                plon = np.asarray(ec.codes_get_array(gid, "longitudes"), dtype="float64")
+                lats = plat.reshape(nj, ni)[:, 0]
+                lons = plon.reshape(nj, ni)[0, :]
                 geom = (ni, nj, lats, lons)
             ni, nj, lats, lons = geom
             field = ec.codes_get_values(gid).reshape(nj, ni) - KELVIN
