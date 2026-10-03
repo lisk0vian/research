@@ -63,6 +63,35 @@ About 52 weekly issuances per fold and station: roughly 520 blind issuances
 pooled over five stations, of which about 104 are distinct dates (the effective
 sample for inference, since stations share forcing).
 
+### Missing values (source check V3, reviewed 2026-10-03)
+
+`00_verify_source` flags V3 `REVIEW_sensor_wise_gaps` because not every gap
+covers a whole hourly record. Reviewed against T1 and the 01/02 logs, the gaps
+are overwhelmingly whole records, and the pipeline handles the sensor-wise
+remainder variable by variable:
+
+| Hourly records (5 stations, 2015-01 – 2024-06) | 416,273 | |
+|---|---|---|
+| Whole record empty (all variables) | 13,268 | 3.19 % |
+| Only TT empty (record otherwise present) | 75 | 0.02 % |
+| Only HR empty | 853 | 0.20 % |
+| Only RR empty | 1,172 | 0.28 % |
+
+No sentinel codes (−999, −9999, 9999, 99999) occur; every gap is an empty
+field. `01_qc_hourly` labels whole-record gaps `missing_source` and never
+fills them; TT values are further flagged as spikes (> 8 °C between
+consecutive hours, kept when rain and humidity rise with them) or stuck
+(≥ 6 identical hours). `02_aggregate_daily` keeps a day only with ≥ 20 valid
+hours and at least one observation in each 6-hour block; 609 of 17,345
+station-days (3.5 %) fail and are left missing. Daily rain needs its own ≥ 20
+hours, so an RR-only gap removes the rain total, not the day. Neither the
+target nor its predictors are imputed anywhere (§2, §4). The sensor-wise gaps
+therefore touch only HR- and RR-based predictors (2,025 hourly values, 0.5 %)
+and, through the 75 TT-only hours, the 20-hour rule for the target; no value
+is filled in to cover them. V3 stays `REVIEW` in T1 because
+the check is mechanical; this note is its resolution, and the paper's data
+section states the table above.
+
 ## 4. Climatology and predictors
 
 Primary reference C2: harmonic, K = 3, per station and fold, training only
