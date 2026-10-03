@@ -48,6 +48,11 @@ from _panel import MODELS_DIR, fast_mode
 from _scores import overlap_order
 
 TARGET = "TT_mean"
+# v1: T5 leaves out models with no per-station training (their LOSO gap is 0
+# by construction and read as a result).
+RESULTS_VERSION = 1
+# Zero-shot models: their LOSO "predictions" are the temporal ones, unchanged.
+NOT_STATION_TRAINED = {"Chronos"}
 
 
 # --- primitives (pure, unit-tested) -------------------------------------------
@@ -294,7 +299,11 @@ def main() -> None:
         tm = tm[(tm["target"] == TARGET) & tm["fold"].isin(lo["fold"].unique())]
         elev = {str(s["ubigeo"]).zfill(6): s["elev_m"] for s in cfg["stations"]}
         keys = ["station", "issue_date", "horizon"]
-        for model in sorted(set(lo["model"]) - {"Clim", "Damp"}):
+        skipped = sorted(set(lo["model"]) & NOT_STATION_TRAINED)
+        if skipped:
+            print(f"T5: {', '.join(skipped)} left out: not trained on stations, so leaving "
+                  "one out changes nothing and the gap is 0 by construction")
+        for model in sorted(set(lo["model"]) - {"Clim", "Damp"} - NOT_STATION_TRAINED):
             # A LOSO variant (`GBM_LG@elev`) is compared with its base model
             # trained on every station: the gap isolates leaving the station out.
             base = model.split("@")[0]

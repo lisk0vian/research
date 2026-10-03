@@ -37,6 +37,9 @@ from _common import (
 from _panel import MODELS_DIR
 
 TARGET = "TT_mean"
+# v1: T6 notes Pers's empty probabilistic columns; F1's legend sits below the axes.
+RESULTS_VERSION = 1
+DETERMINISTIC_ONLY = {"Pers"}  # as in 08_metrics: no quantiles, so no CRPS
 ORDER = ["Clim", "Pers", "Damp", "CFS_BC", "Ridge_L", "Ridge_LG", "GBM_L", "GBM_LG",
          "LSTM_LG", "Chronos", "Ensemble"]
 # Colour-blind-safe (Okabe-Ito), fixed per model across every figure.
@@ -82,7 +85,9 @@ def fig_skill_by_horizon(t2: pd.DataFrame, horizons: list[str]) -> str:
     ax.axhline(0, color="#444", lw=0.8)
     ax.set_xticks(range(len(horizons)), horizons)
     ax.set_ylabel("CRPSS vs Clim (blind)")
-    ax.legend(ncol=3, fontsize=7, frameon=False)
+    # Below the axes: inside, the legend covered the lower error bars.
+    ax.legend(ncol=6, fontsize=7, frameon=False, loc="upper center",
+              bbox_to_anchor=(0.5, -0.12))
     return _save(fig, "F1_skill_by_horizon")
 
 
@@ -241,7 +246,11 @@ def main() -> None:
     atomic_write_csv(t4, TABLES / "T4_murphy.csv")
     t6 = pooled[(pooled["target"] != TARGET) & (pooled["role"] == "blind")][
         ["target", "model", "horizon", "n", "CRPS", "CRPSS_clim", "CRPSS_damp", "MSSS_damp",
-         "brier_frost", "frost_rate", "BSS_frost_clim"]]
+         "brier_frost", "frost_rate", "BSS_frost_clim"]].copy()
+    # Pers gives one value, not a distribution: its CRPS columns are empty by
+    # design, and the table says so instead of leaving a bare NaN.
+    t6["note"] = np.where(t6["model"].isin(DETERMINISTIC_ONLY),
+                          "deterministic: no CRPS, CRPSS or frost probability", "")
     atomic_write_csv(t6, TABLES / "T6_secondary_targets.csv")
 
     t7 = conditional_skill(scored, cfg)
