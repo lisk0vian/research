@@ -11,7 +11,8 @@ manuscript; numbers go to `../outputs/` as CSV/JSON only.
 
 ## Order
 
-1. `00_verify_source.py` — V1–V6 source checks (§2.1).
+1. `fetch_source.py` — download the raw CSV and record provenance (not a stage: `run_all.py` never calls it).
+2. `00_verify_source.py` — V1–V6 source checks (§2.1).
 2. `01_qc_hourly.py` — hourly QC flags (§3.1), no target imputation.
 3. `02_aggregate_daily.py` — local-day aggregation (§3.2) to `data/processed/`.
 4. `03_climatology.py` — C2 primary + C1/C3 sensitivity, `sigma_h,q`, terciles (§7.1).
@@ -289,9 +290,46 @@ The child therefore never draws. It emits machine-readable lines on stdout:
 
 and whoever reads draws: the notebook cell with `tqdm.notebook` (fixed widgets), a local terminal with `tqdm.std`, the log with plain phase markers (`# progress D2: 3/5`). One protocol, three backends; `tqdm` is only ever a drawing library, never the source of truth. The contract lives in `experiments/_progress.py` and its tests in `tests/test_progress.py`.
 
-Levels are `stage` (run_all over stages), `fold` (a stage over folds) and `step` (sub-fold work such as the sigma offset loop). The reader keeps one widget per level and reuses it across phases with a live `desc`, so fifteen 7-item sigma bars become one bar that says which fold and horizon it is on. Emission is throttled like `tqdm`'s `mininterval`: first event, `desc` changes and completion always go through.
+Levels are `stage` (run_all over stages), `fold` (a stage over folds) and `step` (sub-fold work such as a per-model fit loop). The reader keeps one widget per level and reuses it across phases with a live `desc`, so many short phases become one bar that says where it is. Emission is throttled like `tqdm`'s `mininterval`: first event, `desc` changes and completion always go through.
 
 `EXP_PROGRESS=off` silences the whole protocol (tests, CI). `config.progress` selects which levels get a bar; phase markers still reach the log for every level, so hiding a bar never hides the diagnosis.
+
+### Provenance: `fetch_source.py`
+
+Run it before stage 00. It resolves the source through the catalogue API rather
+than pinning a URL, because the portal republishes these packages under new links
+and a pinned link rots between submission and camera-ready.
+
+It writes `data/SOURCE.json`: the package id, the exact resource URL, a sha256,
+the byte count, the download timestamp, and a **station inventory read out of the
+file itself**. The inventory is derived, never hardcoded — hardcoding five
+station codes is how a provenance record starts disagreeing with the bytes it
+claims to describe. The inventory records `ubigeo_raw` next to the padded
+`ubigeo`, because the portal serves that column as a float and codes below
+100000 arrive as `40514.0` with the leading zero already gone.
+
+It also records what `config.yaml` *declares* next to what the file *contains*.
+A mismatch between the declared station count or coverage and the real file is a
+finding about the data, not a formatting detail, and the only way to notice is to
+have both sides written down.
+
+The CSV lands in `data/raw/` (gitignored, ~400k rows). `SOURCE.json` sits one
+level up in `data/`, which is tracked: provenance is small and reviewable, data
+is not.
+
+```
+python fetch_source.py            # download if missing, verify if present
+python fetch_source.py --check    # verify the local file, no network
+python fetch_source.py --force    # re-download regardless
+```
+
+`--check` is the one to use in CI or after a manual copy: it hashes the file and
+compares against `SOURCE.json`, exiting non-zero on a mismatch. It never touches
+the network, which is what makes it safe to run anywhere.
+
+A download is atomic: bytes land on a `.part` name and are renamed only once
+complete. A truncated CSV that looks present is worse than one that is absent,
+because the next run hashes it, matches it against itself, and calls it good.
 
 ### Alternative: code by git sparse clone
 

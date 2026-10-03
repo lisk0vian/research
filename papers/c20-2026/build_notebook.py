@@ -98,11 +98,12 @@ import _common
 _common.ensure_dirs()
 print(_common.paths_report())
 
-raw = pathlib.Path(os.environ["DATA_DIR"]) / "raw/dataset.csv"
-if raw.is_file():
-    print(f"[ok] dataset.csv presente ({raw.stat().st_size} bytes)")
-else:
-    raise RuntimeError(f"dataset.csv ausente en {raw} — subilo a Drive/c20-2026/data/raw/")
+# El dataset crudo no viene del snapshot de codigo: se baja del portal y deja
+# su procedencia en data/SOURCE.json. Si el archivo ya esta y el hash coincide,
+# la celda no vuelve a bajarlo.
+SRC = pathlib.Path(os.environ["DATA_DIR"]) / "raw"
+print(f"[info] data/raw: {SRC}")
+print(f"[info] procedencia: {(pathlib.Path(os.environ['DATA_DIR']) / 'SOURCE.json').is_file()}")
 
 QC = pathlib.Path(os.environ["DATA_DIR"]) / "processed/hourly_qc.csv"
 print(f"[info] QC previo presente: {QC.is_file()}")
@@ -111,6 +112,46 @@ steps = sorted(p.stem.split("_")[0] for p in pathlib.Path(
     "/content/c20-2026/experiments").glob("[0-9][0-9]_*.py"))
 print(f"pasos declarados: {steps}")"""),
 
+    ("md", """## 3b. Bajar el dataset crudo con su procedencia
+
+`fetch_source.py` resuelve el recurso del portal por API en vez de tener una URL fija —el portal republica estos paquetes con enlaces nuevos— y escribe `data/SOURCE.json` con el id del paquete, la URL exacta, un **sha256**, los bytes, la fecha, y el inventario de estaciones leído del archivo mismo.
+
+Es idempotente: si el CSV ya está y el hash coincide, no vuelve a bajarlo. `--check` verifica sin red; `--force` re-baja.
+
+El CSV va a `data/raw/` (gitignored, son ~400k filas). `SOURCE.json` va a `data/` arriba, que sí se versiona: la procedencia es chica y revisable, los datos no."""),
+
+    ("code", """%%bash
+# El compute corre en los servidores de Colab, no en tu maquina.
+# %%bash debe ser la PRIMERA linea de la celda; si no, Colab la parsea como Python.
+cd /content/c20-2026/experiments
+python fetch_source.py
+"""),
+
+    ("code", """# Que dice la procedencia: estaciones, cobertura y checksum.
+import json, pathlib
+
+sj = pathlib.Path(os.environ["DATA_DIR"]) / "SOURCE.json"
+if not sj.is_file():
+    raise RuntimeError(f"SOURCE.json ausente — corré fetch_source.py primero")
+
+info = json.loads(sj.read_text(encoding="utf-8"))
+loc = info["local"]
+print(f"dataset : {info['catalogue']['dataset_id']}")
+print(f"licencia: {info['catalogue']['license_title']}")
+print(f"archivo : {loc['path']}  {loc['bytes']:,} bytes")
+print(f"sha256  : {loc['sha256']}")
+print(f"bajado  : {info['retrieved_at']}")
+print(f"columnas: {len(info['columns'])} -> {info['columns'][:8]}")
+print()
+print(f"{'UBIGEO':>8} {'filas':>10}  cobertura")
+for s in info["stations"]:
+    flag = "  <- leading zero recuperado" if s["needs_padding"] else ""
+    print(f"{s['ubigeo']:>8} {s['rows']:>10,}  {s.get('first','?')}..{s.get('last','?')}{flag}")
+print()
+print(f"config declara {info['declared']['declared_stations']} estaciones / "
+      f"cobertura {info['declared']['declared_coverage']}")
+print("[info] si la cobertura real no llega al final del train, los folds se recortan")"""),
+
     ("code", """# Dependencias. Con marca: si ya se instalaron en ESTE runtime, no se repite.
 # Perder el runtime es lo unico que hay que recuperar, y por eso esto tiene marca.
 import os, subprocess, sys
@@ -118,8 +159,10 @@ _MARK = "/content/.deps_c20_2026"
 if os.path.exists(_MARK):
     print("[skip] deps ya instaladas en este runtime")
 else:
-    subprocess.call([sys.executable, "-m", "pip", "install", "-r",
-                     "requirements-experiments.txt", "--quiet"], check=False)
+    r = subprocess.run([sys.executable, "-m", "pip", "install", "-r",
+                        "requirements-experiments.txt", "--quiet"])
+    if r.returncode != 0:
+        raise RuntimeError(f"pip install fallo con exit={r.returncode}; no se escribe la marca")
     open(_MARK, "w").write("installed")
     print("[ok] deps instaladas")
 !python --version"""),
