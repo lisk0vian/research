@@ -1,5 +1,21 @@
 project: C20-2026-temperatura
 design_version: "2.0"
+
+# Raw source. fetch_source.py resolves the resource through the catalogue API
+# rather than pinning a URL, because the portal republishes these packages under
+# new links. Everything else about the source lives in data/SOURCE.json, written
+# at fetch time from the bytes themselves.
+source:
+  dataset_id: "b884a001-f444-4c87-91b2-bee1891e6eb7"   # SENAMHI GBON/RBON, ODC-By
+  api: "https://www.datos.gob.pe/api/3/action"
+  provider: "SENAMHI"
+  file: "senamhi.csv"
+  # Left empty on purpose. With one CSV on the package the fetch is unambiguous,
+  # and a wrong preference here would silently pick a different series. Set one
+  # if a future snapshot exposes several.
+  prefer_name: ""
+  prefer_format: ""
+
 station:
   name: "EMA Observatorio de Huancayo (Huayao)"
   provider: "IGP-LAMAR"
