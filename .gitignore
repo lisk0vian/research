@@ -116,6 +116,8 @@ opencode.jsonc
 # .claude/settings.json IS committed (it carries the SessionStart hook that
 # creates the links automatically); only the personal override is ignored.
 .claude/skills/
+.claude/agents/
+.opencode/agents/
 .claude/settings.local.json
 
 # ---- Test / tooling caches ----

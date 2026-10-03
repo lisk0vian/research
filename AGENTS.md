@@ -42,7 +42,7 @@ papers/<slug>/
 ├── notebooks/              # exploratory notebooks
 ├── outputs/                # machine-readable results (CSV/JSON/PNG/PKL)
 ├── tests/                  # optional: per-paper suite (see section 6)
-├── reviews/round-N/        # comments.yaml, responses.yaml, ai-review.yaml
+├── reviews/round-N/        # human review (comments/responses) + panel v2 (packet/raw/consolidated/triage, see section 5)
 ├── build/                  # <slug>.pdf/.docx/-latex.zip + render/ scratch (only the PDF committed)
 └── legacy/                 # original .docx/.pdf when migrating an existing paper
 ```
@@ -90,6 +90,9 @@ that know *when* to call them and interview you for the arguments.
 | Link skills for Claude | `python scripts/link_skills.py` |
 | Generate `opencode.jsonc` (MCP, OpenCode) | `python scripts/setup_mcp.py` |
 | Register the MCP servers in Claude Code | `python scripts/setup_mcp.py --claude` (verify: add `--check`) |
+| Freeze a review round packet | `python scripts/paper_review.py --slug <slug> --round round-N --scope code-only\|full [--only ...]` |
+| Render a consolidated report | `python scripts/render_review.py --slug <slug> --round round-N` (verify: add `--check`) |
+| Generate tool subagents | `python scripts/link_agents.py` (verify: add `--check`) |
 | Upload to Zenodo | `python scripts/paper_zenodo.py --slug <slug> [--production] [--draft --yes \| --publish --yes \| --yes]` |
 | Run tests | `pytest -q` |
 
@@ -222,18 +225,41 @@ Registry:
 | `grilling` | Relentless design interview before committing to a plan |
 | `paper-zenodo` | Upload experiments to Zenodo and get a DOI (reads `manifest.yaml` + `authors/`) |
 
+### Review subagents
+
+Canonical reviewers live in `.agents/agents/*.md` (neutral front-matter:
+`name, description, access: read-only, model_tier: strong|light`, body in
+English). `scripts/link_agents.py` generates `.claude/agents/*.md` and
+`.opencode/agents/*.md` (both gitignored); tier mapping lives in
+`.agents/agents/models.yaml` (`inherit` = session model, explicit). Three
+groups: manuscript (`rev-design`, `rev-refs`, `rev-style`), code peers
+(`peer-plan`, `peer-results`, `peer-reach`), gate (`gate-claims`,
+`gate-merge` last). Deterministic checks (leakage patterns, split gaps,
+`code_hashes`, secrets) belong to pytest and the validator, not the panel.
+The single entry point is `/review <slug> <selector>` (one self-contained
+command per tool, bodies kept identical): chat by default (zero writes),
+frozen rounds only on request (`paper_review.py --scope code-only|full`
+selects presets/groups/agents into `packet.yaml`). Rounds with
+`schema_version: 2` use `packet.yaml` + `raw/<object>.yaml` +
+`consolidated.yaml` (+ generated `.md`) + `triage.yaml` (pre-filled
+`pending`): verbatim evidence or existing searched paths, full
+`merged_from`/`discarded` coverage, no undecided major; older rounds keep
+warning-only behavior, and legacy `ai-review.yaml` is an error in v2.
+
 ## 6. Pull request validation
 
 `.github/workflows/validate.yml` runs `scripts/paper_validate.py` and `pytest`
 on every PR that touches `papers/`, `authors/`, `templates/`, `scripts/`,
-`tests/` or `.agents/skills/`. The validator checks:
+`tests/`, `.agents/skills/` or `.agents/agents/`. The validator checks:
 
 - paper folder naming and required directories;
 - presence and shape of `manifest.yaml`, `references.bib`, `main.qmd`;
 - journal and author references resolve to the shared catalogs;
 - no spreadsheet artefacts under `paper/`, `outputs/`, `experiments/`;
 - no secrets/credentials tracked by git;
-- every skill folder has a `SKILL.md` whose `name` matches the folder.
+- every skill folder has a `SKILL.md` whose `name` matches the folder;
+- review rounds with `schema_version: 2` prove each quote verbatim, cover
+  every raw id in `merged_from`/`discarded`, and close every major in triage.
 
 Run it locally before pushing: `python scripts/paper_validate.py`.
 
