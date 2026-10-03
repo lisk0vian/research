@@ -2,13 +2,15 @@
 description: Review a paper's code or manuscript with peer subagents (asks scope, chat by default)
 ---
 
-0. SLUG is mandatory. Take it from $ARGUMENTS (`/review <slug>
-   <selector>`). If present and matching papers/*, use it WITHOUT
-   asking — write SLUG=<slug> and continue. Only if absent or
-   invalid, ask with the real papers/* list and wait. Everything
-   below runs on papers/<slug>/ only.
+0. SLUG is mandatory (`/review <slug> <selector>`). Read it
+   from $1, else the first token of $ARGUMENTS. If present and
+   matching papers/*, use it WITHOUT asking — write SLUG=<slug>
+   and continue. Only if absent or invalid, ask with the real
+   papers/* list and wait. Everything below runs on papers/<slug>/
+   only.
 
-1. Resolve SELECTOR to an explicit agent list FIRST. If present
+1. Resolve SELECTOR to an explicit agent list FIRST. Read it from
+   $2, else the rest of $ARGUMENTS after the slug. If present
    and valid (group, agent, list or preset below), use it WITHOUT
    asking — write RESOLVED=[...] and continue. Only if absent,
    invalid or ambiguous, ask with options (recommended first;
