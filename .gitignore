@@ -153,6 +153,9 @@ Desktop.ini
 tmp/
 scratch/
 
+# ---- Git worktrees (machine-local) ----
+.worktrees/
+
 # ---- Experiments in papers ----
 # papers/*/experiments/
 
