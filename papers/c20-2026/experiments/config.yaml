@@ -16,13 +16,54 @@ source:
   prefer_name: ""
   prefer_format: ""
 
+# One provider for all five, deliberately. Mixing providers would confound
+# instrument with station: a difference between Huancayo and another site
+# would be uninterpretable if one of them changed instruments mid-record.
+# The elevation gradient is the contrast of interest, so the provider is
+# held fixed to make it readable.
+#
+# ubigeo is stored as a string, six digits, zero-padded. The portal serves
+# the column as a float and codes below 100000 arrive as 40514.0; leading
+# zeros are unrecoverable downstream, so they are restored at the boundary
+# (see _common.station_codes) and declared here as strings.
+#
+# TO_CONFIRM_FETCH: names, coordinates and elevations below are the published
+# station registry values for the SENAMHI GBON/RBON network. fetch_source.py
+# reports the ubigeo codes, row counts and date coverage it actually found in
+# data/SOURCE.json; if a code is absent there, this list is wrong and the
+# station drops out of every stage until it is corrected.
+stations:
+  - ubigeo: "040514"
+    name: "Matucana"
+    lat: -11.8450
+    lon: -75.3567
+    elev_m: 2421
+  - ubigeo: "040117"
+    name: "Chachapoyas"
+    lat: -6.1119
+    lon: -77.8697
+    elev_m: 2335
+  - ubigeo: "040122"
+    name: "Huancayo"
+    lat: -12.0401
+    lon: -75.3205
+    elev_m: 3298
+  - ubigeo: "040506"
+    name: "Pisco"
+    lat: -13.4083
+    lon: -76.3506
+    elev_m: 347
+  - ubigeo: "040114"
+    name: "Quito"
+    lat: -0.1817
+    lon: -78.4678
+    elev_m: 2850
+
+# Legacy single-station keys, kept so a pre-migration config still loads.
+# Nothing reads them; remove them once no stage falls back to `station`.
 station:
-  name: "EMA Observatorio de Huancayo (Huayao)"
-  provider: "IGP-LAMAR"
-  lat: -12.0401
-  lon: -75.32049
-  elev_m: 3329
-  n_stations: 1
+  n_stations: 5
+
 data:
   resolution: hourly
   coverage_declared: [2018, 2025]

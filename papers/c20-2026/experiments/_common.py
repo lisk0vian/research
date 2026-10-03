@@ -40,6 +40,7 @@ import subprocess
 import sys
 import tempfile
 import time
+from collections.abc import Iterable
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -172,12 +173,52 @@ def load_config(path: Path | None = None) -> dict:
     return yaml.safe_load((path or CONFIG_PATH).read_text(encoding="utf-8")) or {}
 
 
+def normalize_ubigeo(value) -> str:
+    """Canonical six-digit station code from whatever the source served.
+
+    The portal hands UBIGEO over as a float, so codes below 100000 arrive as
+    40514.0 and pandas types the whole column float64. The leading zero is gone
+    before any stage can see it and no later comparison recovers it, so this
+    runs at the read boundary and nowhere else. NaN passes through as "" rather
+    than becoming the string "nan", which would look like a real code.
+    """
+    if value is None:
+        return ""
+    text = str(value).strip()
+    if not text or text.lower() in {"nan", "none", "<na>"}:
+        return ""
+    if "." in text:
+        text = text.split(".")[0]
+    return text.zfill(6)
+
+
+def read_station_keyed(path: Path, **kwargs) -> pd.DataFrame:
+    """Read a CSV that carries a station key, in canonical six-digit form.
+
+    Both `UBIGEO` (hourly) and `station` (daily) are read as strings and
+    normalised on the way in. Reading them without a dtype is how the padding
+    comes off: pandas infers int64 from 040514, the leading zero is gone, and
+    a station configured as "040514" stops matching the data with no error
+    anywhere. Normalising at every read boundary costs nothing and makes the
+    key stable regardless of what wrote the file.
+    """
+    dtype = {"UBIGEO": "string", "station": "string", **kwargs.pop("dtype", {})}
+    df = pd.read_csv(path, dtype=dtype, **kwargs)
+    for col in ("UBIGEO", "station"):
+        if col in df.columns:
+            df[col] = df[col].map(normalize_ubigeo)
+    return df
+
+
 def read_hourly(path: Path | None = None) -> pd.DataFrame:
-    """Read dataset.csv with local civil timestamps already built.
+    """Read the raw CSV with local civil timestamps and canonical station codes.
 
     The `year/month/day/hour` columns are authoritative; `FECHA_CORTE` is a
     snapshot date and is not a per-row timestamp, so it is dropped (it is in
     `config.data.non_predictors`).
+
+    UBIGEO is normalised here because this is the last point at which the raw
+    value is still visible.
     """
     df = pd.read_csv(path or RAW_CSV, dtype={"FECHA_CORTE": "string", "UBIGEO": "string"})
     df["timestamp"] = pd.to_datetime(
@@ -186,6 +227,8 @@ def read_hourly(path: Path | None = None) -> pd.DataFrame:
         ),
         errors="coerce",
     )
+    if "UBIGEO" in df.columns:
+        df["UBIGEO"] = df["UBIGEO"].map(normalize_ubigeo)
     return df
 
 
@@ -194,7 +237,56 @@ def write_table(df: pd.DataFrame, name: str) -> Path:
     return atomic_write_csv(df, TABLES / name)
 
 
-def write_manifest(payload: dict, name: str = "manifest_index.json") -> Path:
+def station_codes(cfg: dict) -> list[str]:
+    """Station codes declared in config, in order, padded to six digits.
+
+    The padding belongs here and nowhere else. The portal serves UBIGEO as a
+    float, so codes below 100000 arrive as 40514.0 and pandas types the whole
+    column float64; by the time a stage sees the value the leading zero is
+    already gone and no later comparison can recover it. Normalising at the one
+    boundary where the raw value is still visible is the only place it is safe.
+
+    Empty when `stations` is absent, so single-station data still runs.
+    """
+    out: list[str] = []
+    for entry in cfg.get("stations") or []:
+        raw = entry.get("ubigeo")
+        if raw is None:
+            continue
+        code = normalize_ubigeo(raw)
+        if code:
+            out.append(code)
+    return out
+
+
+def deep_merge(base: dict, payload: dict, replace: frozenset[str] = frozenset()) -> dict:
+    """Merge `payload` into `base`, recursing into nested dicts.
+
+    The manifest is written once per (station, fold, target), so a shallow
+    `update` means the second station silently overwrites the first: no
+    exception, no warning, just one station's numbers where there should be
+    five. Recursing is what makes the per-unit writes accumulate.
+
+    `replace` names top-level keys to overwrite outright instead. Deep merge
+    never forgets, which is the other half of the problem: a station removed
+    from config keeps its last entry on disk. A stage that writes a complete
+    set of units in one call passes `replace` for that key, so the block
+    reflects the config that ran rather than the union of every config that
+    ever ran.
+    """
+    out = dict(base)
+    for key, value in payload.items():
+        if key in replace:
+            out[key] = value
+        elif isinstance(value, dict) and isinstance(out.get(key), dict):
+            out[key] = deep_merge(out[key], value)
+        else:
+            out[key] = value
+    return out
+
+
+def write_manifest(payload: dict, name: str = "manifest_index.json",
+                   replace: frozenset[str] | Iterable[str] = frozenset()) -> Path:
     """Update outputs/manifest_index.json, keeping the declared contract intact."""
     path = OUTPUTS / name
     data: dict = {}
@@ -205,7 +297,7 @@ def write_manifest(payload: dict, name: str = "manifest_index.json") -> Path:
             data = {}
     if not isinstance(data, dict):
         data = {}
-    data.update(payload)
+    data = deep_merge(data, payload, frozenset(replace))
     data.setdefault("paper", "c20-2026")
     data.setdefault("design_version", "2.0")
     data["status"] = "partial"
