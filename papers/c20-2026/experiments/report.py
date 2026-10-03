@@ -121,8 +121,8 @@ def _t9():
     print("cov90 should sit in [0.85, 0.95]; k fitted on dev folds only")
     print(t9.pivot_table(index="variant", columns=["role", "horizon"], values="cov90")
           .round(3).to_string())
-    print("
-CRPSS vs Clim")
+    print()
+    print("CRPSS vs Clim")
     print(t9.pivot_table(index="variant", columns=["role", "horizon"], values="crpss_clim")
           .round(3).to_string())
 
