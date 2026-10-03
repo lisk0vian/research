@@ -115,6 +115,18 @@ def _t8():
     print(pd.read_csv(TABLES / "T8_cfs_calibration.csv").round(3).to_string(index=False))
 
 
+@section("T9 calibration (amendment A2, post hoc)")
+def _t9():
+    t9 = pd.read_csv(TABLES / "T9_calibration.csv")
+    print("cov90 should sit in [0.85, 0.95]; k fitted on dev folds only")
+    print(t9.pivot_table(index="variant", columns=["role", "horizon"], values="cov90")
+          .round(3).to_string())
+    print("
+CRPSS vs Clim")
+    print(t9.pivot_table(index="variant", columns=["role", "horizon"], values="crpss_clim")
+          .round(3).to_string())
+
+
 @section("Figures")
 def _figures():
     figs = sorted((OUTPUTS / "figures").glob("F*.png"))

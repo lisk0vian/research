@@ -56,4 +56,5 @@ stages:
   07d_cfs_benchmark: outputs/models/preds_temporal_CFS_BC.csv, outputs/tables/T8_cfs_calibration.csv
   08_metrics: outputs/tables/metrics_long.csv
   09_inference: outputs/tables/T2_blind_skill.csv, T3_hypotheses.csv, T5_loso_gap.csv
+  09b_calibration: outputs/tables/T9_calibration.csv (amendment A2, post hoc)
   10_tables_figures: outputs/tables/T4_murphy.csv, T6_secondary_targets.csv, outputs/figures/F1..F6.png

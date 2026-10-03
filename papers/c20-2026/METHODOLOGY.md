@@ -165,6 +165,51 @@ so A1 uses the open NOAA CFSv2 archive instead and drops the hybrid:
   Results against CFS_BC are evidence about observation-only models versus a
   dynamical system, not versus the state of the art.
 
+### Amendment A2 (2026-10-03, post hoc: written after the blind scores)
+
+Unlike A1, A2 was written **after** the blind folds were scored, and is
+reported as post hoc. It changes nothing above: H3, M* (the Ensemble, frozen on
+dev) and every pre-registered number stand as computed. H3's secondary
+criterion failed: M*'s central 90 % interval covered 0.75 / 0.69 / 0.63 of the
+blind outcomes (W1 / W2 / W3_4) against the pre-registered 0.85-0.95, while its
+CRPSS_clim was positive (0.29-0.35).
+
+Diagnosis (from the scored rows, blind folds included, hence post hoc):
+
+- **Vincentization averages widths.** The Ensemble's 90 % width is exactly the
+  weighted mean of its members' widths, so disagreement between members never
+  widens it. Chronos is the narrowest member by far (90 % width 0.43 °C against
+  1.9-2.3 °C; 90 % coverage 0.22-0.31) and carries ~22 % of the weight; without
+  it the Ensemble would be 16-21 % wider. A likely cause, not tested: each
+  Chronos sample path is averaged over the 7-28-day window, and paths with less
+  persistence than the real anomalies shrink that average's spread.
+- **Under-dispersion is already there in dev.** The dev PIT puts 13-15 % of the
+  outcomes in *each* tail (5 % expected): a spread problem, not a bias. The GBM
+  quantile members also under-cover (0.67-0.73 in dev).
+- **The blind years were warmer and more variable.** Mean observed anomaly
+  −0.06…−0.47 °C in dev against +0.07…+0.43 °C in blind; SD 0.74-0.82 →
+  1.15-1.21 °C at the three southern Andean stations (040514, 040114, 230201).
+  Even Clim drops from 0.81-0.86 to 0.69-0.77 coverage, and the Ensemble's
+  blind PIT becomes asymmetric (15-25 % above q95), consistent with the
+  2023-24 El Niño.
+
+Secondary analyses added (stage `09b_calibration`, table T9):
+
+- **Spread recalibration.** Quantiles stretched around the median by a factor
+  k per horizon, chosen so the central 90 % interval covers 90 % of the
+  outcomes it is fitted on. k uses the dev folds only: each dev fold is scored
+  with k fitted on the other two (cross-fitting), and the blind folds with k
+  fitted on D1-D3. The blind folds never choose their own k.
+- **Ensemble without Chronos,** the frozen dev weights renormalised over the
+  other three members, as a sensitivity analysis. It does not replace M*.
+- **Chronos,** reported as a mis-calibrated member with the diagnosis above.
+
+What this cannot say: k was conceived after the blind coverage was seen, so a
+blind coverage near 0.90 after recalibration is evidence that the spread
+deficit is stable between dev and blind, not a confirmatory test. The warm,
+variable blind period is a property of those two years and would also affect a
+recalibration fitted on any earlier window.
+
 ## 8. Pre-registered decision rule
 
 Written before any real score exists, so the framing cannot follow the numbers.
@@ -195,7 +240,7 @@ sensitivities (C1/C3, Thursday issuance, bootstrap block length).
 
 Tables (`outputs/tables/`): T1 completeness, T2 blind skill + CI, T3 tests,
 T4 Murphy, T5 LOSO gap, T6 secondary targets and frost, T7 conditional skill,
-`metrics_long.csv`.
+T8 CFS calibration, T9 calibration of M* (A2, post hoc), `metrics_long.csv`.
 Figures (`outputs/figures/`): F1 skill vs horizon, F2 PIT and reliability of
 M*, F3 skill by season and ENSO phase, F4 dev vs blind, F5 LOSO vs elevation,
 F6 predictability budget (L vs LG). Every number in the manuscript is a claim
