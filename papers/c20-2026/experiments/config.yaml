@@ -156,8 +156,12 @@ models:
         subsample: 0.8, subsample_freq: 1, colsample_bytree: 0.8}
   lstm: {seq_len: 60, hidden: 32, layers: 1, dropout: 0.1, epochs: 30, batch_size: 256,
          lr: 0.001, patience: 5, val_fraction: 0.15}
-  chronos: {model_id: "amazon/chronos-bolt-small", context_days: 512, enabled: true}
+  # chronos-t5 (not Bolt): it returns sample paths, and a window mean must be
+  # taken path by path. Averaging daily quantiles would overstate the spread.
+  chronos: {model_id: "amazon/chronos-t5-small", context_days: 512, num_samples: 100,
+            batch_size: 64, enabled: true}
   tft: {enabled: false}
+  secondary_target_models: [Clim, Damp, Pers, Ridge_LG, GBM_LG]
   ensemble: {members: [Ridge_LG, GBM_LG, LSTM_LG, Chronos], weights: inverse_dev_crps}
   primary_model_selection: {among: [Ridge_LG, GBM_LG, LSTM_LG, Ensemble], criterion: mean_CRPS_dev_folds}
   # --fast (smoke runs, tests): tiny budgets. Numbers from a fast run are never cited.

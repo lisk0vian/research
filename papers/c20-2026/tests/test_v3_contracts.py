@@ -31,13 +31,18 @@ def cfg() -> dict:
     return _common.load_config()
 
 
+@pytest.fixture(scope="module")
+def _senamhi_month() -> pd.DataFrame:
+    # Built once: a month is enough to exercise every contract below.
+    df = _sample_data.build("senamhi", years=1, seed=3, start_year=2023,
+                            end_date="2023-01-31")
+    return df
+
+
 @pytest.fixture
-def senamhi_csv(tmp_path) -> Path:
-    df = _sample_data.build("senamhi", years=1, seed=3, start_year=2023)
-    # A month is enough to exercise every contract below.
-    first = df["FECHA"] < 20230201
+def senamhi_csv(tmp_path, _senamhi_month) -> Path:
     path = tmp_path / "senamhi.csv"
-    df[first].to_csv(path, index=False)
+    _senamhi_month.to_csv(path, index=False)
     return path
 
 

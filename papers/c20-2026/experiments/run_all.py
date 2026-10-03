@@ -38,8 +38,18 @@ from _common import (
 BASE = Path(__file__).resolve().parents[1]
 
 
+# Stages that need torch (and a GPU to be practical); `--skip-dl` drops them.
+DL_STAGES = ("07b_deep",)
+
+
 def discover_stages() -> list[str]:
-    return [p.stem for p in sorted((BASE / "experiments").glob("[0-9][0-9]_*.py"))]
+    """`NN_name.py` and lettered sub-stages `NNx_name.py`, in run order.
+
+    Sorting is by filename, and `_` sorts before any letter, so `07_models`
+    runs before `07b_deep`, which runs before `07c_ensemble`.
+    """
+    return [p.stem for p in sorted((BASE / "experiments").glob("[0-9][0-9]*_*.py"))
+            if p.stem[:2].isdigit() and (p.stem[2] == "_" or p.stem[2].isalpha())]
 
 
 def resolve_stages(available: list[str], tokens: list[str]) -> tuple[list[str], str]:
@@ -149,6 +159,10 @@ def main() -> int:
     ap.add_argument("--config", metavar="PATH", default=None,
                     help="config.yaml to use; exported to the stages as "
                          "EXP_CONFIG so a subprocess inherits it")
+    ap.add_argument("--fast", action="store_true",
+                    help="smoke run: tiny model budgets (EXP_FAST=1); numbers are not citable")
+    ap.add_argument("--skip-dl", action="store_true",
+                    help=f"skip the deep-learning stages ({', '.join(DL_STAGES)})")
     ap.add_argument("--keep-going", dest="stop_on_error", action="store_false",
                     help="run every stage even after one fails; exit non-zero at the end")
     ap.set_defaults(stop_on_error=True)
@@ -174,6 +188,12 @@ def main() -> int:
         print(f"ERROR: {err}", file=sys.stderr)
         print(f"available: {', '.join(available)}", file=sys.stderr)
         return 2
+
+    if args.skip_dl:
+        stages = [s for s in stages if s not in DL_STAGES]
+    if args.fast:
+        # Exported, like EXP_CONFIG, because the stages are subprocesses.
+        os.environ["EXP_FAST"] = "1"
 
     config = Path(args.config).resolve() if args.config else None
     if args.config and not config.is_file():
