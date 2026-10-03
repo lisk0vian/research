@@ -186,6 +186,109 @@ def test_from_to_range_does_not_error(tmp_path, monkeypatch):
     assert ran == ["00_a", "01_b"]
 
 
+def _stub_pipeline(tmp_path, monkeypatch, fail: set[str] | None = None):
+    """Three empty stages, a fake run_stage, outputs under tmp. Returns the run list."""
+    import os
+
+    exp = tmp_path / "experiments"
+    exp.mkdir(exist_ok=True)
+    for name in ("00_a.py", "01_b.py", "02_c.py"):
+        (exp / name).write_text(f"# {name}\n", encoding="utf-8")
+    ran: list[str] = []
+
+    def fake_run_stage(stage, aggregate=None):
+        ran.append(stage)
+        log = tmp_path / f"{stage}.log"
+        log.write_text(f"Traceback\nValueError: {stage} broke\n", encoding="utf-8")
+        code = 1 if stage in (fail or set()) else 0
+        return {"stage": stage, "exit_code": code, "elapsed_s": 0.1, "log": str(log)}
+
+    monkeypatch.setattr(run_all, "BASE", tmp_path)
+    monkeypatch.setattr(run_all, "OUTPUTS", tmp_path / "outputs")
+    monkeypatch.setattr(run_all, "run_all_log_path", lambda: tmp_path / "run_all.log")
+    monkeypatch.setattr(run_all, "run_stage", fake_run_stage)
+    monkeypatch.setattr(run_all, "write_logs_manifest", lambda e, n="m.json": tmp_path / "m.json")
+    monkeypatch.delenv("COLAB_SESSION_ID", raising=False)
+    monkeypatch.setattr(os, "environ", dict(os.environ))  # EXP_FAST must not leak
+    return ran
+
+
+def _status(tmp_path):
+    import json
+    return json.loads((tmp_path / "outputs" / "logs" / "status.json").read_text(encoding="utf-8"))
+
+
+def test_second_run_skips_stages_that_are_unchanged(tmp_path, monkeypatch):
+    ran = _stub_pipeline(tmp_path, monkeypatch)
+    monkeypatch.setattr(sys, "argv", ["run_all.py"])
+    assert run_all.main() == 0
+    assert ran == ["00_a", "01_b", "02_c"]
+    ran.clear()
+    assert run_all.main() == 0
+    assert ran == []
+    assert set(_status(tmp_path)["stages"].values()) == {"skipped"}
+
+
+def test_editing_a_stage_reruns_it_and_downstream(tmp_path, monkeypatch):
+    ran = _stub_pipeline(tmp_path, monkeypatch)
+    monkeypatch.setattr(sys, "argv", ["run_all.py"])
+    run_all.main()
+    ran.clear()
+    (tmp_path / "experiments" / "01_b.py").write_text("# edited\n", encoding="utf-8")
+    run_all.main()
+    assert ran == ["01_b", "02_c"]
+
+
+def test_force_and_only_rerun_current_stages(tmp_path, monkeypatch):
+    ran = _stub_pipeline(tmp_path, monkeypatch)
+    monkeypatch.setattr(sys, "argv", ["run_all.py"])
+    run_all.main()
+    ran.clear()
+    monkeypatch.setattr(sys, "argv", ["run_all.py", "--force"])
+    run_all.main()
+    assert ran == ["00_a", "01_b", "02_c"]
+    ran.clear()
+    monkeypatch.setattr(sys, "argv", ["run_all.py", "--only", "01"])
+    run_all.main()
+    assert ran == ["01_b"]
+
+
+def test_failed_stage_goes_to_errors_log_and_status(tmp_path, monkeypatch):
+    ran = _stub_pipeline(tmp_path, monkeypatch, fail={"01_b"})
+    monkeypatch.setattr(sys, "argv", ["run_all.py"])
+    assert run_all.main() == 1
+    assert ran == ["00_a", "01_b"]
+    errors = (tmp_path / "outputs" / "logs" / "errors.log").read_text(encoding="utf-8")
+    assert "stage 01_b: exit 1" in errors and "ValueError: 01_b broke" in errors
+    st = _status(tmp_path)
+    assert st["state"] == "failed" and st["failed_stage"] == "01_b"
+    assert st["stages"] == {"00_a": "ok", "01_b": "failed", "02_c": "not_run"}
+
+
+def test_rerun_after_a_failure_resumes_at_the_failed_stage(tmp_path, monkeypatch):
+    ran = _stub_pipeline(tmp_path, monkeypatch, fail={"01_b"})
+    monkeypatch.setattr(sys, "argv", ["run_all.py"])
+    run_all.main()
+    ran.clear()
+    monkeypatch.setattr(run_all, "run_stage", lambda stage, aggregate=None: (
+        ran.append(stage),
+        {"stage": stage, "exit_code": 0, "elapsed_s": 0.1, "log": str(tmp_path / "x.log")})[1])
+    assert run_all.main() == 0
+    assert ran == ["01_b", "02_c"]
+    errors = (tmp_path / "outputs" / "logs" / "errors.log").read_text(encoding="utf-8")
+    assert errors == ""  # a new run outside a notebook starts a clean session
+
+
+def test_smoke_mode_never_reuses_a_full_run(tmp_path, monkeypatch):
+    ran = _stub_pipeline(tmp_path, monkeypatch)
+    monkeypatch.setattr(sys, "argv", ["run_all.py"])
+    run_all.main()
+    ran.clear()
+    monkeypatch.setattr(sys, "argv", ["run_all.py", "--mode", "smoke"])
+    run_all.main()
+    assert ran == ["00_a", "01_b", "02_c"]
+
+
 def test_config_flag_exports_exp_config_to_subprocesses(tmp_path, monkeypatch):
     """A subprocess inherits the environment but not the parent's argv."""
     import os

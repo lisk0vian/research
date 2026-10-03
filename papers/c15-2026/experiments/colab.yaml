@@ -1,0 +1,31 @@
+# Colab spec for c15-2026. The notebook is generated from this file:
+#   python scripts/paper_notebook.py --slug c15-2026
+# Never edit notebooks/experiments.ipynb by hand. Rules: COLAB.md (repo root).
+
+title: "c15-2026: fiscal congestion"
+drive_folder: research/congestion_fiscal   # MyDrive/<drive_folder>/{code,data,outputs}
+
+gpu: none
+
+# Installed once per runtime, from this folder.
+pip: ["-r", "requirements.txt"]
+
+setup: []
+probes: []
+
+run: [run_all.py]
+report: [report.py]
+
+state_inputs: []
+# Code every stage depends on besides its own src/stages/<name>.py.
+shared_modules: [main.py, config.yaml, src/paths.py, src/stages/_io.py,
+                 src/stages/base.py, src/stages/registry.py, src/stages/indexer.py]
+smoke_from: null
+
+stages:
+  consolidation: "3.1 data consolidation"
+  feature_engineering: "3.3 feature engineering"
+  preprocessing: "3.2 preprocessing"
+  feature_selection: "3.4 feature selection"
+  split: "3.5 temporal split"
+  train: "4 results: models, tables/train_manifest.json"

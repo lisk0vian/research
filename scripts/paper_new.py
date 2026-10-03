@@ -133,6 +133,9 @@ def main() -> int:
     ap.add_argument("--abstract", default="TODO")
     ap.add_argument("--round", default="1")
     ap.add_argument("--migrate", action="store_true", help="no main.qmd; leave MIGRATION_PENDING.txt")
+    ap.add_argument("--no-colab", dest="colab", action="store_false",
+                    help="skip the Colab scaffold (experiments/colab.yaml, run_all.py, "
+                         "the generated notebook); every paper gets it by default (COLAB.md)")
     ap.add_argument("--root", default=None)
     args = ap.parse_args()
 
@@ -177,8 +180,21 @@ def main() -> int:
         _write(paper_root / "reviews" / f"round-{args.round}" / fname,
                render((tmpl_dir / f"{fname}.template").read_text(encoding="utf-8"), values))
 
+    if args.colab:
+        for tpl, dest in [("colab.yaml.template", "experiments/colab.yaml"),
+                          ("run_all.py.template", "experiments/run_all.py")]:
+            _write(paper_root / dest,
+                   render((tmpl_dir / tpl).read_text(encoding="utf-8"), values))
+        import subprocess
+
+        subprocess.run([sys.executable, str(Path(__file__).resolve().parent / "paper_notebook.py"),
+                        "--slug", args.slug, "--root", str(repo)], check=True)
+
     print("\nPending (fill before submission):")
     pend = []
+    if args.colab:
+        pend.append("- add pipeline stages as experiments/NN_name.py, fill "
+                    "experiments/colab.yaml, then run scripts/paper_notebook.py (COLAB.md)")
     if values["title"] == "TODO":
         pend.append("- title (manifest.yaml / main.qmd)")
     if not values["journal_slug"]:

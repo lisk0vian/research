@@ -222,7 +222,40 @@ def check_paper(repo: Path, root: Path, rep: Report) -> None:
         check_qmd(root, rep)
     check_artefacts(root, rep)
     check_reviews(root, rep)
+    check_colab(root, rep)
     rep.checked.append(where)
+
+
+# Agent instructions that must not sit in experiments/ of a Colab paper:
+# everything there is synced to Drive code/ and copied into the runtime
+# (COLAB.md). Local config (.env, opencode.jsonc) is fine: the sync skips it.
+COLAB_FORBIDDEN_IN_EXPERIMENTS = ("AGENTS.md", "CLAUDE.md")
+
+
+def check_colab(root: Path, rep: Report) -> None:
+    """A paper with experiments/colab.yaml follows the Colab standard (COLAB.md)."""
+    slug = root.name
+    if not (root / "experiments" / "colab.yaml").is_file():
+        rep.warn(f"papers/{slug}", "no experiments/colab.yaml: not on the Colab standard "
+                 "(COLAB.md); paper_new.py adds it")
+        return
+    where = f"papers/{slug}/notebooks"
+    try:
+        from paper_notebook import check as notebook_check
+    except Exception as exc:  # noqa: BLE001
+        rep.error(where, f"cannot load scripts/paper_notebook.py: {exc}")
+        return
+    try:
+        problems = notebook_check(root, slug)
+    except BaseException as exc:  # noqa: BLE001 - load_spec exits on a bad spec
+        problems = [f"experiments/colab.yaml unreadable: {exc}"]
+    for p in problems:
+        rep.error(where, p)
+    for name in COLAB_FORBIDDEN_IN_EXPERIMENTS:
+        if (root / "experiments" / name).exists():
+            rep.error(f"papers/{slug}/experiments/{name}",
+                      "agent instructions would be synced to Drive code/; "
+                      "keep them in the paper folder, outside experiments/")
 
 
 def check_manifest(repo: Path, root: Path, rep: Report) -> None:

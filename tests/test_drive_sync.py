@@ -201,42 +201,55 @@ def test_real_paper_manifest_is_in_place():
     assert updates, "expected targets"
     assert all(u["file_id"] for u in updates), "every target must be in place"
 
-def test_stage_logs_are_synced_once_they_exist(paper):
-    """A log is the only durable record of a run; it has to reach Drive."""
+def test_outputs_and_logs_are_never_targets(paper):
+    """Colab owns outputs/ on Drive; a local copy pushed over it erases the real run."""
     logs = paper / "outputs" / "logs"
     logs.mkdir(parents=True)
     (logs / "00_verify_source.log").write_text("log\n", encoding="utf-8")
-    (logs / "run_all.log").write_text("log\n", encoding="utf-8")
-    specs = sync.target_specs(paper)
-    remotes = {s["remote"] for s in specs}
-    assert "outputs/logs/00_verify_source.log" in remotes
-    assert "outputs/logs/run_all.log" in remotes
+    (logs / "errors.log").write_text("", encoding="utf-8")
+    assert not [s for s in sync.target_specs(paper) if s["remote"].startswith("outputs/")]
 
 
-def test_no_log_targets_before_the_first_run(paper):
-    """A fresh clone is code-only: no phantom placeholders, no clash."""
-    specs = sync.target_specs(paper)
-    assert not [s for s in specs if s["remote"].startswith("outputs/logs/")]
-
-
-def test_only_present_logs_are_listed(paper):
-    """A partly-run pipeline syncs what it produced, not all eleven stages."""
-    logs = paper / "outputs" / "logs"
-    logs.mkdir(parents=True)
-    (logs / "03_climatology.log").write_text("log\n", encoding="utf-8")
-    specs = sync.target_specs(paper)
-    log_remotes = {s["remote"] for s in specs if s["remote"].startswith("outputs/logs/")}
-    assert log_remotes == {"outputs/logs/03_climatology.log"}
-
-
-def test_log_names_never_carry_a_timestamp(paper):
+def test_target_names_never_carry_a_timestamp(paper):
     """A timestamped filename would mint a new Drive id every run."""
-    logs = paper / "outputs" / "logs"
-    logs.mkdir(parents=True)
-    (logs / "05_features_local.log").write_text("log\n", encoding="utf-8")
-    specs = sync.target_specs(paper)
-    for s in specs:
+    for s in sync.target_specs(paper):
         assert not re.search(r"\d{8}-\d{6}|\d{4}-\d{2}-\d{2}T", s["remote"]), s["remote"]
+
+
+def _with_runtime(paper):
+    scripts = paper.parents[1] / "scripts"
+    scripts.mkdir(exist_ok=True)
+    (scripts / "_colab_runtime.py").write_text("# runtime\n", encoding="utf-8")
+
+
+def test_shared_runtime_is_a_target_of_a_colab_paper(paper):
+    _with_runtime(paper)
+    (paper / "experiments" / "colab.yaml").write_text("title: X\n", encoding="utf-8")
+    spec = next(s for s in sync.target_specs(paper) if s["remote"] == "code/_colab_runtime.py")
+    assert spec["local"] == paper.parents[1] / "scripts" / "_colab_runtime.py"
+
+
+def test_shared_runtime_is_not_pushed_to_a_paper_without_colab_yaml(paper):
+    _with_runtime(paper)
+    assert "code/_colab_runtime.py" not in {s["remote"] for s in sync.target_specs(paper)}
+
+
+def test_new_code_file_is_created_inside_the_code_folder(paper, capsys):
+    """Without the code/ folder id a new file lands in the project root."""
+    sync.save_ids(paper, {"code/": "CODEFOLDER", "experiments.ipynb": "NB"})
+    updates, _ = sync.plan(paper)
+    sync.print_calls(paper, [u for u in updates if u["remote"] == "code/00_a.py"], "ROOT")
+    call = json.loads(capsys.readouterr().out.strip())
+    assert call["arguments"]["parentFolderId"] == "CODEFOLDER"
+
+
+def test_new_code_file_without_a_code_folder_id_is_refused(paper):
+    sync.save_ids(paper, {"experiments.ipynb": "NB"})
+    proc = _run("--slug", "c99-2026", "--root", str(paper.parents[1]),
+                "--print-calls", "--folder-id", "ROOT")
+    assert proc.returncode == 1
+    assert "--record code/" in proc.stderr
+    assert "uploadFile" not in proc.stdout
 
 
 # --- content hashing: upload only what changed -----------------------------
@@ -302,6 +315,7 @@ def test_mark_uploaded_rejects_a_path_that_is_not_a_target(paper):
 def test_missing_folder_id_refuses_instead_of_emitting_an_empty_one(paper):
     """parentFolderId:"" is a malformed call, and its natural fix duplicates files."""
     _one_target(paper)
+    sync.save_ids(paper, {"code/": "CODEFOLDER"})  # only the root-level notebook is new
     proc = _run("--slug", "c99-2026", "--root", str(paper.parents[1]),
                 "--print-calls", "--folder-id", "")
     assert proc.returncode == 1

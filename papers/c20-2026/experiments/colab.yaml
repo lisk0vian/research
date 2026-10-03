@@ -1,0 +1,57 @@
+# Colab spec for c20-2026. The notebook is generated from this file:
+#   python scripts/paper_notebook.py --slug c20-2026
+# Never edit notebooks/experiments.ipynb by hand. Rules: COLAB.md (repo root).
+
+title: "c20-2026: subseasonal temperature forecasts, SENAMHI stations"
+drive_folder: c20-2026            # MyDrive/<drive_folder>/{code,data,outputs}
+
+# required: preflight stops without a GPU (07b_deep trains an LSTM and runs Chronos).
+gpu: required
+
+# Installed once per runtime. torch is not listed: Colab ships a CUDA build and
+# pip would replace it with one that may not see the GPU.
+pip:
+  - "pandas>=2.0"
+  - "pyyaml>=6.0"
+  - "tqdm>=4.66"
+  - "lightgbm>=4.0"
+  - "scikit-learn>=1.3"
+  - "matplotlib>=3.7"
+  - "chronos-forecasting>=1.4,<2.0"
+  - "eccodes>=2.36"
+
+# Run in order before the pipeline; any non-zero exit stops the notebook.
+setup:
+  - [fetch_source.py]             # downloads the raw CSV once, writes data/SOURCE.json
+probes:
+  - [06b_dynamical.py, --probe]   # one CFSv2 date and member: GRIB decode + units
+
+run: [run_all.py]
+report: [report.py]
+figures: outputs/figures/F*.png
+
+# First stage whose work changes in smoke mode (EXP_FAST): 00-06 are shared by
+# smoke and full runs, so a full run after a smoke run starts here.
+smoke_from: 06b_dynamical
+
+# Hashed into every stage fingerprint: a new raw download re-runs the whole chain.
+state_inputs:
+  - data/SOURCE.json
+
+# What each stage writes (shown in notebooks/README.md).
+stages:
+  00_verify_source: outputs/tables/T1_completeness.csv
+  01_qc_hourly: data/processed/hourly_qc.csv
+  02_aggregate_daily: data/processed/daily.csv
+  03_climatology: data/processed/daily_clim.csv, outputs/climatology/<station>/<fold>.json
+  04_make_issuances: data/processed/issuances.csv
+  05_features_local: data/processed/features/<station>/<fold>.csv
+  06_features_largescale: data/processed/largescale_daily.csv
+  06b_dynamical: data/processed/cfs_windows.csv (CFSv2, network)
+  07_models: outputs/models/preds_<exp>_<model>.csv
+  07b_deep: outputs/models/preds_*_LSTM_LG.csv, preds_*_Chronos.csv (GPU)
+  07c_ensemble: outputs/models/preds_*_Ensemble.csv, primary_model.json
+  07d_cfs_benchmark: outputs/models/preds_temporal_CFS_BC.csv, outputs/tables/T8_cfs_calibration.csv
+  08_metrics: outputs/tables/metrics_long.csv
+  09_inference: outputs/tables/T2_blind_skill.csv, T3_hypotheses.csv, T5_loso_gap.csv
+  10_tables_figures: outputs/tables/T4_murphy.csv, T6_secondary_targets.csv, outputs/figures/F1..F6.png

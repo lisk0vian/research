@@ -48,6 +48,10 @@ live in `scripts/paper_new.py`. **Do not create folders or seed files by hand.**
        --keyword "..." --keyword "..."
    ```
 
+   Every paper gets the Colab standard by default: `experiments/colab.yaml`,
+   `experiments/run_all.py` and the generated notebook (see `COLAB.md`). Pass
+   `--no-colab` only if the user says the paper has no pipeline at all.
+
 7. **Report pending items** at the end (title/funding left as TODO, no journal,
    empty `references.bib`, body not written, migration still pending). Never
    mark the paper "done".

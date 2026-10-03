@@ -1,0 +1,36 @@
+# Colab spec for c26-2026. The runner notebook is generated from this file:
+#   python scripts/paper_notebook.py --slug c26-2026
+# Never edit notebooks/experiments.ipynb by hand. Rules: COLAB.md (repo root).
+# notebooks/notebook.ipynb is the readers' reproducibility notebook and is not
+# generated: it is part of the article's package.
+
+title: "c26-2026: GeoAI analysis of national missing-person registers"
+drive_folder: c26-2026            # MyDrive/<drive_folder>/{code,data,outputs}
+
+gpu: none
+
+# The pinned reference environment, installed once per runtime.
+pip: ["-r", "requirements-experiments.txt"]
+
+# The inputs are not downloaded: upload data/raw and data/external to Drive once.
+setup:
+  - [colab_run.py, --check-data]
+probes: []
+
+run: [colab_run.py]
+report: []
+
+state_inputs:
+  - data/raw/dataset.csv
+  - data/external/population.xlsx
+  - data/external/boundaries.geojson
+# The whole package is one stage; any change in it re-runs the pipeline.
+shared_modules: ["src/**/*.py", "config/*.json"]
+smoke_from: null
+
+notes:
+  - "Before the first run, upload the paper's `data/raw/` and `data/external/` to `MyDrive/c26-2026/data/`; cell 2 checks they are there."
+  - "`notebooks/notebook.ipynb` is the readers' notebook of the article; this generated `experiments.ipynb` is only the runner."
+
+stages:
+  pipeline: "outputs/results.json, tables, figures, figures_article, environment.json, MANIFEST.sha256"

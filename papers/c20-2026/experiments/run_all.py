@@ -14,6 +14,11 @@ Enforces the design's §12: per-fold train-only fitting, 28-day embargo, frozen
 M* and hyperparameters before opening blind folds B1-B2. A stage that fails
 stops the run: the stages after it read its outputs, and running them against
 stale or missing files would produce numbers that look valid and are not.
+
+Resume and error reporting come from the shared `_colab_runtime` (COLAB.md at
+the repo root): a stage whose code, config and upstream are unchanged since it
+last succeeded is skipped, every failure is appended to `outputs/logs/errors.log`,
+and `outputs/logs/status.json` records what each stage did.
 """
 
 from __future__ import annotations
@@ -25,6 +30,7 @@ import sys
 from pathlib import Path
 
 from _common import (
+    DATA_DIR,
     LOG_SUMMARY,
     OUTPUTS,
     atomic_write_json,
@@ -36,6 +42,19 @@ from _common import (
 )
 
 BASE = Path(__file__).resolve().parents[1]
+
+
+def _load_runtime():
+    """The shared runtime: next to this file on Colab, in the repo's scripts/ locally."""
+    try:
+        import _colab_runtime
+    except ImportError:
+        sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "scripts"))
+        import _colab_runtime
+    return _colab_runtime
+
+
+rt = _load_runtime()
 
 
 # Stages that need torch (and a GPU to be practical); `--skip-dl` drops them.
@@ -88,6 +107,24 @@ def select_range(available: list[str], first: str, last: str) -> tuple[list[str]
     if i > j:
         return [], f"--from {start[0]} comes after --to {stop[0]}"
     return available[i:j + 1], ""
+
+
+def _spec() -> dict:
+    """colab.yaml next to the stages, or the runtime's defaults when absent."""
+    exp = BASE / "experiments"
+    if (exp / rt.SPEC_NAME).is_file():
+        return rt.load_spec(exp)
+    return rt.load_spec_defaults()
+
+
+def _resolve_input(path: str) -> Path:
+    """`data/...` and `outputs/...` follow DATA_DIR/OUTPUT_DIR, as the stages do."""
+    parts = Path(path).parts
+    if parts and parts[0] == "data":
+        return DATA_DIR.joinpath(*parts[1:])
+    if parts and parts[0] == "outputs":
+        return OUTPUTS.joinpath(*parts[1:])
+    return BASE / path
 
 
 def _git(*args: str) -> str | None:
@@ -159,8 +196,12 @@ def main() -> int:
     ap.add_argument("--config", metavar="PATH", default=None,
                     help="config.yaml to use; exported to the stages as "
                          "EXP_CONFIG so a subprocess inherits it")
+    ap.add_argument("--mode", choices=("full", "smoke"), default="full",
+                    help="smoke = tiny model budgets (EXP_FAST=1), numbers not citable")
     ap.add_argument("--fast", action="store_true",
-                    help="smoke run: tiny model budgets (EXP_FAST=1); numbers are not citable")
+                    help="alias of --mode smoke")
+    ap.add_argument("--force", action="store_true",
+                    help="re-run every selected stage even if its state says it is current")
     ap.add_argument("--skip-dl", action="store_true",
                     help=f"skip the deep-learning stages ({', '.join(DL_STAGES)})")
     ap.add_argument("--keep-going", dest="stop_on_error", action="store_false",
@@ -191,7 +232,8 @@ def main() -> int:
 
     if args.skip_dl:
         stages = [s for s in stages if s not in DL_STAGES]
-    if args.fast:
+    mode = "smoke" if args.fast else args.mode
+    if mode == "smoke":
         # Exported, like EXP_CONFIG, because the stages are subprocesses.
         os.environ["EXP_FAST"] = "1"
 
@@ -212,19 +254,50 @@ def main() -> int:
         # A full run rewrites it, so it describes this run only.
         aggregate.write_text("", encoding="utf-8")
 
-    print(f"running {len(stages)} stage(s): {stages[0]} -> {stages[-1]}")
+    log = rt.RunLog(OUTPUTS / "logs")
+    if not log.in_session():
+        log.begin_session(mode=mode, note="run_all outside a notebook", export=False)
+    spec = _spec()
+    state = rt.StageState(OUTPUTS / rt.STATE_DIR, BASE / "experiments", mode,
+                          shared=spec["shared_modules"],
+                          inputs=[_resolve_input(p) for p in spec["state_inputs"]])
+    fingerprints = state.fingerprints(available, mode_from=spec.get("smoke_from"))
+    # --only names stages the user wants run now, so they never skip.
+    force = args.force or bool(args.only)
+    log.update_status(state=rt.RUNNING, mode=mode,
+                      stages={s: rt.NOT_RUN for s in stages})
+
+    print(f"running {len(stages)} stage(s): {stages[0]} -> {stages[-1]} "
+          f"(mode={mode}{', force' if force else ''})")
     entries: dict[str, dict] = {}
+    skipped: list[str] = []
     failed: list[tuple[str, int]] = []
 
     for stage in progress(stages, desc="pipeline", unit="stage", level="stage"):
+        if not force and state.is_current(stage, fingerprints[stage]):
+            print(f"[{stage}] skipped: unchanged since its last successful {mode} run")
+            skipped.append(stage)
+            log.update_status(stages={stage: rt.SKIPPED})
+            continue
+        log.update_status(stages={stage: rt.RUNNING})
         info = run_stage(stage, aggregate=aggregate)
         entries[stage] = info
         if info["exit_code"] != 0:
             failed.append((stage, info["exit_code"]))
+            state.invalidate_from(stage, available)
+            log.record_error(f"stage {stage}",
+                             f"exit {info['exit_code']} after {info['elapsed_s']:.1f}s "
+                             f"(full log: {rel_path(Path(info['log']))})",
+                             rt.tail(info["log"]))
+            log.update_status(stages={stage: rt.FAILED}, failed_stage=stage)
             print(f"[{stage}] FAILED with exit {info['exit_code']}; see {info['log']}",
                   file=sys.stderr)
             if args.stop_on_error:
                 break
+        else:
+            state.mark_done(stage, fingerprints[stage], info["elapsed_s"])
+            log.update_status(stages={stage: rt.OK})
+    log.update_status(state=rt.FAILED if failed else rt.OK, finished=rt._now())
 
     write_logs_manifest(entries)
     meta = write_run_meta(stages, config, entries)
@@ -234,7 +307,10 @@ def main() -> int:
     print("-" * 58)
     for stage, info in entries.items():
         print(f"{stage:<26}{info['exit_code']:>6}{info['elapsed_s']:>11.2f}")
+    for stage in skipped:
+        print(f"{stage:<26}{'skip':>6}{'':>11}")
     print("=" * 58)
+    print(f"errors: {log.errors}")
     print(f"logs  : {aggregate}")
     print(f"index : {OUTPUTS / 'manifest_index.json'}")
     print(f"meta  : {meta}")
