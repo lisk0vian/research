@@ -1,0 +1,36 @@
+# Colab spec for {{SLUG}}. The notebook is generated from this file:
+#   python scripts/paper_notebook.py --slug {{SLUG}}
+# Never edit notebooks/experiments.ipynb by hand. Rules: COLAB.md (repo root).
+
+title: "{{SLUG}}: {{TITLE}}"
+drive_folder: {{SLUG}}            # MyDrive/<drive_folder>/{code,data,outputs}
+
+# required | optional | none. "required" stops the notebook in cell 2 without a GPU.
+gpu: none
+
+# Installed once per runtime (cell 2). Never list torch: Colab ships a CUDA build.
+pip: []
+
+# Commands run in order before the pipeline (cell 2); a non-zero exit stops the
+# notebook. setup = fetch data; probes = seconds-long checks of anything a long
+# stage depends on (network, a binary format, a model download).
+setup: []
+probes: []
+
+# The pipeline entry point (cell 3). It must accept --mode full|smoke, --force,
+# --only STAGE..., --from/--to, and report failures through _colab_runtime
+# (COLAB.md, "The pipeline contract").
+run: [run_all.py]
+report: []
+# figures: outputs/figures/*.png
+
+# Files hashed into every stage fingerprint (paths under data/ or outputs/).
+state_inputs: []
+# Code hashed into every fingerprint besides the stage file itself (globs).
+shared_modules: ["_*.py", "config.yaml"]
+# First stage whose work changes in smoke mode (EXP_FAST=1); earlier stages are
+# shared by smoke and full runs. Unset = every stage.
+smoke_from: null
+
+# Stage -> what it writes, shown in notebooks/README.md.
+stages: {}

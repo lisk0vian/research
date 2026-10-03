@@ -38,6 +38,30 @@ def test_paper_new_scaffolds_valid_paper(mini_repo: Path):
     assert report.ok, report.errors
 
 
+def test_paper_new_scaffolds_the_colab_standard_by_default(mini_repo: Path):
+    proc = _run(
+        "scripts/paper_new.py", "--root", str(mini_repo), "--slug", "c99-2026",
+        "--title", "A test paper", "--journal", "test-journal",
+        "--author", "moises:corresponding:1",
+    )
+    assert proc.returncode == 0, proc.stderr
+    paper = mini_repo / "papers" / "c99-2026"
+    for rel in ("experiments/colab.yaml", "experiments/run_all.py",
+                "notebooks/experiments.ipynb", "notebooks/README.md"):
+        assert (paper / rel).is_file(), rel
+    report = paper_validate.validate_repo(mini_repo)
+    assert report.ok, report.errors
+
+
+def test_paper_new_no_colab_skips_the_scaffold(mini_repo: Path):
+    proc = _run(
+        "scripts/paper_new.py", "--root", str(mini_repo), "--slug", "c99-2026",
+        "--journal", "test-journal", "--author", "moises:corresponding:1", "--no-colab",
+    )
+    assert proc.returncode == 0, proc.stderr
+    assert not (mini_repo / "papers" / "c99-2026" / "experiments" / "colab.yaml").exists()
+
+
 def test_paper_new_rejects_existing_slug(mini_repo: Path):
     args = ["scripts/paper_new.py", "--root", str(mini_repo), "--slug", "c99-2026", "--journal", "test-journal"]
     assert _run(*args).returncode == 0
