@@ -16,6 +16,8 @@ from statistics import NormalDist
 import numpy as np
 import pytest
 
+scipy = pytest.importorskip("scipy", reason="c20-2026 tests require scipy (paper environment)")
+
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "experiments"))
 
 m09e = importlib.import_module("09e_mstar2")
