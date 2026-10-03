@@ -334,7 +334,10 @@ new Drive file per run, and a new Drive file means a new Colab URL and a new
 runtime session. `paper_drive_sync.py` lists only logs that exist, so a fresh
 clone syncs code alone and a half-finished run syncs exactly what it produced.
 
-**Bars only where there is time.** `tqdm` sits on the fold loops in `03`, `04`
-and `05` and on the offset-day loop in `seasonal_sigma_hq`, which is the slowest
-operation in `03`. Stages `01` and `02` are vectorised pandas and carry no bar:
-a progress indicator over an instant operation is decoration.
+**Bars only where there is time.** Progress sits on the fold loops in `03`,
+`04` and `05`. `seasonal_sigma_hq` used to carry its own offset-day bar, but
+that loop built a mask that could not discriminate between horizons (every
+horizon returned the same numbers); it was replaced by a vectorised train-window
+containment check, and the bar went with it. Stages `01` and `02` are
+vectorised pandas and carry no bar: a progress indicator over an instant
+operation is decoration.

@@ -17,8 +17,8 @@ protocol, three backends. `tqdm` is only a drawing library here, never the
 source of truth.
 
 Levels are `stage` (run_all over stages), `fold` (a stage over folds) and `step`
-(sub-fold work such as the sigma offset loop). A reader keeps one widget per
-level, reused across phases with a live `desc`, so fifteen 7-item bars become
+(sub-fold work such as a per-model fit loop). A reader keeps one widget per
+level, reused across phases with a live `desc`, so many short bars become
 one bar whose description says where it is.
 
 Silencing
@@ -292,7 +292,7 @@ def backend_for_current_process() -> str:
 class TqdmDisplay:
     """One reused widget per level. Sequential phases reset the same bar.
 
-    Fifteen 7-item sigma bars become one step widget whose `desc` says which
+    Many short phases become one step widget whose `desc` says which
     fold and horizon it is on. A new (`desc`, `total`) pair closes the old bar
     and opens a fresh one at the same position, so phases never stack.
     """
