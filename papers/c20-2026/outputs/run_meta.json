@@ -1,24 +1,45 @@
 {
-  "finished_at": "2026-10-02T15:42:18+00:00",
+  "finished_at": "2026-10-03T19:42:46+00:00",
   "stages_run": [
-    "00_verify_source"
+    "00_verify_source",
+    "01_qc_hourly",
+    "02_aggregate_daily",
+    "03_climatology",
+    "04_make_issuances",
+    "05_features_local",
+    "06_features_largescale",
+    "06b_dynamical",
+    "07_models",
+    "07b_deep",
+    "07c_ensemble",
+    "07d_cfs_benchmark",
+    "08_metrics",
+    "09_inference",
+    "09b_calibration",
+    "09c_chronos_diagnostic",
+    "09d_chronos_sensitivity",
+    "10_tables_figures"
   ],
-  "python": "3.14.7",
-  "python_executable": "C:\\Users\\Aron\\AppData\\Local\\Programs\\Python\\Python314\\python.exe",
+  "python": "3.13.15",
+  "python_executable": "/usr/bin/python3",
   "config": "experiments/config.yaml",
-  "git_commit": "29115f1",
-  "git_dirty": true,
+  "git_commit": null,
+  "git_dirty": false,
   "versions": {
-    "pandas": "3.0.5",
-    "numpy": "2.5.3",
+    "pandas": "2.2.3",
+    "numpy": "2.1.3",
     "yaml": "6.0.3",
-    "sklearn": "1.9.1",
-    "lightgbm": "4.7.0"
+    "sklearn": "1.6.1",
+    "lightgbm": "4.6.0"
   },
   "results": {
-    "00_verify_source": {
+    "09d_chronos_sensitivity": {
       "exit_code": 0,
-      "elapsed_s": 1.24
+      "elapsed_s": 400.19
+    },
+    "10_tables_figures": {
+      "exit_code": 0,
+      "elapsed_s": 5.01
     }
   },
   "note": "Fixed filename by design: a timestamped name would mint a new Drive file per run, and a new Drive file means a new Colab url."

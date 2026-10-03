@@ -1,0 +1,31 @@
+{
+  "primary_model": "Ensemble",
+  "criterion": "mean dev-fold CRPS, TT_mean, temporal, stations and horizons pooled",
+  "dev_crps": {
+    "Ensemble": 0.39261,
+    "Ridge_LG": 0.3943,
+    "LSTM_LG": 0.39463,
+    "GBM_LG": 0.42066
+  },
+  "ensemble_weights": {
+    "W1": {
+      "Chronos": 0.21807794249344406,
+      "GBM_LG": 0.25389316477498997,
+      "LSTM_LG": 0.26105750590788396,
+      "Ridge_LG": 0.26697138682368204
+    },
+    "W2": {
+      "Chronos": 0.21869160386925213,
+      "GBM_LG": 0.24591201655404435,
+      "LSTM_LG": 0.26709623572707664,
+      "Ridge_LG": 0.2683001438496268
+    },
+    "W3_4": {
+      "Chronos": 0.22096091786875985,
+      "GBM_LG": 0.24641911416984746,
+      "LSTM_LG": 0.27136070504807536,
+      "Ridge_LG": 0.26125926291331725
+    }
+  },
+  "frozen_before_blind": true
+}

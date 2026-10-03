@@ -1,0 +1,21 @@
+role,check,scope,paths,observed,metric
+blind,daily,days 1-7,0.2139,0.9,cov90 of daily anomaly (nominal 0.90)
+blind,daily,days 1-7,0.1985,1.1399,path SD vs RMSE of the median (degC)
+blind,daily,days 8-14,0.2105,0.9,cov90 of daily anomaly (nominal 0.90)
+blind,daily,days 8-14,0.2302,1.2909,path SD vs RMSE of the median (degC)
+blind,daily,days 15-28,0.2157,0.9,cov90 of daily anomaly (nominal 0.90)
+blind,daily,days 15-28,0.2377,1.3192,path SD vs RMSE of the median (degC)
+blind,persistence,days 1-28,0.8619,0.7566,lag-1 autocorrelation (path deviations vs real errors)
+blind,aggregation,W1,0.763,0.74,SD(window mean)/daily SD; independent days: 0.378
+blind,aggregation,W2,0.8375,0.7866,SD(window mean)/daily SD; independent days: 0.378
+blind,aggregation,W3_4,0.7976,0.6686,SD(window mean)/daily SD; independent days: 0.267
+dev,daily,days 1-7,0.2111,0.9,cov90 of daily anomaly (nominal 0.90)
+dev,daily,days 1-7,0.1809,1.1227,path SD vs RMSE of the median (degC)
+dev,daily,days 8-14,0.2075,0.9,cov90 of daily anomaly (nominal 0.90)
+dev,daily,days 8-14,0.1988,1.2184,path SD vs RMSE of the median (degC)
+dev,daily,days 15-28,0.2023,0.9,cov90 of daily anomaly (nominal 0.90)
+dev,daily,days 15-28,0.1933,1.2228,path SD vs RMSE of the median (degC)
+dev,persistence,days 1-28,0.8182,0.7344,lag-1 autocorrelation (path deviations vs real errors)
+dev,aggregation,W1,0.7445,0.7303,SD(window mean)/daily SD; independent days: 0.378
+dev,aggregation,W2,0.7958,0.7371,SD(window mean)/daily SD; independent days: 0.378
+dev,aggregation,W3_4,0.7083,0.5783,SD(window mean)/daily SD; independent days: 0.267
