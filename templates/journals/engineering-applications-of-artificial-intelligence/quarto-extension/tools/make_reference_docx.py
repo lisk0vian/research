@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Jerremi Aron Chancan Labajos
 """make_reference_docx.py — build the DOCX reference document for elsevier-cas.
 
 The reference doc carries everything pandoc/docx inherits for our papers:

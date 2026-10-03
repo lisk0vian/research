@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Jerremi Aron Chancan Labajos
 """Text report of a run: data checks, then the paper's result tables.
 
 Called by the notebook's last cell (see colab.yaml `report`). Every section reads

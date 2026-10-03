@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Jerremi Aron Chancan Labajos
 """doi_validate.py — Validate and fix DOIs in paper references.bib files.
 
 Wraps bib-literature-audit (_bib_audit.py) with the repository CLI pattern

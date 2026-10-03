@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Jerremi Aron Chancan Labajos
 """Tests for the multi-station boundary in stages 01 and 02.
 
 Every bug here is the same shape: with one station the code was correct, and

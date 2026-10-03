@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Jerremi Aron Chancan Labajos
 """Text report of a c15-2026 run: training status, stage index, quality gates.
 
 Called by the notebook's last cell (colab.yaml `report`). Every section tolerates

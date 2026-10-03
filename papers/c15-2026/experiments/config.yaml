@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Jerremi Aron Chancan Labajos
 data:
   # path relative to DATA_DIR (env DATA_DIR) — subfolder data under GDRIVE_FOLDER_ID, created if missing
   raw_path: "consolidated.csv"

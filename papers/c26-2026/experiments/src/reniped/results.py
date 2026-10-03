@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Jerremi Aron Chancan Labajos
 """Single results store (strict JSON), software environment, hardware and SHA-256 manifest."""
 import json
 import math

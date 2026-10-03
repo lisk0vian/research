@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Jerremi Aron Chancan Labajos
 """cas_fidelity.py — prove that Quarto renders reproduce the official CAS sample.
 
 Two suites, selected by flag:

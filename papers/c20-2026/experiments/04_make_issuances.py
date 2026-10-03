@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Jerremi Aron Chancan Labajos
 """Issuances, targets and embargo (design §6 + §12.2).
 
 Eval: weekly issuance (config weekday, default Monday). Training may use daily

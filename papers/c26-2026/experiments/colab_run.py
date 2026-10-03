@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Jerremi Aron Chancan Labajos
 """Run the c26-2026 pipeline under the Colab standard: python colab_run.py [--force]
 
 Adapter between the Colab notebook (COLAB.md at the repo root) and this paper's

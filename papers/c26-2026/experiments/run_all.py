@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Jerremi Aron Chancan Labajos
 """Run the full pipeline without a notebook:  python run_all.py
 
 Requires the input files in ../data/raw and ../data/external (included in the repository).

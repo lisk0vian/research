@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Jerremi Aron Chancan Labajos
 """Split Stage — temporal year-block gold matrices from the shared encoding.
 
 Method (declared in config.yaml, never fixed counts):

@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Jerremi Aron Chancan Labajos
 """Stages 06-10 on tiny in-memory data: contracts, not numbers.
 
 Budget: the whole file runs in a few seconds on CPU. GBM uses a handful of

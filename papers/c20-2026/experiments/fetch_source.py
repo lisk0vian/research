@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Jerremi Aron Chancan Labajos
 """Fetch the raw source dataset and record its provenance.
 
 Run this before stage 00. It is deliberately not named `NN_*`: fetching is a

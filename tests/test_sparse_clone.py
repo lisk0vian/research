@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Jerremi Aron Chancan Labajos
 """Tests for paper_sparse_clone.py: path building, URL parsing, verification.
 
 No network access: the clone step is exercised through its pure helpers, and

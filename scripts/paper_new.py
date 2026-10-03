@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Jerremi Aron Chancan Labajos
 """paper_new.py — scaffold papers/<slug>/ from templates/paper/.
 
 Mechanical only: create the folder tree and render the seed files. It makes no

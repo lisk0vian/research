@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Jerremi Aron Chancan Labajos
 """Large-scale predictors G (design §7.2) as an as-of daily series.
 
 Weekly Niño 3.4 and Niño 1+2 SST anomalies (CPC OISST, weeks centred on

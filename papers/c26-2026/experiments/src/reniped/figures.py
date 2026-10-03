@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Jerremi Aron Chancan Labajos
 """Supplementary diagnostic figures: no embedded title, 300 dpi, PNG + TIFF."""
 import matplotlib
 

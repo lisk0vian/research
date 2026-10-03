@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Jerremi Aron Chancan Labajos
 """Tests for the CAS fidelity harness (scripts/cas_fidelity.py).
 
 The fixture tests are TeX-free and run everywhere (including CI). The full

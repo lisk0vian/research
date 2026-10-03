@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Jerremi Aron Chancan Labajos
 """paper_notebook.py — generate a paper's Colab notebook from experiments/colab.yaml.
 
 Every paper's notebook has the same skeleton (COLAB.md, "What each cell does"),

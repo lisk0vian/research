@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Jerremi Aron Chancan Labajos
 """Mark every per-paper test suite as slow.
 
 A paper's suite synthesises frames and refits climatologies for each case, which

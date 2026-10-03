@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Jerremi Aron Chancan Labajos
 """The run_all CLI: prefix resolution, ranges, and run_meta.json.
 
 The prefix rule is the part worth pinning down. `--only 03` is what anyone types,

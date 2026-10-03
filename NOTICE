@@ -1,0 +1,48 @@
+# Third-Party Notices
+
+This repository includes third-party material under the following
+licenses.
+
+## Journal Templates (Quarto Extensions)
+
+### Elsevier CAS (Elsevier Ltd)
+
+- Location: `templates/journals/engineering-applications-of-artificial-intelligence/`
+- Location: `templates/journals/information-sciences/`
+- Files: `*.cls`, `*.bst`, `*.sty`, `*.tex` within `quarto-extension/`
+- Copyright: Copyright 2007-2025 Elsevier Ltd
+- License: LaTeX Project Public License (LPPL)
+- Source: https://www.elsevier.com/researcher/author/policies-and-guidelines/latex-instructions
+
+### Elsevier (Elsevier Ltd)
+
+- Location: `templates/journals/machine-learning-with-applications/`
+- Files: `*.cls`, `*.bst` within `quarto-extension/`
+- Copyright: Copyright 2007-2025 Elsevier Ltd
+- License: LaTeX Project Public License (LPPL)
+- Source: https://www.elsevier.com/researcher/author/policies-and-guidelines/latex-instructions
+
+### Nature (christopherkenny)
+
+- Location: `templates/journals/discover-artificial-intelligence/`
+- Files: `*.lua`, `*.scss`, `*.tex`, `*.csl` within `quarto-extension/`
+- License: MIT License
+- Source: https://github.com/christopherkenny/nature
+- Adapted by this repository for the Discover AI journal format.
+
+## Skills
+
+### paper-humanize (MomoYOUNG)
+
+- Location: `.agents/skills/paper-humanize/`
+- Copyright: Copyright (c) 2025 MomoYOUNG
+- License: MIT License
+- Source: https://github.com/MomoYOUNG/paper-humanize
+- Note: This skill retains its original license. Contributions to this
+  skill within this repository are also licensed under MIT.
+
+## Data Licenses
+
+Individual papers may include datasets under their own licenses.
+See the `data/` directory within each paper folder for details
+(e.g., `papers/c26-2026/data/DATA_LICENSES.md`).

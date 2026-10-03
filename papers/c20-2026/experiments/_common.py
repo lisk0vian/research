@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Jerremi Aron Chancan Labajos
 """Shared helpers for the c20-2026 pipeline: paths, config, IO.
 
 Kept dependency-light on purpose (pandas + pyyaml only) so the early stages

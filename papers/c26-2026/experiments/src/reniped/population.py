@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Jerremi Aron Chancan Labajos
 """Official INEI denominators (Table No. 01, 2018-2026) for the 26 territorial units."""
 import re
 

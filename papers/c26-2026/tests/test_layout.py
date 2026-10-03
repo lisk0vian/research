@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Jerremi Aron Chancan Labajos
 """Layout regression test for the rendered manuscript.
 
 Runs scripts/paper_layout_check.py against build/c26-2026.pdf: no content may

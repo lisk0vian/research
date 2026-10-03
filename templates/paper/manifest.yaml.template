@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Jerremi Aron Chancan Labajos
 # papers/{{SLUG}}/manifest.yaml
 # Single source of truth for this paper's metadata. Does NOT duplicate author
 # data: it references authors/<id>.yaml by id only.

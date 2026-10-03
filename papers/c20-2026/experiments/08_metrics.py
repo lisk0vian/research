@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Jerremi Aron Chancan Labajos
 """Deterministic and probabilistic verification (design §7).
 
 Per row (`outputs/models/scored_<experiment>.csv`): squared and absolute error

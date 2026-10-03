@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Jerremi Aron Chancan Labajos
 """Run the c15-2026 stages in order: python run_all.py [--mode smoke] [--only train] [--force]
 
 Adapter between the Colab standard (COLAB.md at the repo root) and this paper's

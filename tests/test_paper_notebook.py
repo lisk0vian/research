@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Jerremi Aron Chancan Labajos
 """Tests for scripts/paper_notebook.py: the generated Colab notebook skeleton.
 
 What must hold for "Runtime -> Run all" (COLAB.md): exactly one cell launches the

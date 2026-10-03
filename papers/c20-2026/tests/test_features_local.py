@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Jerremi Aron Chancan Labajos
 """Tests for 05_features_local.py: trailing windows, per-variable anomalies, coverage.
 
 The property that carries the most weight: no feature for issuance date d may

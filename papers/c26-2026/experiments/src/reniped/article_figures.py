@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Jerremi Aron Chancan Labajos
 """Manuscript figures (Figs. 1-6) in Spanish (internal review) and English (submission).
 
 The figures are built only from the tables in outputs/tables, the territory-month panel

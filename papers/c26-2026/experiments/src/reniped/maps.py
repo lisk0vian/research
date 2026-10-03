@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Jerremi Aron Chancan Labajos
 """Supplementary maps (300 dpi, no embedded title).
 Mandatory caption note: "Map lines delineate study areas and do not necessarily
 depict accepted national boundaries."

@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Jerremi Aron Chancan Labajos
 """Choice of K, bootstrap stability that respects the panel structure, and multi-algorithm
 clustering (Sections 4.3 and 5.2)."""
 import numpy as np

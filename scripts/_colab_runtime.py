@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Jerremi Aron Chancan Labajos
 """_colab_runtime.py: the shared Colab runtime every paper's notebook uses.
 
 One implementation, uploaded by `paper_drive_sync.py` to

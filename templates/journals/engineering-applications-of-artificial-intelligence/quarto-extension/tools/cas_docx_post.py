@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Jerremi Aron Chancan Labajos
 """cas_docx_post.py — give a rendered elsevier-cas DOCX the layout of the PDF.
 
 pandoc/Quarto decide parts of the OOXML that no reference document or Lua

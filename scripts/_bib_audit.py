@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Jerremi Aron Chancan Labajos
 """bib_literature_audit.py
 
 Conservative, research-oriented BibTeX quality auditor and DOI enricher.

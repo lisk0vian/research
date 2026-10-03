@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Jerremi Aron Chancan Labajos
 """Priority territories (Sections 4.1 and 5.1; Figs. 2 and 3).
 
 For each territory u the rate ratio RR_u = rate_u / rate of the rest of the country (the

@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Jerremi Aron Chancan Labajos
 """Spatial layer (n = 26): geometry, weights, global/EB Moran, LISA and Gi* with FDR (Section 4.4).
 
 p-value convention

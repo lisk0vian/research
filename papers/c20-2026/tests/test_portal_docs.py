@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Jerremi Aron Chancan Labajos
 """Tests for the portal document converter.
 
 The converter reads .xlsx and .docx with nothing but the standard library, so

@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Jerremi Aron Chancan Labajos
 """Deep and foundation models (design v3 §5): pooled LSTM and zero-shot Chronos.
 
 `LSTM_LG`

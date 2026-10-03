@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Jerremi Aron Chancan Labajos
 """Territory-month panel (26 × 84) with a complete calendar, coverage flags and two exposures."""
 import numpy as np
 import pandas as pd

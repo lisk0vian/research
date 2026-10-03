@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Jerremi Aron Chancan Labajos
 """Atomic writes and the EXP_ENV check.
 
 The failure these guard against is quiet: a Colab disconnect or a crash in the

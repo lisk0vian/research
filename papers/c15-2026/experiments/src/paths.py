@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Jerremi Aron Chancan Labajos
 import os
 
 # Carga .env (GDRIVE_FOLDER_ID etc.) sin fallar si no existe

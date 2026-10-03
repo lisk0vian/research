@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Jerremi Aron Chancan Labajos
 """Tests for the stage-logging runner.
 
 The runner is what makes a Colab run inspectable from outside: the Colab runtime

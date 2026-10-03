@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Jerremi Aron Chancan Labajos
 """The structure contract: the real repo passes, and the validator catches drift."""
 
 from __future__ import annotations

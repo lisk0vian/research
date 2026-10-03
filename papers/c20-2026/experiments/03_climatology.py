@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Jerremi Aron Chancan Labajos
 """Climatologies + seasonal dispersion (design §7.1). Train-only per fold.
 
 C2 harmonic (K=3) is the primary reference fixed a priori; C1/C3 are sensitivity

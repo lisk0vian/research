@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Jerremi Aron Chancan Labajos
 """Synthesise a small dataset.csv so the pipeline can be run locally.
 
 Why this exists

@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Jerremi Aron Chancan Labajos
 """Reading and validation of the official RENIPED CSV (MININTER, National Open Data Platform)."""
 import hashlib
 import unicodedata

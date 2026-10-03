@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Jerremi Aron Chancan Labajos
 """Preprocessing Stage — train-only imputation + null flags (no leakage).
 
 Reads silver engineered via the feature_engineering manifest (artifact_path),

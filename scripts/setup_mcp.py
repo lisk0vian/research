@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Jerremi Aron Chancan Labajos
 """setup_mcp.py — configure the MCP servers for OpenCode and for Claude Code.
 
 Two targets, one template (`opencode.jsonc.example`):

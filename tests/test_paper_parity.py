@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Jerremi Aron Chancan Labajos
 """Tests for the PDF/DOCX parity tooling: the comparison levels of
 scripts/paper_parity.py and the OOXML passes of the elsevier-cas
 tools/cas_docx_post.py. Synthetic inputs only; no Word, LaTeX or PDF needed."""

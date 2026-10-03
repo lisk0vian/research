@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Jerremi Aron Chancan Labajos
 """Tests for scripts/_colab_runtime.py: errors.log, status.json, resume, preflight.
 
 The contract (COLAB.md): one errors.log per session that holds every failure and
