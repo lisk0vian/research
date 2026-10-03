@@ -38,6 +38,7 @@ import pandas as pd
 from _common import (
     OUTPUTS,
     PROCESSED,
+    checkpoints,
     ensure_dirs,
     fold_windows,
     load_config,
@@ -351,7 +352,7 @@ def predict_paths(pipe, ctx: list, horizon_len: int, num_samples: int,
 
 
 def run_chronos(panel: pd.DataFrame, seqs_by_fold: dict, index: pd.DataFrame,
-                cfg: dict, levels: list[float]) -> list[pd.DataFrame]:
+                cfg: dict, levels: list[float], ck=None) -> list[pd.DataFrame]:
     import torch
     ccfg = cfg["models"]["chronos"]
     windows = {h: (int(v[0]), int(v[1])) for h, v in cfg["target"]["horizons"].items()}
@@ -364,6 +365,12 @@ def run_chronos(panel: pd.DataFrame, seqs_by_fold: dict, index: pd.DataFrame,
     evals = index.drop_duplicates(["station", "fold", "issue_date"])
     for fold, block in progress(list(evals.groupby("fold")), desc="07b chronos",
                                 unit="fold", level="fold"):
+        unit = f"chronos__{fold}"
+        if ck is not None and ck.has(unit):
+            frames.extend(ck.load(unit))
+            print(f"[chronos/{fold}] loaded from checkpoint")
+            continue
+        fold_frames: list[pd.DataFrame] = []
         ctx = []
         for st, d in zip(block["station"], block["issue_date"]):
             s = seqs_by_fold[fold][st]["A_TT_mean"]
@@ -380,8 +387,11 @@ def run_chronos(panel: pd.DataFrame, seqs_by_fold: dict, index: pd.DataFrame,
             part = base.assign(horizon=h, _pos=np.arange(len(base))).merge(
                 keys, on=["station", "fold", "issue_date", "horizon"])
             sel = part["_pos"].to_numpy()
-            frames.append(pred_frame(part, "temporal", TARGET, "Chronos", rearrange(q[sel]),
-                                     mu[sel], cfg))
+            fold_frames.append(pred_frame(part, "temporal", TARGET, "Chronos",
+                                          rearrange(q[sel]), mu[sel], cfg))
+        frames.extend(fold_frames)
+        if ck is not None:
+            ck.save(unit, fold_frames)
         print(f"[chronos/{fold}] {len(block)} contexts")
     return frames
 
@@ -422,10 +432,20 @@ def main(argv: list[str] | None = None) -> None:
     index_t = index_t[index_t["target"] == TARGET]
     summary: dict = {"fast_mode": fast_mode(), "cuda": bool(torch.cuda.is_available())}
     seed = int(cfg.get("seeds", {}).get("lstm", 0))
+    # Each fold (and each LOSO station) is saved as it finishes, so a crash in
+    # Chronos does not cost the LSTM again.
+    ck = checkpoints("07b_deep")
+    if ck.units():
+        print(f"resuming: {len(ck.units())} unit(s) already done in {ck.dir}")
 
     if not args.skip_lstm:
         t_frames, l_frames = [], {}
         for fid in progress(list(folds), desc="07b lstm", unit="fold", level="fold"):
+            unit = f"lstm_temporal__{fid}"
+            if ck.has(unit):
+                t_frames.append(ck.load(unit))
+                print(f"[lstm/temporal/{fid}] loaded from checkpoint")
+                continue
             block = panel[panel["fold"] == fid]
             tr = issue_samples(block, "train", horizons)
             ev = issue_samples(block, "eval", horizons)
@@ -433,6 +453,7 @@ def main(argv: list[str] | None = None) -> None:
             q, mu = fit_predict_lstm(tr, ev, seqs_by_fold[fid], horizons, levels, cfg, seed)
             rows, Q, M = explode(ev, q, mu, horizons, index_t[index_t["fold"] == fid])
             t_frames.append(pred_frame(rows, "temporal", TARGET, "LSTM_LG", Q, M, cfg))
+            ck.save(unit, t_frames[-1])
             print(f"[lstm/temporal/{fid}] train={len(tr)} eval={len(ev)} "
                   f"({time.perf_counter() - t0:.1f}s)")
         write_preds(t_frames, "temporal", "LSTM_LG")
@@ -450,14 +471,23 @@ def main(argv: list[str] | None = None) -> None:
                 tr, ev = tr_all[tr_all["station"] != st], ev_all[ev_all["station"] == st]
                 if ev.empty:
                     continue
+                unit = f"lstm_loso__{fid}__{st}"
+                if ck.has(unit):
+                    for name, frame in ck.load(unit).items():
+                        l_frames.setdefault(name, []).append(frame)
+                    print(f"[lstm/loso/{fid}] held out {st}: loaded from checkpoint")
+                    continue
                 idx = index_l[(index_l["fold"] == fid) & (index_l["station"] == st)]
+                unit_frames = {}
                 for variant, static in variants.items():
                     name = f"LSTM_LG@{variant}" if variant else "LSTM_LG"
                     q, mu = fit_predict_lstm(tr, ev, seqs_by_fold[fid], horizons, levels, cfg,
                                              seed, static=static)
                     rows, Q, M = explode(ev, q, mu, horizons, idx)
-                    l_frames.setdefault(name, []).append(
-                        pred_frame(rows, "loso", TARGET, name, Q, M, cfg))
+                    unit_frames[name] = pred_frame(rows, "loso", TARGET, name, Q, M, cfg)
+                for name, frame in unit_frames.items():
+                    l_frames.setdefault(name, []).append(frame)
+                ck.save(unit, unit_frames)
                 print(f"[lstm/loso/{fid}] held out {st} ({len(variants)} static variants)")
         for name, frames in l_frames.items():
             write_preds(frames, "loso", name)
@@ -468,7 +498,7 @@ def main(argv: list[str] | None = None) -> None:
         chronos_on = False
     if chronos_on:
         try:
-            frames = run_chronos(panel, seqs_by_fold, index_t, cfg, levels)
+            frames = run_chronos(panel, seqs_by_fold, index_t, cfg, levels, ck)
         except ImportError:
             raise SystemExit("ERROR: chronos-forecasting is not installed; run the install cell")
         write_preds(frames, "temporal", "Chronos")

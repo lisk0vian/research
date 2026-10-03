@@ -183,8 +183,8 @@ recorded hashes.
 **4. Run in Colab.** The notebook is generated from `colab.yaml` by
 `scripts/paper_notebook.py` and never hand-edited; how to use it is in
 `COLAB.md` at the repo root and `notebooks/README.md`. Runtime → Run all runs
-the pipeline once and skips stages that are unchanged since they last
-succeeded. After an agent sync, re-run cell 1 (it re-copies `code/` from Drive).
+the pipeline once, skips finished stages and resumes a failed one from its
+last checkpoint (COLAB.md, "Resuming"). After an agent sync, re-run cell 1 (it re-copies `code/` from Drive).
 Cell 4 holds `step()` with its calls commented out:
 
 ```python

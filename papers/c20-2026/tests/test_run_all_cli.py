@@ -231,14 +231,44 @@ def test_second_run_skips_stages_that_are_unchanged(tmp_path, monkeypatch):
     assert set(_status(tmp_path)["stages"].values()) == {"skipped"}
 
 
-def test_editing_a_stage_reruns_it_and_downstream(tmp_path, monkeypatch):
+def test_a_code_edit_keeps_finished_stages(tmp_path, monkeypatch, capsys):
     ran = _stub_pipeline(tmp_path, monkeypatch)
     monkeypatch.setattr(sys, "argv", ["run_all.py"])
     run_all.main()
     ran.clear()
     (tmp_path / "experiments" / "01_b.py").write_text("# edited\n", encoding="utf-8")
+    capsys.readouterr()
+    run_all.main()
+    assert ran == []
+    assert "code changed since it ran" in capsys.readouterr().out
+
+
+def test_bumping_results_version_reruns_it_and_downstream(tmp_path, monkeypatch):
+    ran = _stub_pipeline(tmp_path, monkeypatch)
+    monkeypatch.setattr(sys, "argv", ["run_all.py"])
+    run_all.main()
+    ran.clear()
+    (tmp_path / "experiments" / "01_b.py").write_text("RESULTS_VERSION = 1\n", encoding="utf-8")
     run_all.main()
     assert ran == ["01_b", "02_c"]
+
+
+def test_each_stage_gets_its_key_and_success_clears_its_checkpoints(tmp_path, monkeypatch):
+    import os
+    seen = {}
+    ran = _stub_pipeline(tmp_path, monkeypatch)
+    real = run_all.run_stage
+
+    def spy(stage, aggregate=None):
+        seen[stage] = os.environ.get(run_all.rt.STAGE_KEY_ENV)
+        run_all.rt.Checkpoints(stage, root=tmp_path / "outputs" / "_checkpoints").save("u", 1)
+        return real(stage, aggregate=aggregate)
+
+    monkeypatch.setattr(run_all, "run_stage", spy)
+    monkeypatch.setattr(sys, "argv", ["run_all.py"])
+    run_all.main()
+    assert set(seen) == {"00_a", "01_b", "02_c"} and len(set(seen.values())) == 3
+    assert not any((tmp_path / "outputs" / "_checkpoints").glob("*/u.pkl"))
 
 
 def test_force_and_only_rerun_current_stages(tmp_path, monkeypatch):

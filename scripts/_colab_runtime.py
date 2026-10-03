@@ -13,9 +13,10 @@ first. In short:
   cells. An empty file means the last session had no errors.
 - `outputs/logs/status.json` says what the last session did, so "never ran" and
   "ran clean" are not the same empty file.
-- `outputs/_state/<stage>.json` lets a pipeline skip a stage whose code, config
-  and upstream are unchanged since it last succeeded. "Run all" after a crash
-  resumes instead of redoing hours of work.
+- `outputs/_state/<stage>.json` lets a pipeline skip a finished stage while
+  its config, data and RESULTS_VERSION are unchanged, and
+  `outputs/_checkpoints/<stage>/` lets a long stage resume from its last
+  finished unit. "Run all" after a crash resumes instead of redoing hours.
 - Progress is a text bar per level (count, %, rate, time left) updated in place
   through an IPython display handle. A tqdm widget is saved in the notebook at
   0 %; a display handle keeps its last state, so a notebook read back from Drive
@@ -90,6 +91,7 @@ def load_spec(code_dir: str | Path) -> dict:
     data.setdefault("state_inputs", [])
     data.setdefault("shared_modules", ["_*.py", "config.yaml"])
     data.setdefault("smoke_from", None)
+    data.setdefault("results_version", 0)
     return data
 
 
@@ -475,76 +477,139 @@ def _sha(path: Path) -> str:
     return h.hexdigest()
 
 
-class StageState:
-    """Per-stage fingerprints that let a pipeline skip unchanged, finished stages.
+RESULTS_VERSION_RE = re.compile(r"^RESULTS_VERSION\s*=\s*(\d+)", re.MULTILINE)
+STAGE_KEY_ENV = "STAGE_KEY"
+CHECKPOINT_DIR = "_checkpoints"
 
-    A fingerprint hashes the stage file, the shared modules and config, the
-    declared input files, the previous stage's fingerprint and, from the first
-    stage whose work depends on it (`mode_from`), the run mode. Chaining means a
-    change anywhere upstream re-runs everything after it, and stages before
-    `mode_from` are shared by smoke and full runs. A stage's state file is
-    written only when it succeeds and removed (with all downstream ones) when it
-    fails, so a skip always points at real outputs.
+
+def results_version(path: Path) -> int:
+    """`RESULTS_VERSION = N` in a stage file; 0 when the file declares none."""
+    try:
+        m = RESULTS_VERSION_RE.search(path.read_text(encoding="utf-8", errors="replace"))
+    except OSError:
+        return 0
+    return int(m.group(1)) if m else 0
+
+
+class StageState:
+    """Checkpoints of finished stages, so a run resumes where the last one stopped.
+
+    A stage is reused when its *key* matches. The key chains, in stage order:
+    the config and data files (`shared_modules` that are not `.py`, plus
+    `state_inputs`), the spec's `results_version`, the run mode from
+    `mode_from` on, and each stage's own `RESULTS_VERSION`. Code is not in the
+    key: a change that leaves the results alone (logging, a warning, a
+    refactor) keeps the stage done; a change that alters them bumps
+    `RESULTS_VERSION` in that stage (COLAB.md section 7), which re-runs it and
+    everything after it. The code hash is still recorded, so a stage kept with
+    older code is reported, never silent.
+
+    A state file is written only when a stage succeeds and removed, with all
+    downstream ones, when it fails, so a skip always points at real outputs.
     """
+
+    SCHEME = 3
 
     def __init__(self, state_dir: str | Path, code_dir: str | Path, mode: str,
                  shared: list[str] | None = None, inputs: list[str | Path] | None = None,
-                 stage_file=None) -> None:
+                 stage_file=None, results_version_all: int = 0) -> None:
         self.dir = Path(state_dir)
         self.code = Path(code_dir)
         self.mode = mode
         files: list[Path] = []
         for pattern in shared or []:
             files.extend(sorted(self.code.glob(pattern)))
-        # The runtime itself matches `_*.py` but changes no result; hashing it
-        # would make every runtime fix re-run the whole pipeline.
-        self.shared = [p for p in dict.fromkeys(files)
-                       if p.is_file() and p.name != "_colab_runtime.py"]
+        files = [p for p in dict.fromkeys(files)
+                 if p.is_file() and p.name != "_colab_runtime.py"]
+        self.config_files = [p for p in files if p.suffix != ".py"]
+        self.code_files = [p for p in files if p.suffix == ".py"]
         self.inputs = [Path(p) for p in inputs or []]
         self.stage_file = stage_file or (lambda s: self.code / f"{s}.py")
+        self.version_all = int(results_version_all or 0)
+        self._mode_from: str | None = None
+        self._order: list[str] = []
 
+    # keys --------------------------------------------------------------------
     def _base(self) -> str:
-        h = hashlib.sha256(b"stage-state-v2")
-        for p in self.shared:
-            rel = p.relative_to(self.code).as_posix()
-            h.update(f"{rel}:{_sha(p)}".encode())
+        h = hashlib.sha256(f"stage-state-v{self.SCHEME}|all={self.version_all}".encode())
+        for p in self.config_files:
+            h.update(f"{p.relative_to(self.code).as_posix()}:{_sha(p)}".encode())
         for p in self.inputs:
             h.update(f"{p.name}:{_sha(p) if p.is_file() else 'absent'}".encode())
         return h.hexdigest()
 
     def fingerprints(self, stages: list[str], mode_from: str | None = None) -> dict[str, str]:
-        """Chained fingerprint of every stage, in order.
-
-        The mode enters the chain at `mode_from` (or at the first stage when it
-        is None or not a stage), so it reaches every stage after it.
-        """
+        """Chained key of every stage, in order; the mode enters at `mode_from`."""
         start = mode_from if mode_from in stages else (stages[0] if stages else None)
+        self._mode_from, self._order = start, list(stages)
         prev = self._base()
         out: dict[str, str] = {}
         for stage in stages:
             if stage == start:
                 prev = hashlib.sha256(f"{prev}|mode={self.mode}".encode()).hexdigest()
-            src = Path(self.stage_file(stage))
-            own = _sha(src) if src.is_file() else "absent"
-            prev = hashlib.sha256(f"{prev}|{stage}|{own}".encode()).hexdigest()
+            ver = results_version(Path(self.stage_file(stage)))
+            prev = hashlib.sha256(f"{prev}|{stage}|v{ver}".encode()).hexdigest()
             out[stage] = prev
         return out
 
+    def code_sha(self, stage: str) -> str:
+        """Hash of the stage file and the shared code, recorded to report drift."""
+        h = hashlib.sha256()
+        for p in [Path(self.stage_file(stage)), *self.code_files]:
+            h.update(f"{p.name}:{_sha(p) if p.is_file() else 'absent'}".encode())
+        return h.hexdigest()
+
+    # state files -------------------------------------------------------------
     def path(self, stage: str) -> Path:
         return self.dir / f"{stage}.json"
 
-    def is_current(self, stage: str, fingerprint: str) -> bool:
+    def _read(self, stage: str) -> dict | None:
         try:
-            data = json.loads(self.path(stage).read_text(encoding="utf-8"))
+            return json.loads(self.path(stage).read_text(encoding="utf-8"))
         except (OSError, ValueError):
-            return False
-        return data.get("fingerprint") == fingerprint
+            return None
 
-    def mark_done(self, stage: str, fingerprint: str, elapsed_s: float) -> None:
-        _atomic_write(self.path(stage), json.dumps({
-            "stage": stage, "fingerprint": fingerprint, "mode": self.mode,
-            "elapsed_s": round(float(elapsed_s), 2), "finished": _now(),
-        }, indent=2) + "\n")
+    def is_current(self, stage: str, key: str) -> bool:
+        data = self._read(stage)
+        if data is None:
+            return False
+        if data.get("scheme") == self.SCHEME:
+            return data.get("key") == key
+        # A state written before keys existed still proves the stage finished,
+        # in some mode. Adopt it when the mode cannot matter (before mode_from)
+        # or matches, and rewrite it in this scheme.
+        if "fingerprint" in data:
+            order = self._order
+            before_mode = (self._mode_from in order and stage in order
+                           and order.index(stage) < order.index(self._mode_from))
+            if before_mode or data.get("mode") == self.mode:
+                self._write(stage, key, float(data.get("elapsed_s", 0.0)), code_sha=None,
+                            adopted=True)
+                return True
+        return False
+
+    def drift(self, stage: str) -> str | None:
+        """Why a reused stage's code differs from now, or None when it does not."""
+        data = self._read(stage) or {}
+        recorded = data.get("code_sha")
+        if recorded is None:
+            return "ran before its code was recorded"
+        return None if recorded == self.code_sha(stage) else "code changed since it ran"
+
+    def mark_done(self, stage: str, key: str, elapsed_s: float) -> None:
+        self._write(stage, key, elapsed_s, code_sha=self.code_sha(stage))
+
+    def _write(self, stage: str, key: str, elapsed_s: float, code_sha: str | None,
+               adopted: bool = False) -> None:
+        payload = {
+            "stage": stage, "scheme": self.SCHEME, "key": key, "mode": self.mode,
+            "results_version": results_version(Path(self.stage_file(stage))),
+            "code_sha": code_sha, "elapsed_s": round(float(elapsed_s), 2),
+            "finished": _now(),
+        }
+        if adopted:
+            payload["adopted_from_older_state"] = True
+        _atomic_write(self.path(stage), json.dumps(payload, indent=2) + "\n")
 
     def invalidate_from(self, stage: str, stages: list[str]) -> None:
         """Drop the state of `stage` and of everything after it."""
@@ -555,6 +620,66 @@ class StageState:
                 self.path(s).unlink()
             except FileNotFoundError:
                 pass
+
+
+class Checkpoints:
+    """Finished units of work inside one stage, saved as they complete.
+
+    A long stage (07 fits ~5,000 models in about an hour) saves each unit (a
+    fold, a station) here; after a crash or a stopped session the next run
+    loads the finished units and computes only the rest. Units belong to the
+    stage's key (exported by the runner as $STAGE_KEY): when the key changes
+    (config, data, RESULTS_VERSION or an upstream stage) the old units are
+    dropped. The runner deletes the folder once the stage succeeds.
+    """
+
+    def __init__(self, stage: str, root: str | Path | None = None, key: str | None = None):
+        if root is None:
+            root = Path(os.environ.get("OUTPUT_DIR") or "outputs") / CHECKPOINT_DIR
+        self.dir = Path(root) / stage
+        self.key = key if key is not None else os.environ.get(STAGE_KEY_ENV, "standalone")
+        meta = self.dir / "_meta.json"
+        try:
+            old = json.loads(meta.read_text(encoding="utf-8")).get("key")
+        except (OSError, ValueError):
+            old = None
+        if old is not None and old != self.key:
+            self.clear()
+        self.dir.mkdir(parents=True, exist_ok=True)
+        if old != self.key:
+            _atomic_write(meta, json.dumps({"stage": stage, "key": self.key}) + "\n")
+
+    def _path(self, unit: str) -> Path:
+        return self.dir / (re.sub(r"[^A-Za-z0-9_.-]", "_", unit) + ".pkl")
+
+    def has(self, unit: str) -> bool:
+        return self._path(unit).is_file()
+
+    def load(self, unit: str):
+        import pickle
+
+        with self._path(unit).open("rb") as fh:
+            return pickle.load(fh)
+
+    def save(self, unit: str, obj) -> None:
+        import pickle
+
+        path = self._path(unit)
+        tmp = path.with_name(f".{path.name}.tmp")
+        with tmp.open("wb") as fh:
+            pickle.dump(obj, fh, protocol=pickle.HIGHEST_PROTOCOL)
+        os.replace(tmp, path)
+
+    def units(self) -> list[str]:
+        return sorted(p.stem for p in self.dir.glob("*.pkl"))
+
+    def clear(self) -> None:
+        shutil.rmtree(self.dir, ignore_errors=True)
+
+
+def clear_checkpoints(outputs: str | Path, stage: str) -> None:
+    """Delete a stage's unit checkpoints (after it succeeds, or on --force)."""
+    shutil.rmtree(Path(outputs) / CHECKPOINT_DIR / stage, ignore_errors=True)
 
 
 # --- the notebook's entry points -----------------------------------------------------
@@ -712,7 +837,8 @@ def stages_main(code_dir: str | Path, stages: list[str] | None = None, command=N
         log.begin_session(mode=mode, note="run_all outside a notebook", export=False)
     state = StageState(outputs / STATE_DIR, code, mode, shared=spec["shared_modules"],
                        inputs=[_resolve_input(p, outputs) for p in spec["state_inputs"]],
-                       stage_file=stage_file)
+                       stage_file=stage_file,
+                       results_version_all=spec.get("results_version", 0))
     prints = state.fingerprints(available, mode_from=spec.get("smoke_from"))
     force = args.force or bool(args.only)
     command = command or (lambda s, f: [f"{s}.py"])
@@ -725,15 +851,20 @@ def stages_main(code_dir: str | Path, stages: list[str] | None = None, command=N
             print(f"{PROG_PREFIX}" + json.dumps({"level": "stage", "n": i, "total": len(selected),
                                                  "desc": stage, "unit": "stage"}), flush=True)
         if not force and state.is_current(stage, prints[stage]):
-            print(f"[{stage}] skipped: unchanged since its last successful {mode} run")
+            note = state.drift(stage)
+            print(f"[{stage}] skipped: done in an earlier {mode} run"
+                  + (f" ({note}; results kept, see COLAB.md)" if note else ""))
             log.update_status(stages={stage: SKIPPED})
             continue
+        if force:
+            clear_checkpoints(outputs, stage)
         log.update_status(stages={stage: RUNNING})
         stage_log = outputs / "logs" / f"{stage}.log"
         stage_log.parent.mkdir(parents=True, exist_ok=True)
         stage_log.write_text(f"# STAGE-START {stage}\n# started : {_now()}\n", encoding="utf-8")
         started = time.perf_counter()
-        rc, out = run_command(command(stage, force), cwd=code, log_path=stage_log)
+        rc, out = run_command(command(stage, force), cwd=code, log_path=stage_log,
+                              env={**os.environ, STAGE_KEY_ENV: prints[stage]})
         elapsed = time.perf_counter() - started
         with stage_log.open("a", encoding="utf-8") as fh:
             fh.write(f"\n# STAGE-EXIT {stage} exit_code={rc} elapsed_s={elapsed:.2f}\n")
@@ -748,6 +879,7 @@ def stages_main(code_dir: str | Path, stages: list[str] | None = None, command=N
                 break
         else:
             state.mark_done(stage, prints[stage], elapsed)
+            clear_checkpoints(outputs, stage)
             log.update_status(stages={stage: OK})
     log.update_status(state=FAILED if failed else OK, finished=_now())
     print(f"\n{'FAILED: ' + ', '.join(failed) if failed else 'all stages ok'} | errors: {log.errors}")
@@ -756,4 +888,5 @@ def stages_main(code_dir: str | Path, stages: list[str] | None = None, command=N
 
 def load_spec_defaults() -> dict:
     """The spec defaults, for a pipeline without a colab.yaml."""
-    return {"shared_modules": ["_*.py", "config.yaml"], "state_inputs": [], "smoke_from": None}
+    return {"shared_modules": ["_*.py", "config.yaml"], "state_inputs": [], "smoke_from": None,
+            "results_version": 0}

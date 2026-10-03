@@ -67,7 +67,7 @@ def build_cells(spec: dict) -> list[dict]:
 
     intro = f"""# {spec['title']}
 
-{gpu_step}2. **Runtime → Run all.** The pipeline runs once. Stages that already finished with the same code, config and inputs are skipped; tick `FORCE` in cell 3 to redo them.
+{gpu_step}2. **Runtime → Run all.** The pipeline runs once. Finished stages are skipped and a stage that failed half way resumes from its last checkpoint; tick `FORCE` in cell 3 to redo everything.
 3. **If anything fails**, the last cell prints `outputs/logs/errors.log`, the only file to read. `outputs/logs/status.json` says which stage failed.
 
 After the agent syncs new code, re-run cell 1, then cell 3. How to use this notebook and the rules for changing it: `COLAB.md` in the repository. Generated from `experiments/colab.yaml` by `scripts/paper_notebook.py`; do not edit it by hand."""

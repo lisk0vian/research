@@ -262,7 +262,8 @@ def main() -> int:
     spec = _spec()
     state = rt.StageState(OUTPUTS / rt.STATE_DIR, BASE / "experiments", mode,
                           shared=spec["shared_modules"],
-                          inputs=[_resolve_input(p) for p in spec["state_inputs"]])
+                          inputs=[_resolve_input(p) for p in spec["state_inputs"]],
+                          results_version_all=spec.get("results_version", 0))
     fingerprints = state.fingerprints(available, mode_from=spec.get("smoke_from"))
     # --only names stages the user wants run now, so they never skip.
     force = args.force or bool(args.only)
@@ -277,11 +278,18 @@ def main() -> int:
 
     for stage in progress(stages, desc="pipeline", unit="stage", level="stage"):
         if not force and state.is_current(stage, fingerprints[stage]):
-            print(f"[{stage}] skipped: unchanged since its last successful {mode} run")
+            note = state.drift(stage)
+            print(f"[{stage}] skipped: done in an earlier {mode} run"
+                  + (f" ({note}; results kept, see COLAB.md)" if note else ""))
             skipped.append(stage)
             log.update_status(stages={stage: rt.SKIPPED})
             continue
         log.update_status(stages={stage: rt.RUNNING})
+        if force:
+            rt.clear_checkpoints(OUTPUTS, stage)
+        # The stage's key reaches it through the environment, so its unit
+        # checkpoints (rt.Checkpoints) belong to this exact configuration.
+        os.environ[rt.STAGE_KEY_ENV] = fingerprints[stage]
         info = run_stage(stage, aggregate=aggregate)
         entries[stage] = info
         if info["exit_code"] != 0:
@@ -298,6 +306,7 @@ def main() -> int:
                 break
         else:
             state.mark_done(stage, fingerprints[stage], info["elapsed_s"])
+            rt.clear_checkpoints(OUTPUTS, stage)
             log.update_status(stages={stage: rt.OK})
     log.update_status(state=rt.FAILED if failed else rt.OK, finished=rt._now())
 

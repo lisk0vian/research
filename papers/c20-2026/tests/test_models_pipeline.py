@@ -236,6 +236,37 @@ def test_loso_training_excludes_the_held_out_station(panel, monkeypatch, cfg):
         assert eval_st and not (train_st & eval_st)
 
 
+def test_loso_resumes_from_unit_checkpoints_without_refitting(panel, monkeypatch, cfg, tmp_path):
+    """A crash mid-07 must not cost the finished units again (~1 h of fits)."""
+    import _common
+
+    calls = []
+
+    def fake_gbm(train, evals, cols, target, levels, params):
+        calls.append(sorted(set(evals["station"])))
+        n = len(evals)
+        return np.full((n, len(levels)), float(len(calls))), np.zeros(n)
+
+    written = {}
+    monkeypatch.setattr(m07, "predict_gbm", fake_gbm)
+    monkeypatch.setattr(m07, "atomic_write_csv", lambda *a, **k: None)
+    monkeypatch.setattr(m07, "write_preds",
+                        lambda frames, exp, model: written.__setitem__(model, frames))
+    monkeypatch.setattr(_common, "OUTPUTS", tmp_path)
+    cfg["validation"]["loso"] = {"folds": ["B1"]}
+
+    ck = _common.checkpoints("07_models")
+    m07.run_loso(panel, cfg, ck)
+    first_calls, first = len(calls), {m: pd.concat(f) for m, f in written.items()}
+    assert first_calls and ck.units()
+
+    calls.clear()
+    m07.run_loso(panel, cfg, _common.checkpoints("07_models"))
+    assert calls == []                                   # nothing refitted
+    for m, frame in first.items():                       # same predictions back
+        pd.testing.assert_frame_equal(pd.concat(written[m]), frame)
+
+
 # --- 07b adapters (no torch, no download) ---------------------------------------
 
 def test_window_mean_is_taken_per_path_before_quantiles():

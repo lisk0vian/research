@@ -302,12 +302,55 @@ def test_unchanged_stages_are_current(tmp_path, code):
     assert all(st.is_current(s, fps[s]) for s in STAGES)
 
 
-def test_editing_a_stage_reruns_it_and_everything_after(tmp_path, code):
+def test_a_code_edit_keeps_the_stage_but_reports_drift(tmp_path, code):
+    """A fix that leaves the results alone must not re-run an hour of work."""
     st = _state(tmp_path, code)
     _done_all(st)
-    (code / "01_b.py").write_text("# changed\n", encoding="utf-8")
-    fps = _state(tmp_path, code).fingerprints(STAGES)
-    assert [s for s in STAGES if st.is_current(s, fps[s])] == ["00_a"]
+    (code / "01_b.py").write_text("# silenced a warning\n", encoding="utf-8")
+    st2 = _state(tmp_path, code)
+    fps = st2.fingerprints(STAGES)
+    assert all(st2.is_current(s, fps[s]) for s in STAGES)
+    assert st2.drift("01_b") == "code changed since it ran"
+    assert st2.drift("00_a") is None
+
+
+def test_bumping_results_version_reruns_the_stage_and_everything_after(tmp_path, code):
+    st = _state(tmp_path, code)
+    _done_all(st)
+    (code / "01_b.py").write_text("RESULTS_VERSION = 2  # new QC rule\n", encoding="utf-8")
+    st2 = _state(tmp_path, code)
+    fps = st2.fingerprints(STAGES)
+    assert [s for s in STAGES if st2.is_current(s, fps[s])] == ["00_a"]
+
+
+def test_spec_results_version_reruns_everything(tmp_path, code):
+    _done_all(_state(tmp_path, code))
+    st2 = rt.StageState(tmp_path / "state", code, "full", shared=["_*.py", "config.yaml"],
+                        results_version_all=1)
+    fps = st2.fingerprints(STAGES)
+    assert not any(st2.is_current(s, fps[s]) for s in STAGES)
+
+
+def test_a_state_from_before_keys_is_adopted_once(tmp_path, code):
+    """The 00-07 states on Drive predate keys; they must not force a re-run."""
+    st = _state(tmp_path, code)
+    st.dir.mkdir(parents=True)
+    for s in STAGES:
+        st.path(s).write_text(json.dumps({"stage": s, "fingerprint": "old", "mode": "full",
+                                          "elapsed_s": 5.0}), encoding="utf-8")
+    fps = st.fingerprints(STAGES)
+    assert all(st.is_current(s, fps[s]) for s in STAGES)
+    data = json.loads(st.path("01_b").read_text(encoding="utf-8"))
+    assert data["scheme"] == rt.StageState.SCHEME and data["adopted_from_older_state"]
+    assert st.drift("01_b") == "ran before its code was recorded"
+
+
+def test_an_old_smoke_state_is_not_adopted_by_a_full_run(tmp_path, code):
+    st = _state(tmp_path, code)
+    st.dir.mkdir(parents=True)
+    st.path("00_a").write_text(json.dumps({"fingerprint": "x", "mode": "smoke"}), encoding="utf-8")
+    fps = st.fingerprints(STAGES)
+    assert not st.is_current("00_a", fps["00_a"])
 
 
 def test_editing_config_or_a_shared_module_reruns_everything(tmp_path, code):
@@ -344,11 +387,12 @@ def test_failure_invalidates_the_stage_and_downstream(tmp_path, code):
     assert not st.is_current("02_c", fps["02_c"])
 
 
-def test_state_file_records_mode_and_fingerprint(tmp_path, code):
+def test_state_file_records_key_mode_version_and_code(tmp_path, code):
     st = _state(tmp_path, code)
     fps = _done_all(st)
     data = json.loads(st.path("00_a").read_text(encoding="utf-8"))
-    assert data["fingerprint"] == fps["00_a"] and data["mode"] == "full"
+    assert data["key"] == fps["00_a"] and data["mode"] == "full"
+    assert data["results_version"] == 0 and data["code_sha"] == st.code_sha("00_a")
 
 
 # --- spec ---------------------------------------------------------------------
@@ -368,14 +412,45 @@ def test_mode_enters_the_chain_at_smoke_from(tmp_path, code):
     assert fps["01_b"] != smoke_fps["01_b"] and fps["02_c"] != smoke_fps["02_c"]
 
 
-def test_custom_stage_file_is_hashed(tmp_path, code):
+def test_custom_stage_file_carries_the_results_version(tmp_path, code):
     other = tmp_path / "src"
     other.mkdir()
     (other / "a.py").write_text("x = 1\n", encoding="utf-8")
     st = rt.StageState(tmp_path / "s", code, "full", stage_file=lambda s: other / "a.py")
     before = st.fingerprints(["a"])["a"]
     (other / "a.py").write_text("x = 2\n", encoding="utf-8")
+    assert st.fingerprints(["a"])["a"] == before
+    (other / "a.py").write_text("RESULTS_VERSION = 1\nx = 2\n", encoding="utf-8")
     assert st.fingerprints(["a"])["a"] != before
+
+
+# --- unit checkpoints inside a stage --------------------------------------------------
+
+def test_checkpoints_survive_a_crash_and_reload(tmp_path):
+    ck = rt.Checkpoints("07_models", root=tmp_path, key="K1")
+    ck.save("temporal_TT_mean_D1", {"rows": [1, 2, 3]})
+    again = rt.Checkpoints("07_models", root=tmp_path, key="K1")
+    assert again.has("temporal_TT_mean_D1")
+    assert again.load("temporal_TT_mean_D1") == {"rows": [1, 2, 3]}
+    assert again.units() == ["temporal_TT_mean_D1"]
+
+
+def test_checkpoints_from_another_key_are_dropped(tmp_path):
+    rt.Checkpoints("07_models", root=tmp_path, key="K1").save("u", 1)
+    ck = rt.Checkpoints("07_models", root=tmp_path, key="K2")
+    assert not ck.has("u")
+
+
+def test_checkpoint_key_defaults_to_the_runner_env(tmp_path, monkeypatch):
+    monkeypatch.setenv(rt.STAGE_KEY_ENV, "FROM_ENV")
+    rt.Checkpoints("s", root=tmp_path).save("u", 1)
+    assert rt.Checkpoints("s", root=tmp_path, key="FROM_ENV").has("u")
+
+
+def test_clear_checkpoints_removes_the_stage_folder(tmp_path):
+    rt.Checkpoints("s", root=tmp_path / rt.CHECKPOINT_DIR, key="K").save("u", 1)
+    rt.clear_checkpoints(tmp_path, "s")
+    assert not (tmp_path / rt.CHECKPOINT_DIR / "s").exists()
 
 
 # --- the generic runner (templates/paper/run_all.py.template) ------------------------

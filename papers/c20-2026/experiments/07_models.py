@@ -51,6 +51,7 @@ import pandas as pd
 
 from _common import (
     atomic_write_csv,
+    checkpoints,
     ensure_dirs,
     load_config,
     paths_report,
@@ -216,7 +217,14 @@ def predict_gbm(train: pd.DataFrame, evals: pd.DataFrame, cols: list[str], targe
 
 # --- driver ---------------------------------------------------------------------
 
-def run_temporal(panel: pd.DataFrame, cfg: dict, targets: list[str]) -> dict:
+def _merge(preds: dict[str, list[pd.DataFrame]], unit: dict[str, pd.DataFrame]) -> None:
+    for model, frame in unit.items():
+        preds.setdefault(model, []).append(frame)
+
+
+def run_temporal(panel: pd.DataFrame, cfg: dict, targets: list[str], ck=None) -> dict:
+    """Temporal experiment. With `ck` (unit checkpoints), each (target, fold) is
+    saved as it finishes and loaded instead of refitted on the next run."""
     levels = quantile_levels(cfg)
     fs = feature_sets(panel)
     sets = {"L": fs["L"], "LG": fs["L"] + fs["G"]}
@@ -245,13 +253,21 @@ def run_temporal(panel: pd.DataFrame, cfg: dict, targets: list[str]) -> dict:
             evals = target_rows(block, target, "eval").reset_index(drop=True)
             if evals.empty or train.empty:
                 continue
+            unit = f"temporal__{target}__{fold}"
+            if ck is not None and ck.has(unit):
+                saved = ck.load(unit)
+                _merge(preds, saved["preds"])
+                ridge_alphas.update(saved["alphas"])
+                print(f"[temporal/{target}/{fold}] loaded from checkpoint")
+                continue
             t0 = time.perf_counter()
+            unit_preds: dict[str, pd.DataFrame] = {}
+            unit_alphas: dict[str, dict] = {}
 
             def emit(model, q, mu):
                 if wanted is not None and model not in wanted:
                     return
-                preds.setdefault(model, []).append(
-                    pred_frame(evals, "temporal", target, model, q, mu, cfg))
+                unit_preds[model] = pred_frame(evals, "temporal", target, model, q, mu, cfg)
 
             emit("Clim", *predict_clim(train, evals, target, levels))
             emit("Damp", *predict_damp(train, evals, target, levels))
@@ -261,7 +277,7 @@ def run_temporal(panel: pd.DataFrame, cfg: dict, targets: list[str]) -> dict:
                 if wanted is None or model in wanted:
                     q, mu, chosen = predict_ridge(train, evals, cols, target, levels, alphas, embargo)
                     emit(model, q, mu)
-                    ridge_alphas[f"{target}/{fold}/{model}"] = chosen
+                    unit_alphas[f"{target}/{fold}/{model}"] = chosen
             for name, cols in gbm_sets.items():
                 model = f"GBM_{name}"
                 if wanted is None or model in wanted:
@@ -276,6 +292,10 @@ def run_temporal(panel: pd.DataFrame, cfg: dict, targets: list[str]) -> dict:
                 seed = int(seeds.get("gbm_largescale", 0))
                 emit("GBM_LG@EC", *predict_gbm(train, evals, ec_cols + fs["static"], target,
                                                levels, gbm_params(cfg, seed)))
+            _merge(preds, unit_preds)
+            ridge_alphas.update(unit_alphas)
+            if ck is not None:
+                ck.save(unit, {"preds": unit_preds, "alphas": unit_alphas})
             print(f"[temporal/{target}/{fold}] train={len(train)} eval={len(evals)} "
                   f"({time.perf_counter() - t0:.1f}s)")
 
@@ -301,8 +321,11 @@ def static_variants(cfg: dict, available: list[str]) -> dict[str, list[str]]:
     return {str(k or ""): [c for c in (v or []) if c in available] for k, v in variants.items()}
 
 
-def run_loso(panel: pd.DataFrame, cfg: dict) -> dict:
-    """Pooled GBM refitted without each station, blind folds, primary target."""
+def run_loso(panel: pd.DataFrame, cfg: dict, ck=None) -> dict:
+    """Pooled GBM refitted without each station, blind folds, primary target.
+
+    With `ck`, each (fold, held-out station) is checkpointed as it finishes.
+    """
     levels = quantile_levels(cfg)
     fs = feature_sets(panel)
     variants = static_variants(cfg, fs["static"])
@@ -323,14 +346,22 @@ def run_loso(panel: pd.DataFrame, cfg: dict) -> dict:
             evals = evals_all[evals_all["station"] == st].reset_index(drop=True)
             if evals.empty:
                 continue
+            unit = f"loso__{fold}__{st}"
+            if ck is not None and ck.has(unit):
+                _merge(preds, ck.load(unit))
+                print(f"[loso/{fold}] held out {st}: loaded from checkpoint")
+                continue
+            unit_preds: dict[str, pd.DataFrame] = {}
             for name, cols in {"L": fs["L"], "LG": fs["L"] + fs["G"]}.items():
                 seed = int(seeds.get("gbm_largescale" if name == "LG" else "gbm_local", 0))
                 for variant, static in variants.items():
                     model = model_name(f"GBM_{name}", variant)
                     q, mu = predict_gbm(train, evals, cols + static, target, levels,
                                         gbm_params(cfg, seed))
-                    preds.setdefault(model, []).append(
-                        pred_frame(evals, "loso", target, model, q, mu, cfg))
+                    unit_preds[model] = pred_frame(evals, "loso", target, model, q, mu, cfg)
+            _merge(preds, unit_preds)
+            if ck is not None:
+                ck.save(unit, unit_preds)
             print(f"[loso/{fold}] held out {st}: train={len(train)} eval={len(evals)}")
     atomic_write_csv(index, eval_index_path("loso"))
     return {"preds": {m: str(write_preds(f, "loso", m)) for m, f in preds.items()}}
@@ -350,11 +381,15 @@ def main(argv: list[str] | None = None) -> None:
     panel = load_panel(cfg)
     targets = [PRIMARY_TARGET, *cfg["data"].get("secondary_targets", [])]
 
+    # ~5,000 model fits: a crash or a stopped session resumes from the last unit.
+    ck = checkpoints("07_models")
+    if ck.units():
+        print(f"resuming: {len(ck.units())} unit(s) already done in {ck.dir}")
     summary: dict = {"fast_mode": fast_mode()}
     if args.experiment in ("temporal", "all"):
-        summary["temporal"] = run_temporal(panel, cfg, targets)
+        summary["temporal"] = run_temporal(panel, cfg, targets, ck)
     if args.experiment in ("loso", "all"):
-        summary["loso"] = run_loso(panel, cfg)
+        summary["loso"] = run_loso(panel, cfg, ck)
     write_manifest({"models_07": summary}, replace=("models_07",))
     print("done")
 

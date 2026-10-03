@@ -25,8 +25,8 @@ GPU requirement, what runs before the pipeline, and what every stage writes.
 What to expect:
 
 - The pipeline runs **once**. Only one cell launches it.
-- Stages that already finished, with the same code, config and inputs, are
-  **skipped**. After a disconnect, Run all picks up where the run stopped.
+- Stages that already finished are **skipped**, and a stage that failed half
+  way resumes from its last finished unit (§3, "Resuming").
 - The last cell prints the results, then either "no errors in this session" or
   the full error text, and stops with a red error.
 
@@ -73,13 +73,39 @@ Options in cell 3:
   smoke mode; the stages before it are shared, so a full run after a smoke run
   only redoes the stages that smoke actually cut short.
 
-What "skipped" means: each successful stage leaves
-`outputs/_state/<stage>.json` with a fingerprint of the stage file, the shared
-modules (`shared_modules` in `colab.yaml`, by default `_*.py` and
-`config.yaml`), the declared inputs (`state_inputs`), the mode (from
-`smoke_from` on), and the previous stage's fingerprint. A change anywhere
-upstream re-runs everything after it. A failed stage loses its state and so do
-all stages after it. Deleting `outputs/_state/` forces a full run.
+### Resuming: where a run picks up
+
+A run never redoes finished work by accident. Two levels of checkpoints, both on
+Drive, make that true:
+
+**Finished stages** (`outputs/_state/<stage>.json`). A stage that succeeded is
+skipped while its *key* is unchanged. The key covers what decides its results:
+`config.yaml` and the other non-code files in `shared_modules`, the data in
+`state_inputs`, the mode (from `smoke_from` on), the stage's
+`RESULTS_VERSION`, and the key of the stage before it. **Code is not in the
+key.** Fixing a log message, a warning or a crash in a stage that already
+finished keeps its results, and the run says so:
+
+```
+[07_models] skipped: done in an earlier full run (code changed since it ran; results kept, see COLAB.md)
+```
+
+When a change does alter results (a new rule, a bug that produced wrong
+numbers), bump `RESULTS_VERSION = N` at the top of that stage file. That stage
+and every stage after it run again. `results_version` in `colab.yaml` does the
+same for the whole pipeline.
+
+**Units inside a long stage** (`outputs/_checkpoints/<stage>/`). Stages that
+take more than a few minutes save each finished unit as they go: `06b` each
+date, `07` each target x fold and each LOSO station, `07b` each fold and each
+LOSO station of the LSTM, and each Chronos fold. After a crash, a stopped cell
+or a lost session, the stage loads its finished units and computes only the
+rest. Units belong to the stage's key, so they are dropped when the key changes,
+and the folder is deleted once the stage succeeds.
+
+A failed stage loses its state, and so do all the stages after it; its unit
+checkpoints stay. `FORCE` re-runs everything selected and drops the unit
+checkpoints. Deleting `outputs/_state/` forces a full run.
 
 ## 4. How the notebook is built
 
@@ -195,6 +221,14 @@ check.
 11. **After the user's run, read `status.json` and `errors.log` first** through
     the gdrive MCP, then only the stage log they name. Do not ask the user to
     copy errors from the notebook.
+12. **Bump `RESULTS_VERSION` when, and only when, a change alters a stage's
+    results.** Logging, warnings, refactors, speed and crash fixes leave it alone,
+    so finished work is kept. A changed rule, threshold, model or formula bumps
+    it, and the agent says so to the user, since the stage and everything after
+    it will run again.
+13. **A stage that runs for more than ~10 minutes saves unit checkpoints**
+    (`_colab_runtime.Checkpoints`, through `checkpoints(stage)` in c20's
+    `_common.py`), one unit per fold, station or date.
 
 ### The pipeline contract
 
@@ -214,7 +248,9 @@ The command in `colab.yaml` `run` (normally `run_all.py`) must:
   0 % and hide what ran;
 - never keep every downloaded or computed chunk in memory until the end of a
   loop; release each one once written (Colab free has ~12 GB of RAM);
-- stop at the first failed stage and mark the rest `not_run`.
+- stop at the first failed stage and mark the rest `not_run`;
+- export each stage's key as `$STAGE_KEY`, so its unit checkpoints match it,
+  and clear the stage's checkpoints when it succeeds or is forced.
 
 **Don't write this yourself:** `_colab_runtime.stages_main()` implements the
 whole contract. How each paper uses it:

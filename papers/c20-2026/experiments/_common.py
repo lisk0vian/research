@@ -85,6 +85,20 @@ FIGURES = OUTPUTS / "figures"
 LOGS = OUTPUTS / "logs"
 INSPECT = OUTPUTS / "_inspect"
 
+
+def checkpoints(stage: str):
+    """Unit checkpoints of a long stage, on Drive next to its outputs.
+
+    The shared runtime (COLAB.md) sits next to this file on Colab and in the
+    repo's scripts/ locally; the stage's key arrives from run_all as $STAGE_KEY.
+    """
+    try:
+        import _colab_runtime as rt
+    except ImportError:
+        sys.path.insert(0, str(BASE.parents[1] / "scripts"))
+        import _colab_runtime as rt
+    return rt.Checkpoints(stage, root=OUTPUTS / rt.CHECKPOINT_DIR)
+
 # The previous provider's vocabulary, kept only as the fallback for a config
 # with no `variables` map (pre-v3 configs and the legacy test fixtures).
 LEGACY_NUMERIC_VARS = ("TT", "HR", "RR", "PP", "FF", "DD")
