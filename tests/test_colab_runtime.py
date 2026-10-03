@@ -1,0 +1,383 @@
+"""Tests for scripts/_colab_runtime.py: errors.log, status.json, resume, preflight.
+
+The contract (COLAB.md): one errors.log per session that holds every failure and
+nothing else, a status.json that tells "never ran" from "ran clean", and stage
+states that only ever skip work whose code, config and upstream are unchanged.
+"""
+
+from __future__ import annotations
+
+import json
+import sys
+import types
+from pathlib import Path
+
+import pytest
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
+SCRIPTS = REPO_ROOT / "scripts"
+if str(SCRIPTS) not in sys.path:
+    sys.path.insert(0, str(SCRIPTS))
+
+import _colab_runtime as rt  # noqa: E402
+
+
+@pytest.fixture(autouse=True)
+def _no_session(monkeypatch):
+    monkeypatch.delenv(rt.SESSION_ENV, raising=False)
+
+
+@pytest.fixture
+def log(tmp_path: Path) -> rt.RunLog:
+    return rt.RunLog(tmp_path / "outputs" / "logs")
+
+
+# --- errors.log and status.json ---------------------------------------------------
+
+def test_session_starts_with_an_empty_errors_log(log):
+    log.dir.mkdir(parents=True)
+    log.errors.write_text("old failure\n", encoding="utf-8")
+    log.begin_session(mode="full")
+    assert log.errors.read_text(encoding="utf-8") == ""
+    assert not log.has_errors()
+    assert log.read_status()["state"] == "setup"
+
+
+def test_begin_session_exports_the_id_only_when_asked(log):
+    import os
+
+    log.begin_session(export=False)
+    assert rt.SESSION_ENV not in os.environ
+    sid = log.begin_session()
+    assert os.environ[rt.SESSION_ENV] == sid
+
+
+def test_errors_accumulate_in_one_file(log):
+    log.begin_session()
+    log.record_error("stage 03", "exit 1", "Traceback...\nValueError: x")
+    log.record_error("notebook cell", "KeyError: 'a'")
+    text = log.error_text()
+    assert "stage 03: exit 1" in text and "ValueError: x" in text
+    assert "notebook cell: KeyError" in text
+
+
+def test_status_updates_merge_stages(log):
+    log.begin_session()
+    log.update_status(stages={"00": rt.OK})
+    log.update_status(stages={"01": rt.FAILED}, failed_stage="01")
+    st = log.read_status()
+    assert st["stages"] == {"00": "ok", "01": "failed"}
+    assert st["failed_stage"] == "01"
+
+
+def test_tail_keeps_the_end_of_a_log(tmp_path):
+    p = tmp_path / "s.log"
+    p.write_text("\n".join(f"line {i}" for i in range(200)), encoding="utf-8")
+    out = rt.tail(p, 5)
+    assert out.splitlines() == [f"line {i}" for i in range(195, 200)]
+
+
+def test_raise_if_errors_is_quiet_on_a_clean_session(log, capsys):
+    log.begin_session()
+    rt.raise_if_errors(log)
+    assert "no errors" in capsys.readouterr().out
+
+
+def test_raise_if_errors_raises_an_already_recorded_error(log):
+    log.begin_session()
+    log.record_error("stage 06b", "exit 1")
+    with pytest.raises(rt.RecordedError) as exc:
+        rt.raise_if_errors(log)
+    assert exc.value._recorded
+
+
+# --- notebook cell hook -------------------------------------------------------------
+
+class _FakeShell:
+    def __init__(self):
+        self.handler = None
+        self.shown = []
+
+    def set_custom_exc(self, types_, handler):
+        self.handler = handler
+
+    def showtraceback(self, exc_tuple, tb_offset=None):
+        self.shown.append(exc_tuple[0])
+
+
+def _fake_ipython(monkeypatch, shell):
+    mod = types.ModuleType("IPython")
+    mod.get_ipython = lambda: shell
+    monkeypatch.setitem(sys.modules, "IPython", mod)
+
+
+def test_cell_exception_lands_in_errors_log(log, monkeypatch):
+    shell = _FakeShell()
+    _fake_ipython(monkeypatch, shell)
+    log.begin_session()
+    assert rt.install_cell_error_hook(log)
+    try:
+        raise FileNotFoundError("metrics_long.csv")
+    except FileNotFoundError as e:
+        shell.handler(shell, type(e), e, e.__traceback__)
+    assert "FileNotFoundError" in log.error_text()
+    assert shell.shown == [FileNotFoundError]  # still shown in the cell
+    assert log.read_status()["state"] == "failed"
+
+
+def test_recorded_error_is_not_logged_twice(log, monkeypatch):
+    shell = _FakeShell()
+    _fake_ipython(monkeypatch, shell)
+    log.begin_session()
+    rt.install_cell_error_hook(log)
+    log.record_error("preflight", "no GPU")
+    err = rt.RecordedError("preflight: no GPU")
+    shell.handler(shell, type(err), err, None)
+    assert log.error_text().count("no GPU") == 1
+
+
+# --- running commands ---------------------------------------------------------------
+
+def _script(path: Path, body: str) -> Path:
+    path.write_text(body, encoding="utf-8")
+    return path
+
+
+def test_run_command_turns_progress_events_into_text(tmp_path, capsys):
+    _script(tmp_path / "s.py",
+            "import json\n"
+            "for n in range(1, 4):\n"
+            "    print('#PROG ' + json.dumps({'level': 'fold', 'n': n, 'total': 3, 'desc': 'D1'}))\n"
+            "print('done')\n")
+    code, out = rt.run_command(["s.py"], cwd=tmp_path)
+    printed = capsys.readouterr().out
+    assert code == 0
+    assert "#PROG" not in printed
+    assert "D1: 1/3" in printed and "D1: 3/3" in printed
+    assert "D1: 2/3" not in printed  # intermediate ticks are not lines
+    assert out.strip() == "done"
+
+
+def test_run_command_returns_the_traceback_tail(tmp_path):
+    _script(tmp_path / "bad.py", "raise ValueError('boom')\n")
+    code, out = rt.run_command(["bad.py"], cwd=tmp_path)
+    assert code != 0 and "ValueError: boom" in out
+
+
+# --- preflight ------------------------------------------------------------------------
+
+def test_missing_gpu_fails_hard(log, monkeypatch, tmp_path):
+    monkeypatch.setattr(rt, "gpu_available", lambda: False)
+    log.begin_session()
+    with pytest.raises(rt.RecordedError):
+        rt.preflight({"gpu": "required"}, tmp_path, log)
+    assert "no GPU" in log.error_text()
+    assert "Change runtime type" in log.error_text()
+    assert log.read_status()["failed_stage"] == "preflight"
+
+
+def test_failing_probe_stops_before_the_pipeline(log, monkeypatch, tmp_path):
+    monkeypatch.setattr(rt, "gpu_available", lambda: True)
+    _script(tmp_path / "probe.py", "raise SystemExit('KeyValueNotFoundError')\n")
+    log.begin_session()
+    with pytest.raises(rt.RecordedError):
+        rt.preflight({"gpu": "required", "probes": [["probe.py"]]}, tmp_path, log)
+    assert "preflight/probes" in log.error_text()
+    assert "KeyValueNotFoundError" in log.error_text()
+
+
+def test_passing_preflight_marks_the_session_ready(log, monkeypatch, tmp_path):
+    monkeypatch.setattr(rt, "gpu_available", lambda: False)
+    _script(tmp_path / "setup.py", "print('ok')\n")
+    log.begin_session()
+    rt.preflight({"gpu": "none", "setup": [["setup.py"]]}, tmp_path, log)
+    assert not log.has_errors()
+    assert log.read_status()["state"] == "ready"
+
+
+# --- run_pipeline ------------------------------------------------------------------
+
+def test_pipeline_failure_does_not_raise_and_is_recorded(log, tmp_path):
+    _script(tmp_path / "run_all.py", "import sys\nprint('bad arg')\nsys.exit(2)\n")
+    log.begin_session()
+    code = rt.run_pipeline({"run": ["run_all.py"]}, tmp_path, log)
+    assert code == 2
+    assert "run_all.py --mode full exited 2" in log.error_text()
+    assert log.read_status()["state"] == "failed"
+
+
+def test_pipeline_args_carry_mode_force_and_only(log, tmp_path):
+    _script(tmp_path / "run_all.py", "import sys\nprint(' '.join(sys.argv[1:]))\n")
+    log.begin_session()
+    rt.run_pipeline({"run": ["run_all.py"]}, tmp_path, log, mode="smoke", force=True,
+                    only=["03"])
+    assert log.read_status()["state"] == "ok"
+
+
+# --- resume ---------------------------------------------------------------------
+
+STAGES = ["00_a", "01_b", "02_c"]
+
+
+@pytest.fixture
+def code(tmp_path: Path) -> Path:
+    d = tmp_path / "code"
+    d.mkdir()
+    for s in STAGES:
+        (d / f"{s}.py").write_text(f"# {s}\n", encoding="utf-8")
+    (d / "_common.py").write_text("# shared\n", encoding="utf-8")
+    (d / "config.yaml").write_text("a: 1\n", encoding="utf-8")
+    return d
+
+
+def _state(tmp_path, code, mode="full", inputs=None):
+    return rt.StageState(tmp_path / "state", code, mode,
+                         shared=["_*.py", "config.yaml"], inputs=inputs)
+
+
+def _done_all(st):
+    fps = st.fingerprints(STAGES)
+    for s in STAGES:
+        st.mark_done(s, fps[s], 1.0)
+    return fps
+
+
+def test_unchanged_stages_are_current(tmp_path, code):
+    st = _state(tmp_path, code)
+    _done_all(st)
+    fps = _state(tmp_path, code).fingerprints(STAGES)
+    assert all(st.is_current(s, fps[s]) for s in STAGES)
+
+
+def test_editing_a_stage_reruns_it_and_everything_after(tmp_path, code):
+    st = _state(tmp_path, code)
+    _done_all(st)
+    (code / "01_b.py").write_text("# changed\n", encoding="utf-8")
+    fps = _state(tmp_path, code).fingerprints(STAGES)
+    assert [s for s in STAGES if st.is_current(s, fps[s])] == ["00_a"]
+
+
+def test_editing_config_or_a_shared_module_reruns_everything(tmp_path, code):
+    st = _state(tmp_path, code)
+    _done_all(st)
+    (code / "config.yaml").write_text("a: 2\n", encoding="utf-8")
+    fps = _state(tmp_path, code).fingerprints(STAGES)
+    assert not any(st.is_current(s, fps[s]) for s in STAGES)
+
+
+def test_a_new_input_file_reruns_everything(tmp_path, code):
+    src = tmp_path / "SOURCE.json"
+    src.write_text('{"sha": 1}', encoding="utf-8")
+    st = _state(tmp_path, code, inputs=[src])
+    _done_all(st)
+    src.write_text('{"sha": 2}', encoding="utf-8")
+    fps = _state(tmp_path, code, inputs=[src]).fingerprints(STAGES)
+    assert not any(st.is_current(s, fps[s]) for s in STAGES)
+
+
+def test_smoke_state_never_satisfies_a_full_run(tmp_path, code):
+    _done_all(_state(tmp_path, code, mode="smoke"))
+    full = _state(tmp_path, code, mode="full")
+    fps = full.fingerprints(STAGES)
+    assert not any(full.is_current(s, fps[s]) for s in STAGES)
+
+
+def test_failure_invalidates_the_stage_and_downstream(tmp_path, code):
+    st = _state(tmp_path, code)
+    fps = _done_all(st)
+    st.invalidate_from("01_b", STAGES)
+    assert st.is_current("00_a", fps["00_a"])
+    assert not st.is_current("01_b", fps["01_b"])
+    assert not st.is_current("02_c", fps["02_c"])
+
+
+def test_state_file_records_mode_and_fingerprint(tmp_path, code):
+    st = _state(tmp_path, code)
+    fps = _done_all(st)
+    data = json.loads(st.path("00_a").read_text(encoding="utf-8"))
+    assert data["fingerprint"] == fps["00_a"] and data["mode"] == "full"
+
+
+# --- spec ---------------------------------------------------------------------
+
+def test_load_spec_fills_defaults(tmp_path):
+    (tmp_path / "colab.yaml").write_text("title: T\ndrive_folder: x\n", encoding="utf-8")
+    spec = rt.load_spec(tmp_path)
+    assert spec["gpu"] == "none" and spec["run"] == ["run_all.py"] and spec["probes"] == []
+
+
+def test_mode_enters_the_chain_at_smoke_from(tmp_path, code):
+    _done_all(_state(tmp_path, code, mode="smoke"))
+    full = _state(tmp_path, code, mode="full")
+    fps = full.fingerprints(STAGES, mode_from="01_b")
+    smoke_fps = _state(tmp_path, code, mode="smoke").fingerprints(STAGES, mode_from="01_b")
+    assert fps["00_a"] == smoke_fps["00_a"]  # shared by smoke and full
+    assert fps["01_b"] != smoke_fps["01_b"] and fps["02_c"] != smoke_fps["02_c"]
+
+
+def test_custom_stage_file_is_hashed(tmp_path, code):
+    other = tmp_path / "src"
+    other.mkdir()
+    (other / "a.py").write_text("x = 1\n", encoding="utf-8")
+    st = rt.StageState(tmp_path / "s", code, "full", stage_file=lambda s: other / "a.py")
+    before = st.fingerprints(["a"])["a"]
+    (other / "a.py").write_text("x = 2\n", encoding="utf-8")
+    assert st.fingerprints(["a"])["a"] != before
+
+
+# --- the generic runner (templates/paper/run_all.py.template) ------------------------
+
+@pytest.fixture
+def pipeline(tmp_path, monkeypatch):
+    exp = tmp_path / "experiments"
+    exp.mkdir()
+    (exp / "00_load.py").write_text("print('load')\n", encoding="utf-8")
+    (exp / "01_fit.py").write_text("print('fit')\n", encoding="utf-8")
+    monkeypatch.setenv("OUTPUT_DIR", str(tmp_path / "outputs"))
+    monkeypatch.delenv("EXP_FAST", raising=False)
+    return exp
+
+
+def _logs(tmp_path):
+    return tmp_path / "outputs" / "logs"
+
+
+def test_generic_runner_runs_discovered_stages_and_resumes(pipeline, tmp_path, capsys):
+    assert rt.stages_main(pipeline, argv=[]) == 0
+    assert (_logs(tmp_path) / "00_load.log").read_text(encoding="utf-8").count("load") >= 1
+    capsys.readouterr()
+    assert rt.stages_main(pipeline, argv=[]) == 0
+    assert capsys.readouterr().out.count("skipped") == 2
+
+
+def test_generic_runner_records_a_failed_stage(pipeline, tmp_path):
+    (pipeline / "01_fit.py").write_text("raise RuntimeError('diverged')\n", encoding="utf-8")
+    assert rt.stages_main(pipeline, argv=[]) == 1
+    errors = (_logs(tmp_path) / "errors.log").read_text(encoding="utf-8")
+    assert "stage 01_fit" in errors and "RuntimeError: diverged" in errors
+    status = json.loads((_logs(tmp_path) / "status.json").read_text(encoding="utf-8"))
+    assert status["stages"] == {"00_load": "ok", "01_fit": "failed"}
+
+
+def test_generic_runner_only_forces_the_named_stage(pipeline, tmp_path, capsys):
+    rt.stages_main(pipeline, argv=[])
+    capsys.readouterr()
+    rt.stages_main(pipeline, argv=["--only", "01"])
+    out = capsys.readouterr().out
+    assert "[01_fit] exit=0" in out and "[00_load]" not in out
+
+
+def test_generic_runner_with_no_stages_is_a_no_op(tmp_path, monkeypatch):
+    monkeypatch.setenv("OUTPUT_DIR", str(tmp_path / "outputs"))
+    (tmp_path / "experiments").mkdir()
+    assert rt.stages_main(tmp_path / "experiments", argv=[]) == 0
+
+
+def test_generic_runner_uses_a_custom_command(pipeline, tmp_path):
+    (pipeline / "main.py").write_text(
+        "import sys\nprint('stage', sys.argv[2])\n", encoding="utf-8")
+    rc = rt.stages_main(pipeline, stages=["prep", "train"],
+                        command=lambda s, f: ["main.py", "--stage", s],
+                        stage_file=lambda s: pipeline / "main.py", argv=[])
+    assert rc == 0
+    assert "stage train" in (_logs(tmp_path) / "train.log").read_text(encoding="utf-8")
