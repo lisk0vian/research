@@ -375,15 +375,3 @@ Spatial evidence depended on the neighborhood definition: global autocorrelation
 
 The contribution of the framework lies in articulating these perspectives and pairing them with checks that delimit the interpretation of the results. The findings provide quantitative information for assessing institutional needs, in combination with the status of cases and the available response capacity. The code, the analysis plan and the results are published to facilitate their verification; their extension to other registers requires validating the conditions of application and the behavior of the procedures used.
 
-# Data availability
-
-The data and code that support the findings of this study are openly available in Zenodo [@evangelista2026data], which includes the input files as downloaded, the analysis package, the frozen analysis plan and every reported result. The RENIPED extract is redistributed under the terms of the Peruvian National Open Data Platform (ODC-By), the INEI population projections under their source terms and the provincial boundary layer under MPL-2.0.
-
-# Declaration of competing interest
-
-The authors declare that they have no known competing financial interests or personal relationships that could have appeared to influence the work reported in this paper.
-
-# Funding
-
-<!-- TODO: confirm the funding statement with the authors before submission. -->
-This work was funded by SENATI, Peru (Project C26-2026).
