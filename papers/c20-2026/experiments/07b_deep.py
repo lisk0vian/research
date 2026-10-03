@@ -285,12 +285,26 @@ def explode(ev: pd.DataFrame, q: np.ndarray, mu: np.ndarray, horizons: list[str]
 
 # --- Chronos -------------------------------------------------------------------
 
+def dtype_kwarg(transformers_version: str) -> str:
+    """`dtype` from transformers 4.56 on; `torch_dtype` before, which it deprecates.
+
+    Older releases do not know `dtype` and would silently load in float32.
+    """
+    try:
+        major, minor = (int(x) for x in transformers_version.split(".")[:2])
+    except ValueError:
+        return "dtype"
+    return "dtype" if (major, minor) >= (4, 56) else "torch_dtype"
+
+
 def chronos_pipeline(model_id: str):
     import torch
+    import transformers
     from chronos import BaseChronosPipeline
     device = "cuda" if torch.cuda.is_available() else "cpu"
     dtype = torch.bfloat16 if device == "cuda" else torch.float32
-    return BaseChronosPipeline.from_pretrained(model_id, device_map=device, torch_dtype=dtype)
+    return BaseChronosPipeline.from_pretrained(
+        model_id, device_map=device, **{dtype_kwarg(transformers.__version__): dtype})
 
 
 def window_quantiles(paths: np.ndarray, windows: dict[str, tuple[int, int]],

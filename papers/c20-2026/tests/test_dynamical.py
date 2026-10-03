@@ -381,3 +381,13 @@ def test_chronos_does_not_retry_other_errors():
 
     with pytest.raises(ValueError):
         m07b.predict_paths(Pipe(), [1, 2], 28, 3, batch_size=2)
+
+
+def test_chronos_dtype_argument_follows_the_transformers_version():
+    """Colab warned "`torch_dtype` is deprecated! Use `dtype` instead!"."""
+    import importlib
+    m07b = importlib.import_module("07b_deep")
+    assert m07b.dtype_kwarg("4.57.1") == "dtype"
+    assert m07b.dtype_kwarg("5.0.0") == "dtype"
+    assert m07b.dtype_kwarg("4.55.4") == "torch_dtype"
+    assert m07b.dtype_kwarg("4.40.0") == "torch_dtype"
