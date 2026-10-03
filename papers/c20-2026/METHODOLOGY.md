@@ -5,6 +5,9 @@ data**. It supersedes v2.0 (single-station Huancayo, IGP-LAMAR). The evidence
 behind each choice and the rejected alternatives are in
 [`DESIGN_DECISIONS.md`](DESIGN_DECISIONS.md). Operating parameters live in
 `experiments/config.yaml`; this file states concept and method, not numbers.
+Each decision is checked against the published literature, with the supporting
+references and the open recommendations (R1–R4), in
+[`LITERATURE_REVIEW.md`](LITERATURE_REVIEW.md).
 
 ## 1. Question, scope and contribution
 

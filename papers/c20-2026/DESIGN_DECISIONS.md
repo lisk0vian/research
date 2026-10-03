@@ -22,7 +22,7 @@ the pre-registered decision rule (§8 there) written before any real score.
 | `06`–`10` | **implemented**: Niño + ROMI, Clim/Damp/Pers/Ridge/GBM, LSTM, Chronos, ensemble, metrics, H1–H3, LOSO, T1–T6, F1–F6 |
 | Tests | 343, about 50 s locally, no real data, no training |
 | Real-data run | **not yet.** First run happens on Colab (notebook §4b: smoke run, then full) |
-| `references.bib` | still to rebuild (§7.5) |
+| `references.bib` | **rebuilt**, 94 verified entries; the design checked against the literature in `LITERATURE_REVIEW.md` (recommendations R1–R4 open) |
 | `paper/main.qmd` | owned by the author; title/highlights/abstract still describe v2 (§7.6) |
 
 **Resume here.** Sync `experiments/` and the notebook to Drive in place,
@@ -141,16 +141,21 @@ tropical Andean station. Huancayo appears only in electricity-demand and
 cosmetic-dentistry contexts; Andes glacier work is mass-balance reconstruction
 from observations, with nobody serving those users a verified forecast.
 
-But the framing is not new. Two papers occupy it:
+The framing has precedents, though fewer than this section first claimed:
 
-- Miller et al. 2019, *J. Climate*, `10.1175/jcli-d-18-0389.1` — assessing
-  predictability sources and windows of high predictability.
-- Allen 2023, *QJRMS*, `10.1002/qj.4478` — a conditional decomposition of
-  proper scores quantifying sources of information.
+- Allen et al. 2023, *QJRMS*, `10.1002/qj.4478`: a conditional decomposition
+  of proper scores that quantifies the sources of information in a forecast.
+  This one does supply the machinery.
+- Windows of opportunity for subseasonal skill (Mariotti et al. 2020, BAMS)
+  frame conditional skill.
+- *Corrected 2026-10-02:* Miller & Wang 2019 (`10.1175/jcli-d-18-0389.1`) was
+  listed here as occupying the framing. Its abstract shows it studies
+  **seasonal** ENSO/NAO predictability in CFSv2 reforecasts, not a subseasonal
+  predictability budget; it is no longer cited.
 
-So "decompose the predictability budget" is Miller's framing with Allen's
-machinery. Novelty has to come from *where* it is applied (subseasonal, high
-altitude, tropics) and *what it finds*, not from the idea.
+Novelty has to come from *where* the decomposition is applied (subseasonal,
+high altitude, tropics) and *what it finds*, not from the idea. The full check
+against the literature is in [`LITERATURE_REVIEW.md`](LITERATURE_REVIEW.md).
 
 An empty niche is ambiguous evidence. It can mean untapped opportunity or that
 nobody thought it worth doing because the signal is weak — and §3.2 says the
@@ -330,22 +335,17 @@ decision 13 prefers the loop.
 4. **`manifest.yaml` is scaffold.** Its single claim cites
    `experiments/exp-01/results/metrics.json`, which does not exist, and its only
    figure points at `media/image2.png`, which does not exist either.
-5. **`references.bib` needs a 30–50 entry rebuild.** Verified and ready:
-   Mouatadid et al. 2021 NeurIPS workshop (no DOI, citable by URL) defines
-   `Climatology++` and `Persistence++`; Mouatadid et al. 2023 NeurIPS D&B is
-   `SubseasonalClimateUSA`, arXiv:2109.10399v4, the benchmark our numbers will be
-   compared to; Hwang et al. 2019 KDD `10.1145/3292500.3330674`; He et al. 2021
-   AAAI `10.1609/aaai.v35i1.16090`; Toth & Buizzard `10.1002/qj.2619`; Vitart et
-   al. 2017 BAMS `10.1175/BAMS-D-16-0017.1`; Robertson et al. 2023 WAF
-   `10.1175/WAF-D-22-0160.1`; Miller & Wang 2019 `10.1175/jcli-d-18-0389.1`;
-   Allen et al. 2023 `10.1002/qj.4478`; Brier 1950; Newey & West 1987
-   `10.2307/1913610`; Murphy 1993 `10.1175/1520-0434(1993)008<0281:wiagfa>2.0.co;2`.
+5. **`references.bib` — rebuilt 2026-10-02.** 94 entries, 88 generated from
+   CrossRef metadata by DOI, 6 checked by hand against OpenAlex. The method,
+   the decision each reference supports, and the errors found are in
+   [`LITERATURE_REVIEW.md`](LITERATURE_REVIEW.md). Corrections to the list that
+   used to be here: `10.1002/qj.2619` is Buizza & Leutbecher 2015, not "Toth &
+   Buizza"; Miller & Wang 2019 is a seasonal CFSv2 study and is dropped; the
+   2021 NeurIPS workshop paper could not be resolved, so `SubseasonalClimateUSA`
+   is cited in its published NeurIPS 2023 form (`10.52202/075280-0349`); Clark
+   & West 2007 and Hersbach 2000 resolve by DOI.
 
-   Still missing and not obtainable without institutional access: Kuhn & Johnson
-   2013, Clark & West 2007, Hersbach 2000. Google Scholar is blocked by anti-bot;
-   the arXiv HTTP API and Crossref work and were used for all of the above.
-
-   Two corrections to earlier claims in this file: `Climatology++` and
+   Earlier corrections, still valid: `Climatology++` and
    `Persistence++` are **not** from KDD 2019 — that paper never mentions them.
    And "weeks 2–6" is **not** a WMO definition; WMO/WIPPS says a minimum of four
    weeks, and the 3–4 / 5–6 windows come from the USBR Rodeo.
