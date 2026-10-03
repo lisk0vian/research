@@ -1,7 +1,9 @@
 """Local predictors X_L (design §7.2). All dated <= d, as anomalies vs own climatology.
 
-TT lags/means/A0, DTR/TTmax/TTmin, HR, log1p RR sums, PP level + tendency,
-7-day u/v means, target-midpoint day-of-year sin/cos.
+TT lags/means/A0, DTR/TTmax/TTmin, HR, log1p RR sums, target-midpoint
+day-of-year sin/cos; plus PP level + tendency and 7-day u/v means only when the
+source carries pressure and wind (SENAMHI carries neither, so those features are
+not emitted rather than emitted as all-NaN columns).
 
 Three properties this stage must guarantee (METHODOLOGY §4, README §12):
 
@@ -34,6 +36,7 @@ from _common import (
     PROCESSED,
     atomic_write_csv,
     ensure_dirs,
+    fold_windows,
     load_config,
     paths_report,
     progress,
@@ -59,6 +62,26 @@ PP_TENDENCY_LAG = 3
 WIND_WINDOW = 7
 
 
+def configure(cfg: dict) -> None:
+    """Read the window constants from `config.predictors.local`.
+
+    The module defaults above are the design values and what the unit tests
+    exercise; a config that names them overrides them for the run.
+    """
+    global LAGS, MEAN_WINDOWS, A0_WINDOW, RR_WINDOWS
+    local = (cfg.get("predictors") or {}).get("local")
+    if not isinstance(local, dict):
+        return
+    LAGS = tuple(int(x) for x in local.get("lags", LAGS))
+    MEAN_WINDOWS = tuple(int(x) for x in local.get("mean_windows", MEAN_WINDOWS))
+    A0_WINDOW = int(local.get("a0_window", A0_WINDOW))
+    RR_WINDOWS = tuple(int(x) for x in local.get("rr_windows", RR_WINDOWS))
+
+
+def _has_data(frame: pd.DataFrame, col: str) -> bool:
+    return col in frame.columns and bool(frame[col].notna().any())
+
+
 # --- seasonal references ---------------------------------------------------
 
 def fit_variable_climatologies(daily: pd.DataFrame, coef_tt: np.ndarray,
@@ -69,6 +92,10 @@ def fit_variable_climatologies(daily: pd.DataFrame, coef_tt: np.ndarray,
     doy_tr = doy_fractional(train["date"])
     out = {"TT_mean": {"coef": coef_tt, "source": "climatology json"}}
     for var in ANOMALY_VARS:
+        # A variable the provider does not carry (pressure, for SENAMHI) has no
+        # climatology to fit; its features are skipped downstream.
+        if not _has_data(train, var):
+            continue
         values = train[var].to_numpy(dtype="float64")
         out[var] = {"coef": fit_harmonic(doy_tr, values, k, period), "source": "fitted here"}
     return out
@@ -92,8 +119,8 @@ def min_periods(window: int, coverage: float) -> int:
     return max(1, int(np.ceil(window * coverage)))
 
 
-def build_daily_features(anom: pd.DataFrame, rain: pd.Series, u: pd.Series,
-                         v: pd.Series, coverage: float) -> pd.DataFrame:
+def build_daily_features(anom: pd.DataFrame, rain: pd.Series, u: pd.Series | None,
+                         v: pd.Series | None, coverage: float) -> pd.DataFrame:
     """Every feature that does not depend on the horizon, as one row per date.
 
     Windows are `rolling(...).mean()` on a date-sorted frame, so each includes the
@@ -117,6 +144,8 @@ def build_daily_features(anom: pd.DataFrame, rain: pd.Series, u: pd.Series,
     for var, name in (("DTR", "DTR_anom_7d"), ("TT_max", "TTmax_anom_7d"),
                       ("TT_min", "TTmin_anom_7d"), ("HR_mean", "HR_anom_7d"),
                       ("PP_mean", "PP_anom_7d")):
+        if f"A_{var}" not in anom.columns:
+            continue
         mp = min_periods(A0_WINDOW, coverage)
         f[name] = anom[f"A_{var}"].where(anom["valid"]).rolling(
             A0_WINDOW, min_periods=mp).mean()
@@ -126,13 +155,21 @@ def build_daily_features(anom: pd.DataFrame, rain: pd.Series, u: pd.Series,
         f[f"log1p_RR_sum_{w}"] = np.log1p(
             rain.where(anom["valid"]).rolling(w, min_periods=mp).sum())
 
+    # HR also gets the 30-day window the design lists (HR_anom_7_30).
+    if "A_HR_mean" in anom.columns and 30 in MEAN_WINDOWS:
+        f["HR_anom_30d"] = anom["A_HR_mean"].where(anom["valid"]).rolling(
+            30, min_periods=min_periods(30, coverage)).mean()
+
     # Tendency is a difference, not a mean: it needs the exact lag, so a missing
     # value at either end makes the whole feature missing.
-    pp = anom["PP_mean"].where(anom["valid"])
-    f["PP_tendency_3d"] = pp - pp.shift(PP_TENDENCY_LAG)
+    if "PP_mean" in anom.columns:
+        pp = anom["PP_mean"].where(anom["valid"])
+        f["PP_tendency_3d"] = pp - pp.shift(PP_TENDENCY_LAG)
 
     mp = min_periods(WIND_WINDOW, coverage)
     for name, series in (("u", u), ("v", v)):
+        if series is None or not series.notna().any():
+            continue
         f[f"{name}_mean_{WIND_WINDOW}d"] = series.where(
             anom["valid"]).rolling(WIND_WINDOW, min_periods=mp).mean()
 
@@ -190,14 +227,13 @@ def compute_fold_features(daily: pd.DataFrame, issuances: pd.DataFrame, fold: di
     coef_tt = np.asarray(json.loads(meta_path.read_text(encoding="utf-8"))
                          ["coefficients"]["C2"], dtype="float64")
 
-    train_lo = pd.Timestamp(fold["train"][0], 1, 1)
-    train_hi = pd.Timestamp(fold["train"][1], 12, 31)
+    train_lo, train_hi, _, _ = fold_windows(fold, cfg)
 
     clims = fit_variable_climatologies(daily, coef_tt, train_lo, train_hi, k, period)
     anom = anomaly_frame(daily, clims, period)
 
-    feats = build_daily_features(anom, daily["RR_sum"], daily["u_mean"],
-                                 daily["v_mean"], coverage)
+    feats = build_daily_features(anom, daily["RR_sum"], daily.get("u_mean"),
+                                 daily.get("v_mean"), coverage)
 
     rows = issuances[issuances["fold"] == fold["id"]].copy()
     if rows.empty:
@@ -223,6 +259,7 @@ def compute_fold_features(daily: pd.DataFrame, issuances: pd.DataFrame, fold: di
 
 def main() -> None:
     cfg = load_config()
+    configure(cfg)
     for required in (DAILY_CSV, ISSUANCES_CSV):
         if not required.is_file():
             raise SystemExit(f"ERROR: {required} not found — run 02 and 04 first")

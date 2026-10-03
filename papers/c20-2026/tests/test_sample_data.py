@@ -131,12 +131,12 @@ class TestCoverageCheckOnShortData:
         })
         return mod.check_v4_coverage(frame, _common.load_config())
 
-    def test_short_series_reports_the_absent_blind_years(self):
+    def test_short_series_reports_the_absent_blind_windows(self):
         out = self._v4(2)
         assert out["verdict"] == "REVIEW_coverage_gaps"
         assert "absent from the data" in out["detail"]
-        for y in (2024, 2025):
-            assert str(y) in out["detail"]
+        for fold_id in ("B1", "B2"):
+            assert fold_id in out["detail"]
 
     def test_it_does_not_raise(self):
         """The regression: this used to be KeyError('2024')."""

@@ -43,6 +43,7 @@ from _common import (
     atomic_write_csv,
     atomic_write_json,
     ensure_dirs,
+    fold_windows,
     load_config,
     paths_report,
     progress,
@@ -57,11 +58,16 @@ from _harmonic import (
     eval_harmonic,
     fit_harmonic,
     infer_k_and_trend,
+    years_since,
 )
 
 DAILY_CSV = PROCESSED / "daily.csv"
 CLIM_CSV = PROCESSED / "daily_clim.csv"
 TARGET = "TT_mean"
+# Secondary targets get their own harmonic per fold: Tmin and Tmax peak at
+# different times of year than the mean, so reusing TT_mean's curve would leave
+# a seasonal residual that reads as skill (the DTR lesson from stage 05).
+SECONDARY_TARGETS = ("TT_min", "TT_max")
 # Window (days) used by C1 and by the tercile thresholds (config +/-15d).
 WINDOW_DAYS = 15
 
@@ -172,10 +178,16 @@ def tercile_thresholds(dates, values: np.ndarray, window: int = WINDOW_DAYS
 
 # --- fold driver -----------------------------------------------------------
 
-def train_window(fold: dict) -> tuple[pd.Timestamp, pd.Timestamp]:
-    """Inclusive last training date for a fold's `train: [y0, y1]` window."""
-    y0, y1 = fold["train"]
-    return pd.Timestamp(y0, 1, 1), pd.Timestamp(y1, 12, 31)
+def train_window(fold: dict, cfg: dict | None = None) -> tuple[pd.Timestamp, pd.Timestamp]:
+    """Inclusive training window of a fold (both fold forms, see fold_windows)."""
+    train_start, train_end, _, _ = fold_windows(fold, cfg)
+    return train_start, train_end
+
+
+def test_window(fold: dict, cfg: dict | None = None) -> tuple[pd.Timestamp, pd.Timestamp]:
+    """Inclusive test window of a fold."""
+    _, _, test_start, test_end = fold_windows(fold, cfg)
+    return test_start, test_end
 
 
 def compute_fold_climatology(daily: pd.DataFrame, fold: dict, cfg: dict) -> tuple[pd.DataFrame, dict]:
@@ -184,7 +196,7 @@ def compute_fold_climatology(daily: pd.DataFrame, fold: dict, cfg: dict) -> tupl
     k = int(clim_cfg.get("harmonics_K", 3))
     period = float(clim_cfg.get("period_days", PERIOD_DAYS))
 
-    train_start, train_end = train_window(fold)
+    train_start, train_end = train_window(fold, cfg)
     train = daily[(daily["date"] >= train_start) & (daily["date"] <= train_end)]
     train = train[train[TARGET].notna()]
     if train.empty:
@@ -195,15 +207,18 @@ def compute_fold_climatology(daily: pd.DataFrame, fold: dict, cfg: dict) -> tupl
 
     doy_tr = doy_fractional(train["date"])
     y_tr = train[TARGET].to_numpy(dtype="float64")
+    # C3's trend runs on elapsed years from the start of training, so its
+    # slope is degC per year and extrapolates forward into the test window.
+    t_tr = years_since(train["date"], train_start)
 
     coef_c2 = fit_harmonic(doy_tr, y_tr, k, period, trend=False)
-    coef_c3 = fit_harmonic(doy_tr, y_tr, k, period, trend=True)
+    coef_c3 = fit_harmonic(doy_tr, y_tr, k, period, trend=True, t=t_tr)
     c1_smooth = fit_c1_window(train["date"], y_tr, WINDOW_DAYS)
 
     # Anomalies are defined against the fold's own C2 on every day it predicts.
     doy_all = doy_fractional(daily["date"])
     c2_all = eval_harmonic(coef_c2, doy_all, period)
-    c3_all = eval_harmonic(coef_c3, doy_all, period)
+    c3_all = eval_harmonic(coef_c3, doy_all, period, t=years_since(daily["date"], train_start))
     c1_all = apply_c1_window(c1_smooth, daily["date"])
 
     out = pd.DataFrame({
@@ -225,6 +240,32 @@ def compute_fold_climatology(daily: pd.DataFrame, fold: dict, cfg: dict) -> tupl
     sigma = {h: seasonal_sigma_hq(resid_dates, resid, win, train_start, train_end)
              for h, win in windows.items()}
 
+    # Secondary targets: own C2 per fold, own sigma_h,q and terciles.
+    secondary: dict[str, dict] = {}
+    for var in SECONDARY_TARGETS:
+        if var not in daily.columns:
+            continue
+        tr_v = daily[(daily["date"] >= train_start) & (daily["date"] <= train_end)
+                     & daily[var].notna()]
+        if len(tr_v) < 2 * k + 2:
+            continue
+        doy_v = doy_fractional(tr_v["date"])
+        y_v = tr_v[var].to_numpy(dtype="float64")
+        coef_v = fit_harmonic(doy_v, y_v, k, period)
+        clim_v = eval_harmonic(coef_v, doy_all, period)
+        out[f"C2_{var}"] = clim_v
+        out[f"A_C2_{var}"] = daily[var].to_numpy(dtype="float64") - clim_v
+        ok = out["valid"] & out[f"A_C2_{var}"].notna()
+        secondary[var] = {
+            "C2": [float(c) for c in coef_v],
+            "sigma_hq": {h: seasonal_sigma_hq(out.loc[ok, "date"],
+                                              out.loc[ok, f"A_C2_{var}"].to_numpy(dtype="float64"),
+                                              win, train_start, train_end)
+                         for h, win in windows.items()},
+            "terciles_C2": tercile_thresholds(
+                tr_v["date"], y_v - eval_harmonic(coef_v, doy_v, period), WINDOW_DAYS),
+        }
+
     meta = {
         "fold": fold["id"],
         "role": fold.get("role"),
@@ -237,6 +278,9 @@ def compute_fold_climatology(daily: pd.DataFrame, fold: dict, cfg: dict) -> tupl
             "C2": [float(c) for c in coef_c2],
             "C3": [float(c) for c in coef_c3],
         },
+        # C3's trend column is years since this date (see _harmonic.years_since).
+        "C3_trend_origin": str(train_start.date()),
+        "secondary_targets": secondary,
         "C1_window_days": WINDOW_DAYS,
         "sigma_hq": sigma,
         "terciles_C2": tercile_thresholds(
@@ -281,8 +325,9 @@ def main() -> None:
             atomic_write_json(meta, path)
 
             # Evaluation days belong to exactly one fold: the one that tests them.
-            test_year = fold["test"]
-            mask = out["date"].dt.year == test_year
+            t0, t1 = test_window(fold, cfg)
+            test_year = fold["test"] if not isinstance(fold["test"], (list, tuple))                 else f"{t0.date()}..{t1.date()}"
+            mask = (out["date"] >= t0) & (out["date"] <= t1)
             piece = out.loc[mask].copy()
             piece["station"] = code
             merged = piece if merged is None else pd.concat([merged, piece], ignore_index=True)

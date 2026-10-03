@@ -1,10 +1,13 @@
 """Daily aggregation on the local civil day (design §3.2).
 
-Builds TT_mean/max/min/DTR, HR/PP/FF means, RR_sum and vector-mean u/v with the
-completeness rules from config.daily_aggregation. Wind is never averaged in
-degrees: FF/DD are converted to u/v components, averaged as vectors, then
-converted back. Calms contribute u = v = 0, so they dilute the vector mean
-instead of biasing the direction.
+Builds TT_mean/max/min/DTR, HR mean and RR_sum with the completeness rules from
+config.daily_aggregation. Pressure (PP) and wind (FF/DD) are aggregated only
+when the source carries them: SENAMHI has neither, and its `PP` is renamed to
+`RR` at read time. Their columns stay in the contract as NaN so the schema does
+not depend on the provider. When wind exists it is never averaged in degrees:
+FF/DD become u/v components, averaged as vectors, then converted back. Calms
+contribute u = v = 0, so they dilute the vector mean instead of biasing the
+direction.
 
 Writes data/processed/daily.csv (gitignored, regenerable). No shift is applied:
 00/V1 verified the source timestamps are already local civil time.
@@ -66,26 +69,30 @@ def aggregate_station(df: pd.DataFrame, cfg: dict) -> pd.DataFrame:
 
     df = df.copy()
     df["date"] = df["timestamp"].dt.normalize()
-    df = add_wind_components(df)
+    has_wind = {"FF", "DD"} <= set(df.columns)
+    if has_wind:
+        df = add_wind_components(df)
 
+    spec = {
+        "n_hours": ("TT", "count"),
+        "TT_mean": ("TT", "mean"),
+        "TT_max": ("TT", "max"),
+        "TT_min": ("TT", "min"),
+        "HR_mean": ("HR", "mean"),
+        "RR_n_hours": ("RR", "count"),
+        "RR_sum": ("RR", "sum"),
+    }
+    if "PP" in df.columns:
+        spec["PP_mean"] = ("PP", "mean")
+    if has_wind:
+        spec.update(FF_mean=("FF", "mean"), u_mean=("u", "mean"), v_mean=("v", "mean"))
     grouped = df.groupby("date", sort=True)
-    daily = grouped.agg(
-        n_hours=("TT", "count"),
-        TT_mean=("TT", "mean"),
-        TT_max=("TT", "max"),
-        TT_min=("TT", "min"),
-        HR_mean=("HR", "mean"),
-        PP_mean=("PP", "mean"),
-        FF_mean=("FF", "mean"),
-        u_mean=("u", "mean"),
-        v_mean=("v", "mean"),
-        RR_n_hours=("RR", "count"),
-        RR_sum=("RR", "sum"),
-    )
+    daily = grouped.agg(**spec)
 
     daily["DTR"] = daily["TT_max"] - daily["TT_min"]
-    # Direction is the vector mean's bearing, not the mean of DD in degrees.
-    daily["DD_mean"] = np.rad2deg(np.arctan2(-daily["u_mean"], -daily["v_mean"])) % 360.0
+    if has_wind:
+        # Direction is the vector mean's bearing, not the mean of DD in degrees.
+        daily["DD_mean"] = np.rad2deg(np.arctan2(-daily["u_mean"], -daily["v_mean"])) % 360.0
 
     daily["valid"] = daily["n_hours"] >= min_hours
     if require_blocks:
@@ -145,7 +152,7 @@ def main() -> None:
             f"ERROR: {QC_PATH} not found — run 01_qc_hourly.py first"
         )
     df = read_station_keyed(QC_PATH, parse_dates=["timestamp"])
-    for var in NUMERIC_VARS:
+    for var in [v for v in NUMERIC_VARS if v in df.columns]:
         df[var] = pd.to_numeric(df[var], errors="coerce")
 
     print(paths_report())

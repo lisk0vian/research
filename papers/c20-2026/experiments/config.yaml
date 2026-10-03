@@ -1,13 +1,17 @@
 project: C20-2026-temperatura
-design_version: "2.0"
+design_version: "3.0"
 
 # Raw source. fetch_source.py resolves the resource through the catalogue API
 # rather than pinning a URL, because the portal republishes these packages under
 # new links. Everything else about the source lives in data/SOURCE.json, written
 # at fetch time from the bytes themselves.
+#
+# The host is datosabiertos.gob.pe; datos.gob.pe does not resolve. The host sits
+# behind a WAF that answers a script User-Agent with HTTP 418, so fetch_source
+# sends a browser one.
 source:
   dataset_id: "b884a001-f444-4c87-91b2-bee1891e6eb7"   # SENAMHI GBON/RBON, ODC-By
-  api: "https://www.datos.gob.pe/api/3/action"
+  api: "https://www.datosabiertos.gob.pe/api/3/action"
   provider: "SENAMHI"
   file: "senamhi.csv"
   # Left empty on purpose. With one CSV on the package the fetch is unambiguous,
@@ -17,71 +21,89 @@ source:
   prefer_format: ""
 
 # One provider for all five, deliberately. Mixing providers would confound
-# instrument with station: a difference between Huancayo and another site
-# would be uninterpretable if one of them changed instruments mid-record.
-# The elevation gradient is the contrast of interest, so the provider is
-# held fixed to make it readable.
+# instrument with station; the elevation gradient is the contrast of interest,
+# so the provider is held fixed to make it readable.
 #
-# ubigeo is stored as a string, six digits, zero-padded. The portal serves
-# the column as a float and codes below 100000 arrive as 40514.0; leading
-# zeros are unrecoverable downstream, so they are restored at the boundary
-# (see _common.station_codes) and declared here as strings.
+# ubigeo is stored as a string, six digits, zero-padded. The portal serves the
+# column as a float and codes below 100000 arrive as 40514.0; leading zeros are
+# restored at the read boundary (see _common.normalize_ubigeo).
 #
-# TO_CONFIRM_FETCH: names, coordinates and elevations below are the published
-# station registry values for the SENAMHI GBON/RBON network. fetch_source.py
-# reports the ubigeo codes, row counts and date coverage it actually found in
-# data/SOURCE.json; if a code is absent there, this list is wrong and the
-# station drops out of every stage until it is corrected.
+# Every value below was read from the file of record (fetched 2026-10-02,
+# FECHA_CORTE 20240630), not from a registry page.
 stations:
-  - ubigeo: "040514"
+  - ubigeo: "150701"
     name: "Matucana"
-    lat: -11.8450
-    lon: -75.3567
+    network: GBON
+    department: Lima
+    lat: -11.8391
+    lon: -76.3780
     elev_m: 2421
-  - ubigeo: "040117"
-    name: "Chachapoyas"
-    lat: -6.1119
-    lon: -77.8697
-    elev_m: 2335
-  - ubigeo: "040122"
-    name: "Huancayo"
-    lat: -12.0401
-    lon: -75.3205
-    elev_m: 3298
-  - ubigeo: "040506"
-    name: "Pisco"
-    lat: -13.4083
-    lon: -76.3506
-    elev_m: 347
   - ubigeo: "040114"
-    name: "Quito"
-    lat: -0.1817
-    lon: -78.4678
-    elev_m: 2850
+    name: "San Jose de Uzuna"
+    network: RBON
+    department: Arequipa
+    lat: -16.5810
+    lon: -71.3284
+    elev_m: 3269
+  - ubigeo: "230201"
+    name: "Candarave"
+    network: RBON
+    department: Tacna
+    lat: -17.2680
+    lon: -70.2541
+    elev_m: 3410
+  - ubigeo: "151007"
+    name: "Carania"
+    network: GBON
+    department: Lima
+    lat: -12.3444
+    lon: -75.8722
+    elev_m: 3840
+  - ubigeo: "040514"
+    name: "Imata"
+    network: RBON
+    department: Arequipa
+    lat: -15.8427
+    lon: -71.0906
+    elev_m: 4475
 
-# Legacy single-station keys, kept so a pre-migration config still loads.
-# Nothing reads them; remove them once no stage falls back to `station`.
-station:
-  n_stations: 5
+# Source column -> internal name. This map is the only place a provider's
+# vocabulary meets the pipeline's. It exists because `PP` meant pressure in hPa
+# for the previous provider and means precipitation in mm/h for this one; the
+# old QC range [640, 720] nulled every precipitation value with exit code 0.
+# Internal names: TT air temperature (hourly mean, degC), HR relative humidity
+# (%), RR precipitation (mm/h). NUMERIC_VARS is derived from the values here.
+variables:
+  TEMP: TT
+  HR: HR
+  PP: RR
+
+# How read_hourly builds the timestamp. FECHA is yyyymmdd and HORA is hhmmss,
+# both served as integers (HORA 0 is 00:00:00, 10000 is 01:00:00).
+timestamp:
+  date_col: FECHA
+  time_col: HORA
 
 data:
   resolution: hourly
-  coverage_declared: [2018, 2025]
+  coverage_declared: ["2015-01-01", "2024-06-30"]
   local_tz_offset_hours: -5
-  tz_of_source: TO_VERIFY        # V1
-  target_variable: TT
+  tz_of_source: local_civil      # V1, re-checked by 00 on every run
+  target_variable: TT_mean
+  secondary_targets: [TT_min, TT_max]
   non_predictors: [FECHA_CORTE, UBIGEO]
 qc_hourly:
-  range: {TT: [-15, 35], HR: [0, 100], PP: [640, 720], RR: [0, 60], FF: [0, 40], DD: [0, 360]}
+  # TT lower bound is -25, not -15: IMATA at 4475 m records -16.7 degC and the
+  # old bound (set for a 3329 m station) discarded legitimate values.
+  range: {TT: [-25, 35], HR: [0, 100], RR: [0, 60]}
   hr_clip_upper: 103
   step_TT_max_degC: 8
   stuck_run_hours: 6
 daily_aggregation:
   min_hours: 20
   require_each_6h_block: true
-  rr_min_hours: 24
+  rr_min_hours: 20
   rr_flag_hours: [22, 23]
-  wind: vector_components
 target:
   type: period_mean_anomaly
   horizons:
@@ -102,45 +124,76 @@ climatology:
   sensitivity: [C1_window_pm15d, C3_harmonic_plus_trend]
   fit_on: daily_training_only
 predictors:
-  local: [TT_anom_lags_0_6, TT_anom_mean_7_14_30, A0_7d, DTR_anom_7d, TTmax_anom_7d, TTmin_anom_7d,
-          HR_anom_7_30, log1p_RR_sum_7_30, PP_anom_7d, PP_tendency_3d, u_mean_7d, v_mean_7d,
-          doy_sin_cos_target_midpoint]
-  # Fraccion de una ventana trailing que debe estar valida para usar su media.
-  # Ventanas cortas quedan NaN; nunca se imputa el target ni sus predictores.
+  # Local predictors from TT/HR/RR only: the file has no wind and no pressure.
+  local:
+    lags: [0, 1, 2, 3, 4, 5, 6]
+    mean_windows: [7, 14, 30]
+    a0_window: 7
+    rr_windows: [7, 30]
+  # Fraction of a trailing window that must be valid for its mean to be used.
+  # Short windows become NaN; neither the target nor its predictors are imputed.
   min_window_coverage: 0.5
   large_scale:
-    nino34_weekly: {source: CPC_OISST_weekly, lag_days: 7}
-    nino12_weekly: {source: CPC_OISST_weekly, lag_days: 7}
-    rmm: {components: [RMM1, RMM2], lag_days: 1, provider: TO_VERIFY}
-    era5_pcs: {lag_days: 5, k: 5, k_sensitivity: [3, 10], fit: per_fold_training_only,
-               domain: TO_CONFIRM_D4, variables: TO_CONFIRM_D4}
-  excluded_leaky: [ONI, ICEN]
+    nino34_weekly: {source: CPC_OISST_weekly, url: "https://www.cpc.ncep.noaa.gov/data/indices/wksst9120.for", lag_days: 7}
+    nino12_weekly: {source: CPC_OISST_weekly, url: "https://www.cpc.ncep.noaa.gov/data/indices/wksst9120.for", lag_days: 7}
+    # Real-time OMI (Kiladis et al. 2014). Not OMI: OMI is built from 30-96 day
+    # band-passed OLR, a centred filter that reads the future (the same leak as
+    # ONI/ICEN). ROMI uses only past data.
+    romi: {source: NOAA_PSL, url: "https://psl.noaa.gov/mjo/mjoindex/romi.cpcolr.1x.txt", components: [ROMI1, ROMI2], lag_days: 1}
+  excluded_leaky: [ONI, ICEN, OMI]
 models:
   references: [Clim, Damp, Pers]
-  candidates: [Ridge_L, Ridge_LG, GBM_L, GBM_LG]
+  candidates: [Ridge_L, Ridge_LG, GBM_L, GBM_LG, LSTM_LG, Chronos, Ensemble]
   strategy: direct_per_horizon
   damp: {intercept: true, by: season_quarter}
   gaussian_sigma: by_horizon_and_quarter
-  gbm_quantiles: [0.05, 0.10, 0.15, 0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50,
-                  0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95]
+  quantiles: [0.05, 0.10, 0.15, 0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50,
+              0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95]
   quantile_crossing_fix: rearrangement
-  primary_model_selection: {among: [Ridge_LG, GBM_LG], criterion: mean_CRPS_dev_folds}
+  # Hyperparameters chosen on the dev folds only, then frozen before B1.
+  ridge: {alphas: [0.1, 1.0, 10.0, 100.0, 1000.0]}
+  gbm: {n_estimators: 300, learning_rate: 0.03, num_leaves: 15, min_child_samples: 40,
+        subsample: 0.8, subsample_freq: 1, colsample_bytree: 0.8}
+  lstm: {seq_len: 60, hidden: 32, layers: 1, dropout: 0.1, epochs: 30, batch_size: 256,
+         lr: 0.001, patience: 5, val_fraction: 0.15}
+  chronos: {model_id: "amazon/chronos-bolt-small", context_days: 512, enabled: true}
+  tft: {enabled: false}
+  ensemble: {members: [Ridge_LG, GBM_LG, LSTM_LG, Chronos], weights: inverse_dev_crps}
+  primary_model_selection: {among: [Ridge_LG, GBM_LG, LSTM_LG, Ensemble], criterion: mean_CRPS_dev_folds}
+  # --fast (smoke runs, tests): tiny budgets. Numbers from a fast run are never cited.
+  fast: {gbm_n_estimators: 20, lstm_epochs: 1, lstm_hidden: 8, bootstrap_B: 50, chronos_enabled: false}
 validation:
   scheme: rolling_origin_expanding
   embargo_days: 28
+  # Twelve-month July-June test windows, because the record ends 2024-06-30: a
+  # calendar-year blind fold for 2024 would be half empty. Training starts at
+  # train_start and ends the day before the test window; the embargo is applied
+  # to training issuances in 04, so no training target reaches the test window.
+  train_start: "2015-01-01"
   folds:
-    - {id: D1, train: [2018, 2020], test: 2021, role: dev}
-    - {id: D2, train: [2018, 2021], test: 2022, role: dev}
-    - {id: D3, train: [2018, 2022], test: 2023, role: dev}
-    - {id: B1, train: [2018, 2023], test: 2024, role: blind}
-    - {id: B2, train: [2018, 2024], test: 2025, role: blind}
+    - {id: D1, test: ["2019-07-01", "2020-06-30"], role: dev}
+    - {id: D2, test: ["2020-07-01", "2021-06-30"], role: dev}
+    - {id: D3, test: ["2021-07-01", "2022-06-30"], role: dev}
+    - {id: B1, test: ["2022-07-01", "2023-06-30"], role: blind}
+    - {id: B2, test: ["2023-07-01", "2024-06-30"], role: blind}
   freeze_before_blind: [hyperparameters, primary_model]
+  # Leave-one-station-out runs on the blind windows only: train on the other
+  # four stations with dates before the test window (no temporal leak), score
+  # the held-out station. Static descriptors replace a station embedding, which
+  # would be undefined for a station never seen in training.
+  loso: {folds: [B1, B2], static_features: [elev_m, lat, lon]}
 metrics:
   deterministic: [MAE, RMSE, ACC, MSSS_clim, MSSS_damp, murphy_decomposition]
   probabilistic: [CRPS_quantile_grid, CRPSS_clim, CRPSS_damp, RPSS_terciles, PIT, reliability, coverage_50_90, sharpness]
+  # Frost index from hourly-mean temperature (TEMP is an hourly mean, so this
+  # understates true frost): P(period-mean TT_min < threshold).
+  frost: {threshold_degC: 0.0, target: TT_min}
   fair_scores: false
 inference:
   population: blind_test_only
+  # Stations are pooled; the moving-block bootstrap resamples the same time
+  # blocks for every station so the cross-station correlation is preserved.
+  pooling: stations_pooled_joint_time_blocks
   h1_ridge: clark_west_hac
   h1_gbm: block_bootstrap_delta_mse
   h1_probabilistic: block_bootstrap_delta_crps
@@ -151,30 +204,28 @@ inference:
   multiplicity: {method: holm, families: {H1: 3, H2: 1, H3: 3}}
   alpha: 0.05
   secondary_calibration_criterion: {interval: 0.90, coverage_range: [0.85, 0.95]}
-extensions_enabled: {E1_LSTM_TFT: false, E2_multistation: false, E3_S2S_benchmark: false,
-                     E4_long_climatology: false, E5_Tmin: false}
+extensions_enabled: {E1_LSTM_TFT: true, E2_multistation: true, E3_S2S_benchmark: false,
+                     E4_long_climatology: false, E5_Tmin: true}
 
-# Seeds are declared here, not chosen by the stage that needs them: the stages
-# that consume randomness (07 GBM, 09 moving-block bootstrap) do not exist yet,
-# so there is nothing to seed today. Declaring the block now means whoever
-# writes 07 reads the number instead of inventing one.
 # Every stochastic stage takes its seed from `seeds[<key>]`; a stage may not
 # hardcode one.
 seeds:
   master: 20260930
   gbm_local: 101
   gbm_largescale: 202
+  lstm: 505
   bootstrap_crpss: 303
   bootstrap_robustness: 404
 
 # Schema used by _sample_data.py to synthesise a local dataset for functional
-# testing without touching data/raw/dataset.csv. "huancayo" is what the pipeline
-# consumes today; when the multi-station migration lands this becomes the
-# SENAMHI GBON schema and the switch is a one-line config change.
+# testing without touching the real file. Ten years from 2015 so a smoke run
+# covers every fold; the generator trims to the real record end (2024-06-30).
 sample_data:
-  schema: huancayo
+  schema: senamhi
   seed: 42
-  years: 2
+  years: 10
+  start_year: 2015
+  end_date: "2024-06-30"
 
 # Progress display (see experiments/_progress.py). Stages emit `#PROG` event
 # lines; whoever reads draws. These flags decide which levels get a bar. Phase

@@ -35,6 +35,7 @@ from _common import (
     PROCESSED,
     atomic_write_csv,
     ensure_dirs,
+    fold_windows,
     load_config,
     paths_report,
     progress,
@@ -57,7 +58,16 @@ ISSUANCE_COLUMNS = [
     "fold", "role", "issue_date", "weekday", "kind", "horizon",
     "lag_start", "lag_end", "target_start", "target_end",
     "n_days", "n_valid_days", "A_C2_target", "valid_target", "n_train_days",
+    "C2_target",
 ]
+# Secondary targets (03 fits their climatologies). Each adds an anomaly, a
+# validity flag and the window-mean climatology, which is what reconstructs an
+# absolute temperature (T = C + A) for the frost index.
+SECONDARY_TARGETS = ("TT_min", "TT_max")
+
+
+def secondary_columns(var: str) -> list[str]:
+    return [f"A_C2_target_{var}", f"valid_target_{var}", f"C2_target_{var}"]
 
 
 # --- calendar helpers ------------------------------------------------------
@@ -73,6 +83,19 @@ def weekly_dates(start: pd.Timestamp, end: pd.Timestamp, weekday: int) -> pd.Dat
 def horizon_windows(horizons: dict) -> dict[str, tuple[int, int]]:
     """{'W1': [1, 7]} -> {'W1': (1, 7)}; first element is the lag offset."""
     return {h: (int(v[0]), int(v[1])) for h, v in horizons.items()}
+
+
+def load_fold_meta(fold_id: str, station: str | None = None) -> dict:
+    """The fold's whole climatology JSON (same lookup as load_fold_coefficients)."""
+    candidates = ([CLIM_JSON_DIR / station / f"{fold_id}.json"] if station
+                  else [CLIM_JSON_DIR / f"{fold_id}.json",
+                        *sorted(CLIM_JSON_DIR.glob(f"*/{fold_id}.json"))])
+    for path in candidates:
+        if path.is_file():
+            return json.loads(path.read_text(encoding="utf-8"))
+    tried = ", ".join(str(c) for c in candidates)
+    raise SystemExit(f"ERROR: no climatology for fold {fold_id} (tried: {tried}) — "
+                     "run 03_climatology.py first")
 
 
 def load_fold_coefficients(fold_id: str, station: str | None = None) -> np.ndarray:
@@ -98,8 +121,9 @@ def load_fold_coefficients(fold_id: str, station: str | None = None) -> np.ndarr
 
 
 def anomalies_for_window(daily: pd.DataFrame, coef: np.ndarray, start: pd.Timestamp,
-                         end: pd.Timestamp, period: float) -> pd.DataFrame:
-    """Observed TT minus the fold's C2, restricted to [start, end].
+                         end: pd.Timestamp, period: float,
+                         variable: str = "TT_mean") -> pd.DataFrame:
+    """Observed `variable` minus the fold's C2, restricted to [start, end].
 
     The climatology is reconstructed from the fold coefficients rather than read
     from `daily_clim.csv`, because training years are absent there by design.
@@ -110,7 +134,7 @@ def anomalies_for_window(daily: pd.DataFrame, coef: np.ndarray, start: pd.Timest
     doy = doy_fractional(sub["date"])
     sub = sub.copy()
     sub["C2"] = eval_harmonic(coef, doy, period)
-    sub["A_C2"] = sub["TT_mean"] - sub["C2"]
+    sub["A_C2"] = sub[variable] - sub["C2"]
     return sub
 
 
@@ -135,6 +159,10 @@ class AnomalyPanel:
         self._csum = np.concatenate([[0.0], np.cumsum(self.usable.astype("float64"))])
         self._vsum = np.concatenate(
             [[0.0], np.cumsum(np.where(self.usable, anomalies, 0.0))])
+        clim = (ordered["C2"].to_numpy(dtype="float64") if "C2" in ordered.columns
+                else np.full(len(ordered), np.nan))
+        self._csum_clim = np.concatenate(
+            [[0.0], np.cumsum(np.where(self.usable, clim, 0.0))])
         self._i64 = self.dates.astype("datetime64[ns]").astype("int64")
 
     @staticmethod
@@ -158,8 +186,10 @@ class AnomalyPanel:
         n_valid = int(self._csum[hi] - self._csum[lo])
         if n_valid >= min_valid:
             value = float((self._vsum[hi] - self._vsum[lo]) / n_valid)
+            clim = float((self._csum_clim[hi] - self._csum_clim[lo]) / n_valid)
         else:
             value = np.nan  # never imputed (METHODOLOGY §3)
+            clim = np.nan
 
         return {
             "target_start": t0,
@@ -168,6 +198,7 @@ class AnomalyPanel:
             "n_valid_days": n_valid,
             "A_C2_target": value,
             "valid_target": bool(n_valid >= min_valid),
+            "C2_target": clim,
         }
 
 
@@ -195,9 +226,7 @@ def compute_fold_issuances(daily: pd.DataFrame, fold: dict, cfg: dict) -> pd.Dat
         raise SystemExit(f"ERROR: unknown issuance weekday {weekday_name!r}")
     weekday = WEEKDAY_NAMES[weekday_name]
 
-    train_lo, train_hi = pd.Timestamp(fold["train"][0], 1, 1), pd.Timestamp(fold["train"][1], 12, 31)
-    test_start = pd.Timestamp(fold["test"], 1, 1)
-    test_end = pd.Timestamp(fold["test"], 12, 31)
+    train_lo, train_hi, test_start, test_end = fold_windows(fold, cfg)
 
     # The caller hands in one station's block, so the code is recoverable from
     # it. Passing it explicitly would be clearer, but inferring keeps the
@@ -216,6 +245,13 @@ def compute_fold_issuances(daily: pd.DataFrame, fold: dict, cfg: dict) -> pd.Dat
     # Panel spans the training window and the test year: a target may reach from
     # one into the other, and the embargo decides whether that is allowed.
     panel = AnomalyPanel(anomalies_for_window(daily, coef, train_lo, test_end, period))
+    secondary_panels: dict[str, AnomalyPanel] = {}
+    sec_meta = (load_fold_meta(fold["id"], station).get("secondary_targets") or {})
+    for var in SECONDARY_TARGETS:
+        if var in sec_meta and var in daily.columns:
+            coef_v = np.asarray(sec_meta[var]["C2"], dtype="float64")
+            secondary_panels[var] = AnomalyPanel(
+                anomalies_for_window(daily, coef_v, train_lo, test_end, period, var))
 
     rows: list[dict] = []
 
@@ -228,7 +264,15 @@ def compute_fold_issuances(daily: pd.DataFrame, fold: dict, cfg: dict) -> pd.Dat
             # usual case: its W3-4 window falls in January.
             if kind == "eval" and tgt["target_end"] > test_end:
                 continue
+            extra = {}
+            for var in SECONDARY_TARGETS:
+                if var in secondary_panels:
+                    sec = secondary_panels[var].target(issue_date, lag_start, lag_end, need)
+                    extra[f"A_C2_target_{var}"] = sec["A_C2_target"]
+                    extra[f"valid_target_{var}"] = sec["valid_target"]
+                    extra[f"C2_target_{var}"] = sec["C2_target"]
             rows.append({
+                **extra,
                 "fold": fold["id"],
                 "role": fold.get("role", ""),
                 "issue_date": issue_date,
@@ -255,7 +299,9 @@ def compute_fold_issuances(daily: pd.DataFrame, fold: dict, cfg: dict) -> pd.Dat
     out = pd.DataFrame(rows)
     if not out.empty:
         out = out.sort_values(["issue_date", "horizon", "kind"]).reset_index(drop=True)
-        out = out[ISSUANCE_COLUMNS]
+        sec_cols = [c for var in SECONDARY_TARGETS for c in secondary_columns(var)
+                    if c in out.columns]
+        out = out[ISSUANCE_COLUMNS + sec_cols]
     return out
 
 
@@ -303,7 +349,8 @@ def main() -> None:
         ev = sub[sub["kind"] == "eval"]
         tr = sub[sub["kind"] == "train"]
         print(f"[{fold['id']}] eval={len(ev)} train={len(tr)} "
-              f"| test {fold['test']} | valid targets by horizon: "
+              f"| test {fold_windows(fold, cfg)[2].date()}..{fold_windows(fold, cfg)[3].date()} "
+              f"| valid targets by horizon: "
               + ", ".join(
                   f"{h}:{int(g['valid_target'].sum())}/{len(g)}"
                   for h, g in sub.groupby("horizon")))

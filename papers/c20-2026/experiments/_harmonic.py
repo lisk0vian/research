@@ -26,15 +26,29 @@ def doy_fractional(dates: pd.Series | pd.DatetimeIndex,
     return (idx - start).dt.total_seconds().to_numpy() / 86400.0
 
 
+def years_since(dates: pd.Series | pd.DatetimeIndex, origin) -> np.ndarray:
+    """Elapsed time in years from `origin`: the axis a secular trend is fitted on."""
+    idx = pd.DatetimeIndex(dates)
+    return ((idx - pd.Timestamp(origin)).total_seconds() / (86400.0 * PERIOD_DAYS)).to_numpy()
+
+
 def design_matrix(doy: np.ndarray, k: int, period: float = PERIOD_DAYS,
-                  trend: bool = False) -> np.ndarray:
-    """Columns [1, sin(2pi m doy/p), cos(2pi m doy/p) for m in 1..k, (doy)]."""
+                  trend: bool = False, t: np.ndarray | None = None) -> np.ndarray:
+    """Columns [1, sin(2pi m doy/p), cos(2pi m doy/p) for m in 1..k, (t)].
+
+    The trend column is elapsed time `t`, never day-of-year. Day-of-year resets
+    every January, so a "trend" on it is a sawtooth that fits a spurious
+    within-year ramp and extrapolates nothing; that was C3 until design v3, and
+    it is why C3 degraded out of sample. `t` is required when `trend` is set.
+    """
     cols = [np.ones_like(doy)]
     for m in range(1, k + 1):
         cols.append(np.sin(2 * np.pi * m * doy / period))
         cols.append(np.cos(2 * np.pi * m * doy / period))
     if trend:
-        cols.append(doy)
+        if t is None:
+            raise ValueError("a trend needs an elapsed-time axis t (see years_since)")
+        cols.append(np.asarray(t, dtype="float64"))
     return np.column_stack(cols)
 
 
@@ -50,16 +64,18 @@ def infer_k_and_trend(coef: np.ndarray) -> tuple[int, bool]:
 
 
 def fit_harmonic(doy: np.ndarray, values: np.ndarray, k: int,
-                 period: float = PERIOD_DAYS, trend: bool = False) -> np.ndarray:
+                 period: float = PERIOD_DAYS, trend: bool = False,
+                 t: np.ndarray | None = None) -> np.ndarray:
     """Least-squares coefficients; NaN rows are dropped, never imputed."""
     mask = np.isfinite(doy) & np.isfinite(values)
-    X = design_matrix(doy[mask], k, period, trend)
+    X = design_matrix(doy[mask], k, period, trend,
+                      None if t is None else np.asarray(t)[mask])
     coef, *_ = np.linalg.lstsq(X, values[mask], rcond=None)
     return coef
 
 
 def eval_harmonic(coef: np.ndarray, doy: np.ndarray,
-                  period: float = PERIOD_DAYS) -> np.ndarray:
-    """Evaluate fitted coefficients."""
+                  period: float = PERIOD_DAYS, t: np.ndarray | None = None) -> np.ndarray:
+    """Evaluate fitted coefficients (pass the same time axis `t` used to fit a trend)."""
     k, has_trend = infer_k_and_trend(coef)
-    return design_matrix(doy, k, period, has_trend) @ coef
+    return design_matrix(doy, k, period, has_trend, t) @ coef

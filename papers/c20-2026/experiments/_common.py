@@ -83,7 +83,36 @@ FIGURES = OUTPUTS / "figures"
 LOGS = OUTPUTS / "logs"
 INSPECT = OUTPUTS / "_inspect"
 
-NUMERIC_VARS = ("TT", "HR", "RR", "PP", "FF", "DD")
+# The previous provider's vocabulary, kept only as the fallback for a config
+# with no `variables` map (pre-v3 configs and the legacy test fixtures).
+LEGACY_NUMERIC_VARS = ("TT", "HR", "RR", "PP", "FF", "DD")
+
+
+def variable_map(cfg: dict) -> dict[str, str]:
+    """Source column -> internal name, from `config.variables`."""
+    return {str(k): str(v) for k, v in (cfg.get("variables") or {}).items()}
+
+
+def numeric_vars(cfg: dict) -> tuple[str, ...]:
+    """Internal numeric variables, derived from the map rather than restated.
+
+    Restating them is how `PP` came to mean pressure in one place and
+    precipitation in another: the config moved to a new provider and this
+    tuple did not.
+    """
+    mapped = tuple(variable_map(cfg).values())
+    return mapped or LEGACY_NUMERIC_VARS
+
+
+def _declared_numeric_vars() -> tuple[str, ...]:
+    try:
+        cfg = yaml.safe_load(CONFIG_PATH.read_text(encoding="utf-8")) or {}
+    except (OSError, yaml.YAMLError):
+        return LEGACY_NUMERIC_VARS
+    return numeric_vars(cfg)
+
+
+NUMERIC_VARS = _declared_numeric_vars()
 
 # Environment names this pipeline knows. EXP_ENV is a *check*, not a switch:
 # the notebook still exports DATA_DIR/OUTPUT_DIR explicitly, and EXP_ENV only
@@ -234,26 +263,84 @@ def read_station_keyed(path: Path, **kwargs) -> pd.DataFrame:
     return df
 
 
-def read_hourly(path: Path | None = None) -> pd.DataFrame:
-    """Read the raw CSV with local civil timestamps and canonical station codes.
+def build_timestamp(dates: pd.Series, times: pd.Series) -> pd.Series:
+    """Timestamp from integer `yyyymmdd` and `hhmmss` columns.
 
-    The `year/month/day/hour` columns are authoritative; `FECHA_CORTE` is a
-    snapshot date and is not a per-row timestamp, so it is dropped (it is in
-    `config.data.non_predictors`).
-
-    UBIGEO is normalised here because this is the last point at which the raw
-    value is still visible.
+    HORA arrives as an integer, so 01:00:00 is 10000 and midnight is 0; the
+    zero-padding to six digits is what makes those parse as times at all.
     """
+    d = dates.astype("string").str.replace(r"\.0$", "", regex=True).str.zfill(8)
+    t = times.astype("string").str.replace(r"\.0$", "", regex=True).str.zfill(6)
+    return pd.to_datetime(d + t, format="%Y%m%d%H%M%S", errors="coerce")
+
+
+def read_hourly(path: Path | None = None, cfg: dict | None = None) -> pd.DataFrame:
+    """Read the raw CSV with local civil timestamps, internal variable names and
+    canonical station codes.
+
+    Two schemas are recognised. When the file carries the config's timestamp
+    columns (`FECHA`+`HORA` for SENAMHI) it is the provider of record: the
+    timestamp is built from them and `config.variables` renames the source
+    columns to internal names (`TEMP`->`TT`, `PP`->`RR`). Otherwise it is the
+    legacy `year/month/day/hour` contract, read verbatim. The rename is tied to
+    the schema on purpose: applying a SENAMHI map to a file where `PP` is
+    pressure would silently relabel pressure as rain.
+
+    `FECHA_CORTE` is a snapshot date, not a per-row timestamp (it is in
+    `config.data.non_predictors`). UBIGEO is normalised here because this is the
+    last point at which the raw value is still visible.
+    """
+    cfg = load_config() if cfg is None else cfg
     df = pd.read_csv(path or RAW_CSV, dtype={"FECHA_CORTE": "string", "UBIGEO": "string"})
-    df["timestamp"] = pd.to_datetime(
-        dict(
-            year=df["year"], month=df["month"], day=df["day"], hour=df["hour"]
-        ),
-        errors="coerce",
-    )
+    ts_cfg = cfg.get("timestamp") or {}
+    date_col, time_col = ts_cfg.get("date_col"), ts_cfg.get("time_col")
+    if date_col and time_col and {date_col, time_col} <= set(df.columns):
+        df["timestamp"] = build_timestamp(df[date_col], df[time_col])
+        mapping = variable_map(cfg)
+        missing = [src for src in mapping if src not in df.columns]
+        if missing:
+            raise SystemExit(f"ERROR: config.variables names source columns absent "
+                             f"from the file: {missing}")
+        clash = [dst for src, dst in mapping.items()
+                 if dst != src and dst in df.columns and dst not in mapping]
+        if clash:
+            raise SystemExit(f"ERROR: renaming would overwrite existing columns {clash}")
+        df = df.rename(columns=mapping)
+    else:
+        df["timestamp"] = pd.to_datetime(
+            dict(
+                year=df["year"], month=df["month"], day=df["day"], hour=df["hour"]
+            ),
+            errors="coerce",
+        )
     if "UBIGEO" in df.columns:
         df["UBIGEO"] = df["UBIGEO"].map(normalize_ubigeo)
     return df
+
+
+def fold_windows(fold: dict, cfg: dict | None = None
+                 ) -> tuple[pd.Timestamp, pd.Timestamp, pd.Timestamp, pd.Timestamp]:
+    """(train_start, train_end, test_start, test_end) for one fold, inclusive.
+
+    Design v3 folds give the test window as dates (`test: [start, end]`) and
+    train from `validation.train_start` to the day before the test window. The
+    legacy form (`train: [y0, y1]`, `test: year`) is still read so the older
+    fixtures keep meaning what they meant. The embargo is not applied here: it
+    belongs to training *issuances* (04), not to the climatology fit, whose
+    inputs all predate the test window anyway.
+    """
+    test = fold["test"]
+    if isinstance(test, (list, tuple)):
+        test_start, test_end = pd.Timestamp(test[0]), pd.Timestamp(test[1])
+        start = fold.get("train_start") or ((cfg or {}).get("validation") or {}).get("train_start")
+        if start is None:
+            raise SystemExit(f"ERROR: fold {fold.get('id')} has no train_start "
+                             "(set validation.train_start)")
+        return (pd.Timestamp(start), test_start - pd.Timedelta(days=1),
+                test_start, test_end)
+    y0, y1 = fold["train"]
+    return (pd.Timestamp(y0, 1, 1), pd.Timestamp(y1, 12, 31),
+            pd.Timestamp(int(test), 1, 1), pd.Timestamp(int(test), 12, 31))
 
 
 def write_table(df: pd.DataFrame, name: str) -> Path:

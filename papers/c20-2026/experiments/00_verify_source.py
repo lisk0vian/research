@@ -19,6 +19,7 @@ from _common import (
     NUMERIC_VARS,
     RAW_CSV,
     ensure_dirs,
+    fold_windows,
     load_config,
     paths_report,
     read_hourly,
@@ -93,10 +94,32 @@ def check_v4_coverage(df, cfg) -> dict:
     per_day = ts.dt.normalize().value_counts()
     incomplete_days = int((per_day < 24).sum())
     years_declared = list(cfg.get("data", {}).get("coverage_declared", []))
-    blind_years = [
-        f["test"] for f in cfg.get("validation", {}).get("folds", [])
-        if f.get("role") == "blind"
-    ]
+    blind_folds = [f for f in cfg.get("validation", {}).get("folds", [])
+                   if f.get("role") == "blind"]
+    if any(isinstance(f.get("test"), (list, tuple)) for f in blind_folds):
+        # v3 folds: a blind window is ready when every one of its months is
+        # present in full, and the window may straddle two calendar years.
+        days_present = set(per_day.index[per_day >= 24].normalize())
+        complete, absent = [], []
+        for f in blind_folds:
+            _, _, t0, t1 = fold_windows(f, cfg)
+            want = pd.date_range(t0, t1, freq="D")
+            n = sum(d in days_present for d in want)
+            label = f"{f['id']}({t0.date()}..{t1.date()})"
+            if n == len(want):
+                complete.append(label)
+            elif n == 0:
+                absent.append(label)
+        return {
+            "check": "V4_coverage",
+            "detail": f"{first} -> {last} | days={days} | days with <24h={incomplete_days} "
+            f"| declared={years_declared} | blind windows fully present={complete}"
+            + (f" | blind windows absent from the data={absent}" if absent else ""),
+            "verdict": "ok" if incomplete_days == 0 and len(complete) == len(blind_folds)
+            else "REVIEW_coverage_gaps",
+            "value": f"first={first};last={last};days={days}",
+        }
+    blind_years = [f["test"] for f in blind_folds]
     # A year absent from the frame is a coverage finding, not an exception.
     # Stations carry different windows and a synthetic dataset carries a short
     # one, so `per_day.loc[str(y)]` used to raise a bare KeyError naming nothing
@@ -178,7 +201,7 @@ def main() -> None:
         raise SystemExit(f"ERROR: {RAW_CSV} not found — put dataset.csv there first")
     ensure_dirs()
 
-    df = read_hourly()
+    df = read_hourly(cfg=cfg)
     for var in NUMERIC_VARS:
         df[var] = pd.to_numeric(df[var], errors="coerce")
 

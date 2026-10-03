@@ -155,7 +155,11 @@ def main() -> None:
         raise SystemExit(f"ERROR: {RAW_CSV} not found")
     ensure_dirs()
 
-    df = read_hourly()
+    df = read_hourly(cfg=cfg)
+    missing = [v for v in NUMERIC_VARS if v not in df.columns]
+    if missing:
+        raise SystemExit(f"ERROR: internal variables {missing} absent after reading "
+                         f"{RAW_CSV.name}; check config.variables")
     for var in NUMERIC_VARS:
         df[var] = pd.to_numeric(df[var], errors="coerce")
     # Station first, then time: the flags below read consecutive rows, so each
