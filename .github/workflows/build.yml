@@ -96,9 +96,10 @@ jobs:
 
       - name: Setup Quarto
         uses: quarto-dev/quarto-actions/setup@v2
-
-      - name: Setup TinyTeX
-        uses: quarto-dev/quarto-actions/setup-tinytex@v2
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tinytex: true
 
       - name: Build paper
         id: build
