@@ -2,7 +2,7 @@
 # papers/c26-2026/paper/main.qmd
 # Single source of the manuscript. Render with:
 #   python scripts/paper_build.py --slug c26-2026 --format all
-# CI build test — tinytex fix verification
+# CI build test — Node.js 24 actions verification
 title: "A reproducible GeoAI framework for explainable spatiotemporal analysis of national missing-person registers: multi-algorithm clustering and multilevel validation (Peru, 2019-2025)"
 format:
   elsevier-cas-pdf: {}
