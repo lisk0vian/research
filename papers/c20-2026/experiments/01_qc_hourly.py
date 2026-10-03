@@ -116,6 +116,39 @@ def flag_stuck_runs(df, cfg: dict) -> pd.DataFrame:
     return df
 
 
+def apply_qc_flags(df: pd.DataFrame, cfg: dict) -> pd.DataFrame:
+    """Run the range, spike and stuck-run flags one station at a time.
+
+    Every flag below reasons about consecutive rows: a step needs the previous
+    hour, a stuck run needs the run to continue. With one station that is the
+    whole frame. With five, the frame interleaves them, and three things break
+    at once and quietly.
+
+    `sort_values("timestamp")` interleaves stations, so `timestamp.diff()` is
+    zero between two different sensors, which makes `contiguous` false, which
+    means the spike test never fires on the last hour of any station. And
+    `tt.diff() == 0` compares one station's reading against another's, so the
+    stuck-run grouping runs across sensor boundaries.
+
+    Grouping here rather than inside each flag keeps the per-station signatures
+    the existing tests call, so the loop sits on top and the API underneath is
+    unchanged.
+    """
+    flags = (flag_out_of_range, flag_tt_spikes, flag_stuck_runs)
+    if "UBIGEO" not in df.columns:
+        out = df
+        for flag in flags:
+            out = flag(out, cfg)
+        return out
+
+    parts = []
+    for _, block in df.groupby("UBIGEO", sort=True):
+        for flag in flags:
+            block = flag(block, cfg)
+        parts.append(block)
+    return pd.concat(parts).sort_index()
+
+
 def main() -> None:
     cfg = load_config()
     if not RAW_CSV.is_file():
@@ -125,14 +158,16 @@ def main() -> None:
     df = read_hourly()
     for var in NUMERIC_VARS:
         df[var] = pd.to_numeric(df[var], errors="coerce")
-    df = df.sort_values("timestamp").reset_index(drop=True)
+    # Station first, then time: the flags below read consecutive rows, so each
+    # station's hours have to sit together. Sorting on timestamp alone is what
+    # put two different sensors next to each other.
+    by = ["UBIGEO", "timestamp"] if "UBIGEO" in df.columns else ["timestamp"]
+    df = df.sort_values(by).reset_index(drop=True)
     print(paths_report())
 
     before = int(df[list(NUMERIC_VARS)].notna().to_numpy().sum())
     df = flag_missing_source(df)
-    df = flag_out_of_range(df, cfg)
-    df = flag_tt_spikes(df, cfg)
-    df = flag_stuck_runs(df, cfg)
+    df = apply_qc_flags(df, cfg)
     after = int(df[list(NUMERIC_VARS)].notna().to_numpy().sum())
 
     # QC output is an intermediate: it feeds 02, so it stays in data/processed
@@ -140,7 +175,10 @@ def main() -> None:
     from _common import PROCESSED, atomic_write_csv
 
     out = PROCESSED / "hourly_qc.csv"
-    keep = ["timestamp", *NUMERIC_VARS, *QC_COLUMNS]
+    # UBIGEO is kept: dropping it here is what left 02 with no way to tell two
+    # stations apart, and a daily frame keyed only on date silently averaged
+    # them together.
+    keep = [c for c in ["timestamp", "UBIGEO", *NUMERIC_VARS, *QC_COLUMNS] if c in df.columns]
     atomic_write_csv(df[keep], out)
 
     summary = {}

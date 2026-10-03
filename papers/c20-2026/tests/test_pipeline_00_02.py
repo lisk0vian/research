@@ -101,11 +101,25 @@ def test_v3_confirms_rowwise_gaps(hourly, cfg):
     assert out["verdict"] == "ok"
 
 
-def test_v5_flags_multistation(hourly):
+def test_v5_flags_multistation_against_an_undeclared_config(hourly):
+    """Verdict string changed with the check, not by accident.
+
+    V5 used to assert UBIGEO was constant and returned
+    REVIEW_multi_station, meaning "several stations is wrong". It now compares
+    the file's station set against the declared one, so with nothing declared
+    the useful failure is that the config is not describing this file. The
+    intent of the test is unchanged: several stations with a single-station
+    contract must not pass silently.
+    """
     multi = hourly.copy()
     multi.loc[0, "UBIGEO"] = "150901"
     out = verify_mod.check_v5_ubigeo(multi, {"station": {"n_stations": 1}})
-    assert out["verdict"] == "REVIEW_multi_station"
+    assert out["verdict"] == "REVIEW_multi_station_undeclared"
+
+
+def test_v5_is_ok_when_the_config_declares_no_station_and_one_is_present(hourly):
+    """The pre-migration contract: nothing declared, one station in the file."""
+    assert verify_mod.check_v5_ubigeo(hourly, {})["verdict"] == "ok"
 
 
 def test_v6_counts_duplicates(hourly):

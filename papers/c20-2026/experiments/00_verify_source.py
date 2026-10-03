@@ -22,6 +22,7 @@ from _common import (
     load_config,
     paths_report,
     read_hourly,
+    station_codes,
     write_manifest,
     write_table,
 )
@@ -118,23 +119,54 @@ def check_v4_coverage(df, cfg) -> dict:
 
 
 def check_v5_ubigeo(df, cfg) -> dict:
-    """UBIGEO must be constant for a single-station study."""
-    values = df["UBIGEO"].dropna().unique().tolist()
-    n_expected = cfg.get("station", {}).get("n_stations", 1)
+    """The stations present in the file must be exactly the declared stations.
+
+    This check used to assert that UBIGEO was constant, which was the
+    single-station design's way of saying "this is one observatory". Inverting
+    it is the whole point: the file is now expected to carry the network, and
+    the useful failures are the two that used to be invisible. A declared
+    station with no rows means an entire elevation level silently absent from
+    the gradient, and an undeclared station means the file is not the one the
+    paper describes. Either one is a finding, not a review note.
+    """
+    present = set(df["UBIGEO"].dropna().unique().tolist()) - {""}
+    declared = set(station_codes(cfg))
+    if not declared:
+        # No stations declared: the pre-migration contract, single station.
+        verdict = "ok" if len(present) == 1 else "REVIEW_multi_station_undeclared"
+        detail = f"present={sorted(present)} (no stations declared in config)"
+    else:
+        missing = sorted(declared - present)
+        unexpected = sorted(present - declared)
+        verdict = "ok" if not missing and not unexpected else "REVIEW_station_mismatch"
+        detail = (f"present={len(present)} declared={len(declared)}"
+                  + (f" missing={missing}" if missing else "")
+                  + (f" undeclared={unexpected}" if unexpected else ""))
     return {
-        "check": "V5_ubigeo_constancy",
-        "detail": f"unique UBIGEO: {values} (n_stations expected: {n_expected})",
-        "verdict": "ok" if len(values) == 1 == n_expected else "REVIEW_multi_station",
-        "value": f"nunique={len(values)}",
+        "check": "V5_ubigeo_station_set",
+        "detail": detail,
+        "verdict": verdict,
+        "value": f"n_present={len(present)}",
+        "present": sorted(present),
+        "declared": sorted(declared),
     }
 
 
 def check_v6_duplicates(df) -> dict:
-    """Duplicate timestamps must be reported; deduplicated by keeping the first."""
-    n_dup = int(df["timestamp"].duplicated().sum())
+    """Duplicate (station, timestamp) pairs must be reported; keep the first.
+
+    Scoping to the station matters now: with five stations every timestamp
+    legitimately appears five times, so a whole-frame duplicate count reports
+    roughly 400k and buries the real duplicates inside its own noise.
+    """
+    if "UBIGEO" in df.columns:
+        dup_mask = df.duplicated(subset=["UBIGEO", "timestamp"], keep="first")
+    else:
+        dup_mask = df["timestamp"].duplicated(keep="first")
+    n_dup = int(dup_mask.sum())
     return {
         "check": "V6_timestamp_duplicates",
-        "detail": f"duplicated timestamps: {n_dup}",
+        "detail": f"duplicated (station, timestamp) pairs: {n_dup}",
         "verdict": "ok" if n_dup == 0 else "REVIEW_deduplicate_first_occurrence",
         "value": f"duplicates={n_dup}",
     }

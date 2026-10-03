@@ -26,12 +26,13 @@ from _common import (
     load_config,
     paths_report,
     read_hourly,
+    read_station_keyed,
 )
 
 QC_PATH = PROCESSED / "hourly_qc.csv"
 
 DAILY_COLUMNS = [
-    "date", "n_hours", "valid", "TT_mean", "TT_max", "TT_min", "DTR",
+    "station", "date", "n_hours", "valid", "TT_mean", "TT_max", "TT_min", "DTR",
     "HR_mean", "PP_mean", "FF_mean", "DD_mean",
     "RR_sum", "u_mean", "v_mean", "RR_n_hours",
 ]
@@ -51,8 +52,13 @@ def require_each_block(n_hours: pd.Series, hours_per_day: int, n_blocks: int = 4
     return n_hours >= n_blocks
 
 
-def aggregate(df: pd.DataFrame, cfg: dict) -> pd.DataFrame:
-    """Group the QC'd hourly frame by local calendar day."""
+def aggregate_station(df: pd.DataFrame, cfg: dict) -> pd.DataFrame:
+    """Group one station's QC'd hourly frame by local calendar day.
+
+    Single station by contract. The network-level entry point is `aggregate`,
+    which calls this once per station; keeping the per-station shape here is
+    what lets the existing tests keep working unchanged.
+    """
     agg_cfg = cfg.get("daily_aggregation", {})
     min_hours = int(agg_cfg.get("min_hours", 20))
     require_blocks = bool(agg_cfg.get("require_each_6h_block", True))
@@ -98,6 +104,38 @@ def aggregate(df: pd.DataFrame, cfg: dict) -> pd.DataFrame:
     return daily[DAILY_COLUMNS]
 
 
+def aggregate(df: pd.DataFrame, cfg: dict) -> pd.DataFrame:
+    """Daily frame for the whole network, one row per (station, date).
+
+    This is the bug the multi-station refactor exists to prevent. Keying on
+    `date` alone is fine while there is one station and wrong from the first
+    day there are two: the group covers both, the aggregation averages them,
+    and the output looks like an ordinary single-station daily frame. Nothing
+    raises. Huancayo and Matucana end up as one row per date at a blended
+    temperature, 877 m of elevation silently averaged away, and every
+    downstream stage inherits it as fact.
+
+    The loop is here rather than inside `aggregate_station` so that function
+    keeps the single-station shape the existing tests call.
+    """
+    if "UBIGEO" not in df.columns:
+        out = aggregate_station(df, cfg)
+        if "station" not in out.columns:
+            out["station"] = ""
+        return out[DAILY_COLUMNS]
+
+    parts = []
+    for code, block in df.groupby("UBIGEO", sort=True):
+        daily = aggregate_station(block, cfg)
+        daily["station"] = code
+        parts.append(daily)
+    if not parts:
+        return pd.DataFrame(columns=DAILY_COLUMNS)
+    out = pd.concat(parts, ignore_index=True)
+    out["date"] = pd.to_datetime(out["date"])
+    return out.sort_values(["station", "date"]).reset_index(drop=True)[DAILY_COLUMNS]
+
+
 def main() -> None:
     cfg = load_config()
     ensure_dirs()
@@ -106,7 +144,7 @@ def main() -> None:
         raise SystemExit(
             f"ERROR: {QC_PATH} not found — run 01_qc_hourly.py first"
         )
-    df = pd.read_csv(QC_PATH, parse_dates=["timestamp"])
+    df = read_station_keyed(QC_PATH, parse_dates=["timestamp"])
     for var in NUMERIC_VARS:
         df[var] = pd.to_numeric(df[var], errors="coerce")
 
@@ -117,9 +155,15 @@ def main() -> None:
 
     n_days = len(daily)
     n_valid = int(daily["valid"].sum())
+    # Per station, because a network total hides the thing worth checking: two
+    # stations with different coverage. One long, one short, and the pooled
+    # count looks fine.
     print(f"days aggregated: {n_days} | valid by completeness: {n_valid}")
-    print(f"TT_mean: mean={daily['TT_mean'].mean():.2f} "
-          f"min={daily['TT_mean'].min():.2f} max={daily['TT_mean'].max():.2f} degC")
+    for code, block in daily.groupby("station", sort=True):
+        span = f"{block['date'].min():%Y-%m-%d}..{block['date'].max():%Y-%m-%d}"
+        tt = block["TT_mean"]
+        print(f"  {code}: {len(block):>5} days  {span}  "
+              f"TT_mean mean={tt.mean():6.2f} min={tt.min():6.2f} max={tt.max():6.2f} degC")
     print(f"n_hours distribution: {daily['n_hours'].describe()[['min', '50%', 'max']].round(1).to_dict()}")
     print(f"days rejected by min_hours: {n_days - n_valid}")
     print(f"wrote {out}")
