@@ -16,9 +16,10 @@ first. In short:
 - `outputs/_state/<stage>.json` lets a pipeline skip a stage whose code, config
   and upstream are unchanged since it last succeeded. "Run all" after a crash
   resumes instead of redoing hours of work.
-- Progress is rendered as plain text, one line per phase. A widget bar is saved
-  in the notebook at 0 %, so a notebook read back from Drive would not show what
-  ran; a text line does.
+- Progress is a text bar per level (count, %, rate, time left) updated in place
+  through an IPython display handle. A tqdm widget is saved in the notebook at
+  0 %; a display handle keeps its last state, so a notebook read back from Drive
+  shows how far the run got.
 
 Stdlib only, except `yaml` for the spec, which every pipeline here already
 depends on.
@@ -235,9 +236,104 @@ def _marker(event: dict, state: dict) -> str | None:
     return None
 
 
+def _fmt_secs(s: float) -> str:
+    s = int(max(0, s))
+    return f"{s // 3600}:{s % 3600 // 60:02d}:{s % 60:02d}" if s >= 3600 else f"{s // 60:02d}:{s % 60:02d}"
+
+
+def bar_text(desc: str, n: int, total: int | None, elapsed: float, width: int = 30) -> str:
+    """`06b CFSv2  [#########.....]  312/864  36%  4.2/s  elapsed 01:14  left 02:11`."""
+    rate = n / elapsed if elapsed > 0 else 0.0
+    if total:
+        frac = min(1.0, n / total)
+        fill = int(round(frac * width))
+        left = (total - n) / rate if rate > 0 else None
+        return (f"{desc:<28} [{'#' * fill}{'.' * (width - fill)}] {n}/{total} "
+                f"{frac * 100:3.0f}%  {rate:.1f}/s  elapsed {_fmt_secs(elapsed)}  "
+                f"left {_fmt_secs(left) if left is not None else '?'}")
+    return f"{desc:<28} {n} done  {rate:.1f}/s  elapsed {_fmt_secs(elapsed)}"
+
+
+def _in_kernel() -> bool:
+    try:
+        from IPython import get_ipython  # type: ignore
+
+        ip = get_ipython()
+        return ip is not None and getattr(ip, "kernel", None) is not None
+    except Exception:  # noqa: BLE001
+        return False
+
+
+class _Progress:
+    """Renders `#PROG` events from a child, in one of three ways.
+
+    - forward: a rendering parent launched us (EXP_PROGRESS_PARENT=1); pass
+      the raw event up so the notebook draws it.
+    - live: we are the notebook kernel; one bar per level, updated in place
+      through an IPython display handle. Unlike a widget, the last state is
+      saved in the notebook, so a run read back from Drive shows how far it got.
+    - text: a terminal or a log; a line per phase, plus one every 30 s so a
+      long phase never looks frozen.
+
+    Phase markers (`  .. desc: n/total`) always go to the stage log.
+    """
+
+    LIVE_EVERY_S = 0.5
+    TEXT_EVERY_S = 30.0
+
+    def __init__(self, emit, sink) -> None:
+        self.emit, self.sink = emit, sink
+        if os.environ.get("EXP_PROGRESS_PARENT") == "1":
+            self.mode = "forward"
+        elif _in_kernel():
+            self.mode = "live"
+        else:
+            self.mode = "text"
+        self.marks: dict = {}
+        self.bars: dict[str, dict] = {}
+
+    def event(self, line: str, ev: dict) -> None:
+        mark = _marker(ev, self.marks)
+        if mark and self.sink is not None:
+            self.sink.write(mark + "\n")
+            self.sink.flush()
+        if self.mode == "forward":
+            print(line if line.endswith("\n") else line + "\n", end="", flush=True)
+            return
+        level, desc = ev.get("level", ""), ev.get("desc", "") or ev.get("level", "")
+        n, total = int(ev.get("n") or 0), ev.get("total")
+        now = time.monotonic()
+        bar = self.bars.get(level)
+        if bar is None or bar["desc"] != desc:
+            bar = {"desc": desc, "t0": now, "last": 0.0, "handle": bar and bar.get("handle")}
+            self.bars[level] = bar
+        done = total is not None and n >= total
+        due = now - bar["last"] >= (self.LIVE_EVERY_S if self.mode == "live" else self.TEXT_EVERY_S)
+        if not (due or done or bar["last"] == 0.0):
+            return
+        bar["last"] = now
+        text = bar_text(desc, n, total, now - bar["t0"])
+        if self.mode == "live":
+            self._draw(bar, text)
+        else:
+            print(f"  .. {text}", flush=True)
+
+    def _draw(self, bar: dict, text: str) -> None:
+        try:
+            from IPython.display import display  # type: ignore
+
+            if bar.get("handle") is None:
+                bar["handle"] = display({"text/plain": text}, raw=True, display_id=True)
+            else:
+                bar["handle"].update({"text/plain": text}, raw=True)
+        except Exception:  # noqa: BLE001 - a bar must never break a run
+            self.mode = "text"
+            print(f"  .. {text}", flush=True)
+
+
 def run_command(argv: list[str], cwd: str | Path | None = None,
                 env: dict | None = None, log_path: str | Path | None = None) -> tuple[int, str]:
-    """Run a command, printing its output with `#PROG` events as text lines.
+    """Run a command, printing its output with `#PROG` events as progress bars.
 
     Returns (exit code, last lines of output) so a caller can put the tail,
     which holds the traceback, into errors.log. With `log_path`, everything
@@ -268,15 +364,13 @@ def _run_command(argv, cwd, env, sink) -> tuple[int, str]:
         text=True, encoding="utf-8", errors="replace", bufsize=1, env=child_env,
     )
     keep: list[str] = []
-    state: dict = {}
+    bars = _Progress(emit, sink)
     assert proc.stdout is not None
     try:
         for line in proc.stdout:
             event = _parse_prog(line)
             if event is not None:
-                mark = _marker(event, state)
-                if mark:
-                    emit(mark + "\n")
+                bars.event(line, event)
                 continue
             emit(line)
             keep.append(_ANSI.sub("", line.rstrip("\n")))

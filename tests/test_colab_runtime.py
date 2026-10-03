@@ -161,13 +161,54 @@ def test_run_command_turns_progress_events_into_text(tmp_path, capsys):
             "for n in range(1, 4):\n"
             "    print('#PROG ' + json.dumps({'level': 'fold', 'n': n, 'total': 3, 'desc': 'D1'}))\n"
             "print('done')\n")
-    code, out = rt.run_command(["s.py"], cwd=tmp_path)
+    log = tmp_path / "stage.log"
+    code, out = rt.run_command(["s.py"], cwd=tmp_path, log_path=log)
     printed = capsys.readouterr().out
     assert code == 0
     assert "#PROG" not in printed
-    assert "D1: 1/3" in printed and "D1: 3/3" in printed
-    assert "D1: 2/3" not in printed  # intermediate ticks are not lines
+    assert " 1/3 " in printed and " 3/3 " in printed and "100%" in printed
+    assert " 2/3 " not in printed  # within 30 s, intermediate ticks are not lines
     assert out.strip() == "done"
+    assert "D1: 1/3" in log.read_text(encoding="utf-8")  # phase markers in the log
+
+
+def test_run_command_forwards_events_to_a_rendering_parent(tmp_path, capsys, monkeypatch):
+    """Nested runners (stages_main under the notebook) pass events up, raw."""
+    monkeypatch.setenv("EXP_PROGRESS_PARENT", "1")
+    _script(tmp_path / "s.py",
+            "import json\nprint('#PROG ' + json.dumps({'level': 'step', 'n': 1, 'total': 9}))\n")
+    rt.run_command(["s.py"], cwd=tmp_path)
+    assert '#PROG {"level": "step"' in capsys.readouterr().out
+
+
+def test_bar_text_shows_count_percent_rate_and_time_left():
+    text = rt.bar_text("06b CFSv2", 216, 864, 60.0)
+    assert "216/864" in text and "25%" in text and "3.6/s" in text
+    assert "elapsed 01:00" in text and "left 03:00" in text
+
+
+class _FakeHandle:
+    def __init__(self, store):
+        self.store = store
+
+    def update(self, obj, raw=False):
+        self.store.append(obj["text/plain"])
+
+
+def test_notebook_bar_updates_in_place(monkeypatch):
+    shown: list[str] = []
+    display_mod = types.ModuleType("IPython.display")
+    display_mod.display = lambda obj, raw=False, display_id=False: (
+        shown.append(obj["text/plain"]), _FakeHandle(shown))[1]
+    monkeypatch.setitem(sys.modules, "IPython.display", display_mod)
+    monkeypatch.delenv("EXP_PROGRESS_PARENT", raising=False)
+    monkeypatch.setattr(rt, "_in_kernel", lambda: True)
+    p = rt._Progress(lambda t: None, None)
+    assert p.mode == "live"
+    p.LIVE_EVERY_S = 0.0
+    for n in (1, 2, 3):
+        p.event("", {"level": "step", "n": n, "total": 3, "desc": "06b CFSv2"})
+    assert len(shown) == 3 and "3/3" in shown[-1] and "100%" in shown[-1]
 
 
 def test_run_command_returns_the_traceback_tail(tmp_path):

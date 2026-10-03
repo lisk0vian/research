@@ -209,8 +209,11 @@ The command in `colab.yaml` `run` (normally `run_all.py`) must:
   `status.json`, appending to the notebook's session when `COLAB_SESSION_ID` is
   set;
 - print progress as `#PROG {json}` lines (level, n, total, desc), which the
-  notebook turns into one text line per phase. Never print widget bars: they
-  are saved at 0 % and hide what ran;
+  notebook draws as a live text bar per level (count, %, rate, time left) that
+  keeps its last state when saved. Never print widget bars: they are saved at
+  0 % and hide what ran;
+- never keep every downloaded or computed chunk in memory until the end of a
+  loop; release each one once written (Colab free has ~12 GB of RAM);
 - stop at the first failed stage and mark the rest `not_run`.
 
 **Don't write this yourself:** `_colab_runtime.stages_main()` implements the

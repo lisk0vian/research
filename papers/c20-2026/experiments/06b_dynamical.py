@@ -345,8 +345,12 @@ def main(argv: list[str] | None = None) -> None:
         total = len(futures)
         for done, fut in enumerate(progress(as_completed(futures), desc="06b CFSv2", unit="req",
                                             total=total, level="step"), start=1):
-            d, m = futures[fut]
+            # pop, not index: a finished future keeps its ~9 MB result alive for as
+            # long as anything references it, and the dict would hold all of them
+            # (~8 GB for a full run) until the loop ends.
+            d, m = futures.pop(fut)
             res = fut.result()
+            del fut
             got.setdefault(d, {})[m] = res
             if res is not None:
                 nbytes += len(res[0])
@@ -357,6 +361,7 @@ def main(argv: list[str] | None = None) -> None:
                     continue
                 daily = process_date(d, cfg, stations, members, fetched)
                 atomic_write_csv(daily, cache_path(d))
+                del fetched, res
     print(f"downloaded {nbytes / 1e6:.0f} MB in {time.perf_counter() - t0:.0f} s; "
           f"{len(missing)} dates absent from the archive")
 
