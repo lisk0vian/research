@@ -107,6 +107,23 @@ A failed stage loses its state, and so do all the stages after it; its unit
 checkpoints stay. `FORCE` re-runs everything selected and drops the unit
 checkpoints. Deleting `outputs/_state/` forces a full run.
 
+### How long each process takes (`outputs/timings.md`)
+
+Every run records how long each stage took and how long is still expected, in
+`outputs/timings.json` (the record) and `outputs/timings.md` (a table to read
+while the run is going). The expectation is the median of the recent runs of
+*that* configuration; before anything is measured, and again after a change to
+config, data, `RESULTS_VERSION` or code makes old measurements incomparable, it
+falls back to the a-priori estimates in `experiments/timings.yaml` - written by
+hand or by the agent, never overwritten from measurements. A last run outside
+its estimate range is marked `⚠`, which is how "this is taking too long" and
+"that finished suspiciously fast" surface without reading logs. Long stages
+also record how their time divides up per fold, station or date.
+
+`python scripts/paper_timings.py` shows every paper at once, and
+`python scripts/paper_timings.py --seed <slug>` harvests durations that already
+exist in older runs (state files, stage logs, the run meta) into the record.
+
 ## 4. How the notebook is built
 
 - `papers/<slug>/experiments/colab.yaml` declares the paper: title, Drive
