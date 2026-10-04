@@ -37,6 +37,7 @@ from _common import (
     ensure_dirs,
     load_config,
     paths_report,
+    primary_target,
     read_station_keyed,
     rel_path,
     write_manifest,
@@ -46,7 +47,7 @@ from _panel import fast_mode, load_panel, pred_frame, quantile_levels, target_ro
 from _scores import gaussian_quantiles
 
 WINDOWS_CSV = PROCESSED / "cfs_windows.csv"
-TARGET = "TT_mean"
+TARGET = primary_target()
 MODEL = "CFS_BC"
 MIN_CELL = 20  # rows below which a quarter falls back to the pooled residual SD
 
@@ -96,7 +97,10 @@ def main() -> None:
 
     levels = quantile_levels(cfg)
     k = int(dyn.get("clim_harmonics_K", 2))
-    min_train = 40
+    # Declared in config (dynamical.min_train), not hardcoded: the training
+    # cutoff of the CFS calibration is an operating parameter a methods section
+    # has to source from somewhere.
+    min_train = int(dyn.get("min_train", 40))
     if fast_mode():
         fast = dyn.get("fast") or {}
         k = int(fast.get("clim_harmonics_K", 1))
@@ -144,7 +148,8 @@ def main() -> None:
         print("\nCFS anomaly vs observed anomaly, mean over stations and folds:")
         print(pooled.to_string())
         print(f"wrote {path}")
-    write_manifest({"cfs_benchmark": {
+    write_manifest({"tables": {"T8_cfs_calibration": "tables/T8_cfs_calibration.csv"},
+                    "cfs_benchmark": {
         "model": MODEL, "folds": folds, "clim_harmonics_K": k, "min_train": min_train,
         "cells": int(len(diag)), "table": rel_path(TABLES / "T8_cfs_calibration.csv"),
         "fast_mode": fast_mode()}}, replace=("cfs_benchmark",))

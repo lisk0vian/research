@@ -55,6 +55,7 @@ from _common import (
     ensure_dirs,
     load_config,
     paths_report,
+    primary_target,
     progress,
     write_manifest,
 )
@@ -73,7 +74,7 @@ from _panel import (
 )
 from _scores import gaussian_quantiles, rearrange
 
-PRIMARY_TARGET = "TT_mean"
+PRIMARY_TARGET = primary_target()
 MIN_CELL = 20  # rows below which a station x horizon x quarter cell falls back
 
 

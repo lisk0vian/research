@@ -460,6 +460,40 @@ def test_conditional_skill_splits_by_mjo_and_enso(cfg):
     assert mjo["n"].sum() == 4
 
 
+def test_calibration_table_records_the_numbers_behind_f2():
+    """T15 holds what F2 draws: PIT tails and reliability bins as rows of record.
+
+    Amendment A2 quoted its dev PIT tail masses from the figure alone, so the
+    sentence pointed at nothing in outputs/. The table is the file it points at.
+    """
+    n = 20
+    pit = np.linspace(0, 1, 100)          # exactly 5 values in each 5 % tail
+    p_below = np.tile(np.linspace(0.1, 0.9, 5), n)
+    obs_cat = np.where(p_below < 0.5, 0, 2)
+    frame = pd.DataFrame({"model": "Ensemble", "role": "blind", "horizon": "W1",
+                          "pit": pit, "p_below": p_below, "p_above": p_below,
+                          "obs_cat": obs_cat})
+    t15 = f10.calibration_table(frame, "Ensemble", ["W1"])
+
+    hist = t15[t15["series"] == "pit_hist"]
+    assert hist["value"].sum() == pytest.approx(1.0)
+    assert set(hist["reference"]) == {0.1}
+
+    tails = t15[t15["series"] == "pit_tail"].set_index("bin_low")
+    assert tails.loc[0.0, "value"] == pytest.approx(0.05)
+    assert tails.loc[0.95, "value"] == pytest.approx(0.05)
+
+    low = t15[(t15["series"] == "reliability_lower") & (t15["n"] > 0)]
+    b0 = low[low["bin_low"] == 0.0].iloc[0]
+    assert b0["n"] == n
+    assert b0["value"] == pytest.approx(1.0)
+    assert b0["reference"] == pytest.approx(0.1)
+    b2 = low[low["bin_low"] == 0.4].iloc[0]
+    assert b2["n"] == n
+    assert b2["value"] == pytest.approx(0.0)
+    assert b2["reference"] == pytest.approx(0.5)
+
+
 def test_sensitivity_models_never_enter_the_ensemble_or_m_star(cfg):
     members = cfg["models"]["ensemble"]["members"]
     among = cfg["models"]["primary_model_selection"]["among"]

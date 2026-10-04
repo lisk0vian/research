@@ -32,13 +32,13 @@ import importlib
 import numpy as np
 import pandas as pd
 
-from _common import checkpoints, ensure_dirs, load_config, paths_report, read_station_keyed, \
-    write_manifest
+from _common import checkpoints, ensure_dirs, load_config, paths_report, primary_target, \
+    read_station_keyed, write_manifest
 from _harmonic import doy_fractional, eval_harmonic
 from _panel import fast_mode, pred_frame, quantile_levels, read_eval_index, write_preds
 from _scores import _norm_ppf, rearrange
 
-TARGET = "TT_mean"
+TARGET = primary_target()
 BOLT_ID = "amazon/chronos-bolt-small"
 BOLT_LEVELS = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
 Z90 = 2 * _norm_ppf(0.9)  # (q90 - q10) of a standard normal, 2.563

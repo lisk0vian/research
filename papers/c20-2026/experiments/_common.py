@@ -242,6 +242,53 @@ def load_config(path: Path | None = None) -> dict:
     return yaml.safe_load((path or CONFIG_PATH).read_text(encoding="utf-8")) or {}
 
 
+def primary_target(cfg: dict | None = None) -> str:
+    """The primary target's name, from `data.target_variable`.
+
+    Every stage used to carry `TARGET = "TT_mean"` next to a config that
+    declares `data.target_variable`, so editing the config changed nothing.
+    One reader, used by the stages, closes that gap. Config is read
+    defensively, like `_declared_raw_name`: an unreadable config is a fact,
+    not an import error, and the fallback is the name the pipeline has always
+    used.
+    """
+    try:
+        name = ((cfg if cfg is not None else load_config()).get("data") or {}).get(
+            "target_variable")
+    except (OSError, yaml.YAMLError):
+        name = None
+    return str(name).strip() if name else "TT_mean"
+
+
+def secondary_targets(cfg: dict | None = None) -> tuple[str, ...]:
+    """The secondary targets, from `data.secondary_targets`.
+
+    Stages 03 and 04 used to hardcode `("TT_min", "TT_max")` while 07 read the
+    config, so the three stages could silently disagree about which targets
+    carry their own climatology. Same reader as `primary_target`, same rule.
+    """
+    try:
+        names = ((cfg if cfg is not None else load_config()).get("data") or {}).get(
+            "secondary_targets")
+    except (OSError, yaml.YAMLError):
+        names = None
+    return tuple(str(n).strip() for n in (names or ("TT_min", "TT_max")))
+
+
+def design_version() -> str:
+    """The design version of the config that ran, for the manifest stamp.
+
+    It used to be a hardcoded `"2.0"` default, which labelled the v3.0
+    multi-station outputs as the superseded single-station design. The
+    manifest is the provenance record every manuscript number traces
+    through, so it must carry the version that actually executed.
+    """
+    try:
+        return str(load_config().get("design_version") or "unknown")
+    except (OSError, yaml.YAMLError):
+        return "unknown"
+
+
 def normalize_ubigeo(value) -> str:
     """Canonical six-digit station code from whatever the source served.
 
@@ -426,7 +473,7 @@ def write_manifest(payload: dict, name: str = "manifest_index.json",
         data = {}
     data = deep_merge(data, payload, frozenset(replace))
     data.setdefault("paper", "c20-2026")
-    data.setdefault("design_version", "2.0")
+    data.setdefault("design_version", design_version())
     data["status"] = "partial"
     return atomic_write_json(data, path)
 

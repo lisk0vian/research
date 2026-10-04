@@ -4,7 +4,8 @@
 
 Tables: T1 completeness (00), T2 blind skill + 95 % CI (09), T3 hypotheses (09),
 T4 Murphy decomposition, T5 LOSO gap (09), T6 secondary targets and frost index,
-T7 conditional skill by season, ENSO phase and MJO activity at issuance (R3).
+T7 conditional skill by season, ENSO phase and MJO activity at issuance (R3),
+T15 PIT and tercile reliability of M* (the numbers behind F2, amendment A4).
 Figures:
   F1 CRPSS vs Clim by horizon, every model, blind, with 95 % intervals
   F2 PIT histogram and tercile reliability of M*, blind
@@ -31,14 +32,15 @@ from _common import (
     ensure_dirs,
     load_config,
     paths_report,
+    primary_target,
     read_station_keyed,
     write_manifest,
 )
 from _panel import MODELS_DIR
 
-TARGET = "TT_mean"
+TARGET = primary_target()
 # v1: T6 notes Pers's empty probabilistic columns; F1's legend sits below the axes.
-RESULTS_VERSION = 1
+RESULTS_VERSION = 2   # v2: T15_pit_reliability.csv added (the numbers behind F2)
 DETERMINISTIC_ONLY = {"Pers"}  # as in 08_metrics: no quantiles, so no CRPS
 ORDER = ["Clim", "Pers", "Damp", "CFS_BC", "Ridge_L", "Ridge_LG", "GBM_L", "GBM_LG",
          "LSTM_LG", "Chronos", "Ensemble"]
@@ -118,6 +120,55 @@ def fig_calibration(scored: pd.DataFrame, primary: str, horizons: list[str]) -> 
     fig.suptitle(f"{primary}, blind folds")
     fig.tight_layout()
     return _save(fig, "F2_calibration")
+
+
+def calibration_table(scored: pd.DataFrame, primary: str, horizons: list[str]) -> pd.DataFrame:
+    """T15: the numbers behind F2, per role and horizon, as rows of record.
+
+    The stage docstring promises that no number is computed here that a table
+    does not also hold, and F2 was the one figure that broke it: PIT tail
+    masses and reliability bins existed only inside the PNG, so any sentence
+    quoting them (amendment A2's dev tails) pointed at nothing in `outputs/`.
+    Long format, one row per (role, horizon, series, bin): `value` is what was
+    measured, `reference` what it should be compared against — the uniform
+    share for PIT bins, the mean forecast probability for reliability bins.
+    """
+    s = scored[scored["model"] == primary]
+    rows: list[dict] = []
+
+    def add(role: str, h: str, series: str, lo: float, hi: float,
+            value: float, reference: float, n: int) -> None:
+        rows.append({"role": role, "horizon": h, "series": series, "bin_low": lo,
+                     "bin_high": hi, "value": value, "reference": reference, "n": n})
+
+    for role in ("dev", "blind"):
+        for h in horizons:
+            g = s[(s["role"] == role) & (s["horizon"] == h)]
+            pit = g["pit"].dropna().to_numpy()
+            n = int(len(pit))
+            if n:
+                for i in range(10):
+                    lo, hi = i / 10.0, (i + 1) / 10.0
+                    inside = (pit >= lo) & ((pit < hi) if i < 9 else (pit <= hi))
+                    add(role, h, "pit_hist", lo, hi, float(inside.mean()), 0.1, n)
+                # The two 5 % tails A2 quotes: PIT below 0.05 and above 0.95.
+                for lo, hi, tail in ((0.0, 0.05, pit < 0.05), (0.95, 1.0, pit > 0.95)):
+                    add(role, h, "pit_tail", lo, hi, float(tail.mean()), 0.05, n)
+            for col, cat, series in (("p_below", 0, "reliability_lower"),
+                                     ("p_above", 2, "reliability_upper")):
+                ok = g[col].notna() & (g["obs_cat"] >= 0)
+                p = g.loc[ok, col].to_numpy(float)
+                o = (g.loc[ok, "obs_cat"] == cat).to_numpy(float)
+                if not len(p):
+                    continue
+                edges = np.linspace(0, 1, 6)
+                k = np.clip(np.digitize(p, edges) - 1, 0, 4)
+                for b in range(5):
+                    m = k == b
+                    add(role, h, series, float(edges[b]), float(edges[b + 1]),
+                        float(o[m].mean()) if m.any() else float("nan"),
+                        float(p[m].mean()) if m.any() else float("nan"), int(m.sum()))
+    return pd.DataFrame(rows)
 
 
 def conditional_skill(scored: pd.DataFrame, cfg: dict) -> pd.DataFrame:
@@ -256,6 +307,9 @@ def main() -> None:
     t7 = conditional_skill(scored, cfg)
     atomic_write_csv(t7, TABLES / "T7_conditional_skill.csv")
 
+    t15 = calibration_table(scored, primary, horizons)
+    atomic_write_csv(t15.round(4), TABLES / "T15_pit_reliability.csv")
+
     figures = {
         "F1": fig_skill_by_horizon(t2, horizons),
         "F2": fig_calibration(scored, primary, horizons),
@@ -270,7 +324,8 @@ def main() -> None:
     write_manifest({"figures": figures,
                     "tables": {"T4_murphy": "tables/T4_murphy.csv",
                                "T6_secondary_targets": "tables/T6_secondary_targets.csv",
-                               "T7_conditional_skill": "tables/T7_conditional_skill.csv"}})
+                               "T7_conditional_skill": "tables/T7_conditional_skill.csv",
+                               "T15_pit_reliability": "tables/T15_pit_reliability.csv"}})
 
 
 if __name__ == "__main__":

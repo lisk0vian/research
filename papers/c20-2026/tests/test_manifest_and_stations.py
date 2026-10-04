@@ -97,7 +97,10 @@ def test_the_declared_contract_survives_every_write(outputs):
     _common.write_manifest({"stations": {"040514": {}}})
     data = _read(outputs)
     assert data["paper"] == "c20-2026"
-    assert data["design_version"] == "2.0"
+    # Stamped from the config that runs, not from a hardcoded default: the
+    # v3.0 outputs used to be labelled "2.0", which put the provenance record
+    # of every manuscript number a design version behind.
+    assert data["design_version"] == str(_common.load_config()["design_version"])
     assert data["status"] == "partial"
 
 

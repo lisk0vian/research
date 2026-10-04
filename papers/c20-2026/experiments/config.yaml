@@ -97,15 +97,17 @@ data:
 qc_hourly:
   # TT lower bound is -25, not -15: IMATA at 4475 m records -16.7 degC and the
   # old bound (set for a 3329 m station) discarded legitimate values.
+  # The range is the single QC policy per variable. `hr_clip_upper` (103) used
+  # to add a second HR threshold, unreachable because range.HR [0, 100] nulls
+  # everything above 100 first; it is removed rather than reinterpreted, which
+  # would change the QC'd data after the fact.
   range: {TT: [-25, 35], HR: [0, 100], RR: [0, 60]}
-  hr_clip_upper: 103
   step_TT_max_degC: 8
   stuck_run_hours: 6
 daily_aggregation:
   min_hours: 20
   require_each_6h_block: true
   rr_min_hours: 20
-  rr_flag_hours: [22, 23]
 target:
   type: period_mean_anomaly
   horizons:
@@ -239,6 +241,7 @@ dynamical:
   members: [1, 2, 3, 4]  # the four 00Z members; each runs >= 93 days (28 needed)
   start: "2018-10-31"    # first cfs.* prefix in the bucket
   folds: [B1, B2]
+  min_train: 40        # training Mondays needed before a CFS calibration is fitted
   clim_harmonics_K: 2    # CFS window-mean climatology, from <= ~4.7 training years
   workers: 8
   retries: 3

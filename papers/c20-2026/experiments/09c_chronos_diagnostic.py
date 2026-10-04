@@ -41,12 +41,18 @@ from _common import (
     ensure_dirs,
     load_config,
     paths_report,
+    primary_target,
     read_station_keyed,
     write_manifest,
 )
 from _panel import fast_mode, read_eval_index
 
-TARGET = "TT_mean"
+TARGET = primary_target()
+# Declared with the `value`/`reference` schema of T10 (the columns used to be
+# `paths`/`observed`); a stale T10 from an earlier run would not match what
+# report.py and the paper read. Declaring it also re-runs the stage when the
+# schema moves again (COLAB.md §7, rule 12).
+RESULTS_VERSION = 1
 
 
 # --- metrics (pure, tested without torch) ----------------------------------------
@@ -99,7 +105,13 @@ def error_shrink(err: np.ndarray, a: int, b: int) -> float:
 
 def summarise(paths: np.ndarray, obs: np.ndarray, windows: dict[str, tuple[int, int]],
               role: str) -> list[dict]:
-    """Rows of T10 for one set of contexts."""
+    """Rows of T10 for one set of contexts.
+
+    Column names say what they hold: `value` is the model's achieved quantity
+    (its coverage, its spread, its persistence) and `reference` is what it is
+    compared against (the nominal level, the RMSE, the real errors). They used
+    to be `paths` and `observed`, which read as if the second were the data.
+    """
     med = np.quantile(paths, 0.5, axis=1)
     err = obs - med
     dev = paths - paths.mean(axis=1, keepdims=True)
@@ -108,18 +120,18 @@ def summarise(paths: np.ndarray, obs: np.ndarray, windows: dict[str, tuple[int, 
     for (lo, hi), name in (((1, 7), "days 1-7"), ((8, 14), "days 8-14"), ((15, 28), "days 15-28")):
         part = d[(d["lead_day"] >= lo) & (d["lead_day"] <= hi)]
         rows.append({"role": role, "check": "daily", "scope": name,
-                     "paths": float(part["cov90"].mean()), "observed": 0.90,
+                     "value": float(part["cov90"].mean()), "reference": 0.90,
                      "metric": "cov90 of daily anomaly (nominal 0.90)"})
         rows.append({"role": role, "check": "daily", "scope": name,
-                     "paths": float(part["spread"].mean()),
-                     "observed": float(part["rmse_median"].mean()),
+                     "value": float(part["spread"].mean()),
+                     "reference": float(part["rmse_median"].mean()),
                      "metric": "path SD vs RMSE of the median (degC)"})
     rows.append({"role": role, "check": "persistence", "scope": "days 1-28",
-                 "paths": lag1(dev), "observed": lag1(err),
+                 "value": lag1(dev), "reference": lag1(err),
                  "metric": "lag-1 autocorrelation (path deviations vs real errors)"})
     for h, (a, b) in windows.items():
         rows.append({"role": role, "check": "aggregation", "scope": h,
-                     "paths": path_shrink(paths, a, b), "observed": error_shrink(err, a, b),
+                     "value": path_shrink(paths, a, b), "reference": error_shrink(err, a, b),
                      "metric": f"SD(window mean)/daily SD; independent days: "
                                f"{1 / np.sqrt(b - a + 1):.3f}"})
     return rows
@@ -182,7 +194,8 @@ def main() -> None:
     table = pd.DataFrame(rows)
     path = atomic_write_csv(table.round(4), TABLES / "T10_chronos_diagnostic.csv")
     print(table.round(3).to_string(index=False))
-    write_manifest({"chronos_diagnostic_09c": {
+    write_manifest({"tables": {"T10_chronos_diagnostic": "tables/T10_chronos_diagnostic.csv"},
+                    "chronos_diagnostic_09c": {
         "amendment": "A2, post hoc", "table": "outputs/tables/T10_chronos_diagnostic.csv",
         "contexts": int(sum(len(p) for parts in by_role.values() for p, _ in parts)),
         "model_id": ccfg["model_id"], "num_samples": int(ccfg["num_samples"]),

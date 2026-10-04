@@ -36,11 +36,11 @@ from scipy.optimize import minimize
 from scipy.special import ndtr
 
 from _common import TABLES, atomic_write_csv, atomic_write_json, ensure_dirs, load_config, \
-    paths_report, write_manifest
+    paths_report, primary_target, write_manifest
 from _panel import MODELS_DIR, fast_mode, qcols, quantile_levels, read_eval_index, read_preds
 from _scores import crps_quantile, gaussian_quantiles, rearrange
 
-TARGET = "TT_mean"
+TARGET = primary_target()
 KEYS = ["station", "fold", "issue_date", "horizon"]
 BASE_MEMBERS = ["Ridge_LG", "GBM_LG", "LSTM_LG"]
 CHRONOS_VARIANTS = ["Chronos", "Chronos@abs", "ChronosBolt"]
@@ -365,7 +365,9 @@ def main() -> None:
     atomic_write_csv(out, MODELS_DIR / "mstar2_preds.csv")
     print(t13.round(3).to_string(index=False))
     print(t14.round(4).to_string(index=False))
-    write_manifest({"mstar2_09e": {
+    write_manifest({"tables": {"T13_mstar2_selection": "tables/T13_mstar2_selection.csv",
+                               "T14_mstar2_blind": "tables/T14_mstar2_blind.csv"},
+                    "mstar2_09e": {
         "amendment": "A3.3", "selected": frozen["configuration"], "chronos_variant": chronos,
         "tables": ["outputs/tables/T13_mstar2_selection.csv",
                    "outputs/tables/T14_mstar2_blind.csv"],

@@ -40,6 +40,7 @@ from _common import (
     ensure_dirs,
     load_config,
     paths_report,
+    primary_target,
     read_station_keyed,
     rel_path,
     write_manifest,
@@ -47,7 +48,7 @@ from _common import (
 from _panel import MODELS_DIR, fast_mode
 from _scores import overlap_order
 
-TARGET = "TT_mean"
+TARGET = primary_target()
 # v1: T5 leaves out models with no per-station training (their LOSO gap is 0
 # by construction and read as a result).
 RESULTS_VERSION = 1

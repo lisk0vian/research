@@ -57,10 +57,30 @@ contract), `_scores.py` (CRPS, PIT, RPS, Murphy).
 ## Status
 
 All stages are implemented and covered by the light test suite
-(`tests/test_v3_contracts.py`, `tests/test_models_pipeline.py`). No stage has
-yet run on the real file under design v3; the first Colab run produces the
-numbers. The notes below were measured on the superseded single-station
-Huancayo data and are kept for their reasoning, not their values.
+(`tests/test_v3_contracts.py`, `tests/test_models_pipeline.py`).
+
+**Run of record: 2026-10-03, Colab, stages 00-10** (`outputs/run_meta.json`).
+It produced T1-T11, `metrics_long.csv`, F1-F6 and `outputs/models/primary_model.json`,
+and every review finding was measured against it. Three defects make a clean
+re-run the next step before anything is written:
+
+- **The run is not bound to the code.** `run_meta.json` has no `code_hashes`
+  and `git_commit: null`, so nothing proves which version of `experiments/`
+  produced the tables. `run_all.py` writes both on every run now.
+- **Amendment A3 never ran.** Stages `07e_chronos_variants`,
+  `07f_seed_variability` and `09e_mstar2` are implemented but absent from
+  `stages_run`, so T12/T12b/T13/T14 and `outputs/models/mstar2.json` do not
+  exist and H5 is untested. `report.py` already reads T12-T14 and fails on
+  today's `outputs/`.
+- **`06b_dynamical` is recorded with `exit_code: 1`** while its dynamical
+  section in `manifest_index.json` describes a clean run: the log entry and the
+  section come from different executions, so `cfs_windows.csv` has no run
+  provenance until 06b is re-run.
+
+The blind numbers in `outputs/` are therefore provisional: they are sound
+enough to review the design against, not to quote. The notes below were
+measured on the superseded single-station Huancayo data and are kept for their
+reasoning, not their values.
 
 ## Notes from the v2 (Huancayo) runs
 

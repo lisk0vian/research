@@ -39,16 +39,17 @@ from _common import (
     ensure_dirs,
     load_config,
     paths_report,
+    primary_target,
     read_station_keyed,
     write_manifest,
 )
 from _harmonic import doy_fractional, eval_harmonic
 from _panel import fast_mode, read_eval_index
 
-TARGET = "TT_mean"
+TARGET = primary_target()
 # v1: adds the CRPS of each variant (daily and per window), the net effect of
 # calibration and median accuracy together.
-RESULTS_VERSION = 1
+RESULTS_VERSION = 2   # v2: T11 columns renamed value/reference (were paths/observed)
 FOLD = "D3"  # the last dev fold: nothing here touches the blind folds again
 VARIANTS = [("bfloat16", "anomaly"), ("float32", "anomaly"),
             ("bfloat16", "absolute"), ("float32", "absolute")]
@@ -98,14 +99,14 @@ def variant_rows(label: str, paths: np.ndarray, obs: np.ndarray,
                  windows: dict[str, tuple[int, int]], d09c) -> list[dict]:
     rows = d09c.summarise(paths, obs, windows, label)
     for scope, value in crps_daily_and_windows(paths, obs, windows).items():
-        rows.append({"role": label, "check": "crps", "scope": scope, "paths": value,
-                     "observed": np.nan, "metric": "CRPS (degC; lower is better)"})
+        rows.append({"role": label, "check": "crps", "scope": scope, "value": value,
+                     "reference": np.nan, "metric": "CRPS (degC; lower is better)"})
     for h, (a, b) in windows.items():
         cov, rmse = window_coverage(paths, obs, a, b)
-        rows.append({"role": label, "check": "window", "scope": h, "paths": cov,
-                     "observed": 0.90, "metric": "cov90 of window mean (nominal 0.90)"})
-        rows.append({"role": label, "check": "window", "scope": h, "paths": rmse,
-                     "observed": np.nan, "metric": "RMSE of window-mean median (degC)"})
+        rows.append({"role": label, "check": "window", "scope": h, "value": cov,
+                     "reference": 0.90, "metric": "cov90 of window mean (nominal 0.90)"})
+        rows.append({"role": label, "check": "window", "scope": h, "value": rmse,
+                     "reference": np.nan, "metric": "RMSE of window-mean median (degC)"})
     return rows
 
 
@@ -192,9 +193,10 @@ def main() -> None:
     table = pd.DataFrame(rows).rename(columns={"role": "variant"})
     path = atomic_write_csv(table.round(4), TABLES / "T11_chronos_sensitivity.csv")
     show = table[table["metric"].str.startswith(("cov90", "path SD", "CRPS"))]
-    print(show.pivot_table(index=["check", "scope", "metric"], columns="variant", values="paths")
+    print(show.pivot_table(index=["check", "scope", "metric"], columns="variant", values="value")
           .round(3).to_string())
-    write_manifest({"chronos_sensitivity_09d": {
+    write_manifest({"tables": {"T11_chronos_sensitivity": "tables/T11_chronos_sensitivity.csv"},
+                    "chronos_sensitivity_09d": {
         "amendment": "A2, post hoc; sensitivity only, 07b/M* unchanged",
         "table": "outputs/tables/T11_chronos_sensitivity.csv", "fold": FOLD,
         "variants": [f"{a}/{b}" for a, b in VARIANTS], "contexts": int(len(block)),

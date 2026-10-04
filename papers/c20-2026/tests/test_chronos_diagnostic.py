@@ -65,9 +65,9 @@ def test_summary_flags_the_hypothesised_failure():
     daily = rows[("daily", "days 15-28", "cov90 ")]
     agg = rows[("aggregation", "W3_4", "SD(win")]
     pers = rows[("persistence", "days 1-28", "lag-1 ")]
-    assert daily["paths"] == pytest.approx(0.90, abs=0.03)
-    assert pers["paths"] < 0.1 < 0.6 < pers["observed"]
-    assert agg["paths"] < 0.5 * agg["observed"]
+    assert daily["value"] == pytest.approx(0.90, abs=0.03)
+    assert pers["value"] < 0.1 < 0.6 < pers["reference"]
+    assert agg["value"] < 0.5 * agg["reference"]
 
 
 # --- 09d sensitivity: window coverage on the same anomaly scale -----------------------

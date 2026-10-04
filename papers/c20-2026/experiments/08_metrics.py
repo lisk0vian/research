@@ -26,6 +26,7 @@ from _common import (
     ensure_dirs,
     load_config,
     paths_report,
+    primary_target,
     rel_path,
     write_manifest,
 )
@@ -39,6 +40,7 @@ from _scores import (
 )
 
 KEYS = ["experiment", "target", "station", "fold", "issue_date", "horizon"]
+TARGET = primary_target()
 DETERMINISTIC_ONLY = {"Pers"}
 REFERENCES = ("Clim", "Damp")
 
@@ -160,7 +162,7 @@ def main() -> None:
             # the temporal experiment has: borrow its Clim and Damp rows.
             t = read_preds("temporal")
             refs = t[t["model"].isin(REFERENCES) & t["fold"].isin(scored["fold"].unique())
-                     & (t["target"] == "TT_mean")].assign(experiment="loso")
+                     & (t["target"] == TARGET)].assign(experiment="loso")
             if not refs.empty:
                 scored = pd.concat([scored, score_rows(refs, index, cfg)], ignore_index=True)
         path = atomic_write_csv(scored, MODELS_DIR / f"scored_{experiment}.csv")
@@ -173,12 +175,13 @@ def main() -> None:
 
     table = aggregate(pd.concat(all_scored, ignore_index=True))
     out = atomic_write_csv(table, TABLES / "metrics_long.csv")
-    show = table[(table["scope"] == "pooled") & (table["target"] == "TT_mean")]
+    show = table[(table["scope"] == "pooled") & (table["target"] == TARGET)]
     for (exp, role), g in show.groupby(["experiment", "role"]):
-        print(f"\n== {exp} / {role} (TT_mean, pooled) CRPSS vs Damp ==")
+        print(f"\n== {exp} / {role} ({TARGET}, pooled) CRPSS vs Damp ==")
         print(g.pivot(index="model", columns="horizon", values="CRPSS_damp").round(3).to_string())
     print(f"\nwrote {out}")
-    write_manifest({"metrics": {"table": rel_path(out), "scored_rows": written}},
+    write_manifest({"metrics": {"table": rel_path(out), "scored_rows": written},
+                    "tables": {"metrics_long": "tables/metrics_long.csv"}},
                    replace=("metrics",))
 
 

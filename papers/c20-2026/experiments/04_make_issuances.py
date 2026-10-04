@@ -40,14 +40,17 @@ from _common import (
     fold_windows,
     load_config,
     paths_report,
+    primary_target,
     progress,
     read_station_keyed,
     rel_path,
+    secondary_targets,
     write_manifest,
 )
 from _harmonic import doy_fractional, eval_harmonic
 
 DAILY_CSV = PROCESSED / "daily.csv"
+TARGET = primary_target()
 CLIM_CSV = PROCESSED / "daily_clim.csv"
 CLIM_JSON_DIR = OUTPUTS / "climatology"
 
@@ -65,7 +68,7 @@ ISSUANCE_COLUMNS = [
 # Secondary targets (03 fits their climatologies). Each adds an anomaly, a
 # validity flag and the window-mean climatology, which is what reconstructs an
 # absolute temperature (T = C + A) for the frost index.
-SECONDARY_TARGETS = ("TT_min", "TT_max")
+SECONDARY_TARGETS = secondary_targets()
 
 
 def secondary_columns(var: str) -> list[str]:
@@ -124,7 +127,7 @@ def load_fold_coefficients(fold_id: str, station: str | None = None) -> np.ndarr
 
 def anomalies_for_window(daily: pd.DataFrame, coef: np.ndarray, start: pd.Timestamp,
                          end: pd.Timestamp, period: float,
-                         variable: str = "TT_mean") -> pd.DataFrame:
+                         variable: str = TARGET) -> pd.DataFrame:
     """Observed `variable` minus the fold's C2, restricted to [start, end].
 
     The climatology is reconstructed from the fold coefficients rather than read

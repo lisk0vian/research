@@ -43,6 +43,7 @@ from _common import (
     fold_windows,
     load_config,
     paths_report,
+    primary_target,
     progress,
     read_station_keyed,
     write_manifest,
@@ -64,7 +65,7 @@ from _scores import rearrange
 DAILY_CSV = PROCESSED / "daily.csv"
 CLIM_DIR = OUTPUTS / "climatology"
 SEQ_VARS = ["A_TT_mean", "A_TT_min", "A_TT_max", "A_HR_mean", "log1p_RR", "valid"]
-TARGET = "TT_mean"
+TARGET = primary_target()
 
 
 # --- daily anomaly sequences ---------------------------------------------------

@@ -141,6 +141,13 @@ only four training stations, latitude and longitude act as station identifiers,
 so LOSO runs three static-descriptor variants: elevation, latitude and
 longitude; elevation only (`@elev`); none (`@none`).
 
+What LOSO holds out is the station's data **from model fitting**. The held-out
+station's own record still defines its climatology `C_t`, its anomalies and
+`A0_7d`, so the transfer measured is "no data of this station enters any fit",
+not "this station has never been observed"; a system serving a station without
+any record would have to estimate the climatology from elsewhere. The claim is
+scoped that way in the paper (amendment A4).
+
 ## 6. Metrics
 
 Deterministic: MAE, RMSE, ACC, MSSS vs Clim and vs Damp, Murphy decomposition
@@ -346,6 +353,43 @@ selection is visible, but only the frozen winner is tested.
 H1); (b) M*₂'s 90 % coverage lies in 0.85-0.95 (reported per horizon, not a
 test). H5 is evidence for the dev-selected system, not a replacement of H1-H4.
 
+### Amendment A4 (2026-10-03): scope of the promised secondary analyses
+
+Written after the 2026-10-03 run produced its blind scores and after the
+review of the pipeline (A2's diagnosis above is already post hoc), but before
+any manuscript text exists. It changes no pre-registered number, no hypothesis
+and not the decision rule in §8. It decides what three promises in §9 and §10
+mean, so the paper cannot promise what no stage computes.
+
+Scope changes:
+
+- **C1/C3 are a diagnostic, not a rescored sensitivity.** §9 listed "C1/C3"
+  among the reported sensitivities. What exists is stage 03's own evidence —
+  the variance of the monthly-mean residual out of sample
+  (DESIGN_DECISIONS §3.1, K = 3 chosen against K = 1 and K = 5) — and the
+  `A_C1`/`A_C3` columns, which no stage turns into scores. Rebuilding targets
+  under C1/C3 and rescoring now would be post hoc. The climatology sensitivity
+  is therefore reported as the §3.1 diagnostic; `climatology.sensitivity` in
+  `config.yaml` stays, because the variants are still computed and inspected.
+- **The Thursday-issuance sensitivity is not run.** `issuance.weekday_sensitivity`
+  declared it, no stage ever read the key, and a Thursday pass refits every
+  model to answer a descriptive robustness question. The key is removed from
+  `config.yaml` and the promise from §9; it is listed as future work rather
+  than left standing unfilled.
+
+Clarifications (nothing is dropped):
+
+- **What LOSO holds out** is the station's data from *model fitting*; see §5.
+- **Holm's families in H1** are the four test strings (Ridge ΔMSE and ΔCRPS,
+  GBM ΔMSE and ΔCRPS) each corrected over its three horizons, as
+  `inference.multiplicity` declares (`H1: 3`): four sub-families of three, not
+  one family of twelve. The paper reports it that way and states the
+  uncorrected family-wise rate next to it.
+- **PIT and tercile reliability get a file of record.** §10's contract was
+  broken by F2, whose PIT tail masses (quoted in A2) and reliability bins
+  lived only inside the PNG. Stage 10 now writes `T15_pit_reliability.csv` per
+  role and horizon, and §10 lists it.
+
 ## 8. Pre-registered decision rule
 
 Written before any real score exists, so the framing cannot follow the numbers.
@@ -369,15 +413,20 @@ Written before any real score exists, so the framing cannot follow the numbers.
 
 Skill by season, by ENSO phase at issuance (Niño 3.4 ≥ 0.5 / ≤ −0.5) and by
 MJO activity (ROMI amplitude ≥ 1), reported as windows of opportunity (T7, F3),
-dev vs blind robustness, the TT_min/TT_max targets and the frost index,
-sensitivities (C1/C3, Thursday issuance, bootstrap block length).
+dev vs blind robustness, the TT_min/TT_max targets and the frost index, and the
+bootstrap block-length sensitivity (4 and 13 weeks against the registered 8).
+The climatology sensitivity is the C2-vs-C1/C3 diagnostic of
+DESIGN_DECISIONS §3.1, not a rescored skill comparison, and the
+Thursday-issuance check is not run: both are scoped in amendment A4.
 
 ## 10. Output contract
 
 Tables (`outputs/tables/`): T1 completeness, T2 blind skill + CI, T3 tests,
 T4 Murphy, T5 LOSO gap, T6 secondary targets and frost, T7 conditional skill,
 T8 CFS calibration, T9 calibration of M*, T10 Chronos diagnostic and T11 Chronos
-precision/scale sensitivity (A2, post hoc), `metrics_long.csv`.
+precision/scale sensitivity (A2, post hoc), T12/T12b seed variability and
+T13/T14 M*₂ selection and blind scores (A3), T15 PIT and tercile reliability of
+M* (A4), `metrics_long.csv`.
 Figures (`outputs/figures/`): F1 skill vs horizon, F2 PIT and reliability of
 M*, F3 skill by season and ENSO phase, F4 dev vs blind, F5 LOSO vs elevation,
 F6 predictability budget (L vs LG). Every number in the manuscript is a claim

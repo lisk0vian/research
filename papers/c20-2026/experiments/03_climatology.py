@@ -48,9 +48,11 @@ from _common import (
     fold_windows,
     load_config,
     paths_report,
+    primary_target,
     progress,
     read_station_keyed,
     rel_path,
+    secondary_targets,
     write_manifest,
 )
 from _harmonic import (
@@ -65,11 +67,11 @@ from _harmonic import (
 
 DAILY_CSV = PROCESSED / "daily.csv"
 CLIM_CSV = PROCESSED / "daily_clim.csv"
-TARGET = "TT_mean"
+TARGET = primary_target()
 # Secondary targets get their own harmonic per fold: Tmin and Tmax peak at
 # different times of year than the mean, so reusing TT_mean's curve would leave
 # a seasonal residual that reads as skill (the DTR lesson from stage 05).
-SECONDARY_TARGETS = ("TT_min", "TT_max")
+SECONDARY_TARGETS = secondary_targets()
 # Window (days) used by C1 and by the tercile thresholds (config +/-15d).
 WINDOW_DAYS = 15
 

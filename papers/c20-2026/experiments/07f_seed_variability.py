@@ -29,6 +29,7 @@ from _common import (
     ensure_dirs,
     load_config,
     paths_report,
+    primary_target,
     read_station_keyed,
     write_manifest,
 )
@@ -45,7 +46,7 @@ from _panel import (
 )
 from _scores import crps_quantile
 
-TARGET = "TT_mean"
+TARGET = primary_target()
 KEYS = ["station", "fold", "issue_date", "horizon"]
 EXTRA_SEEDS = (1, 2, 3, 4)
 SEED_KEY = {"GBM_L": "gbm_local", "GBM_LG": "gbm_largescale", "LSTM_LG": "lstm"}
@@ -163,7 +164,9 @@ def main() -> None:
     atomic_write_csv(pairs, TABLES / "T12b_seed_pairs.csv")
     print(t12.round(3).to_string(index=False))
     print(pairs.to_string(index=False))
-    write_manifest({"seed_variability_07f": {
+    write_manifest({"tables": {"T12_seed_variability": "tables/T12_seed_variability.csv",
+                               "T12b_seed_pairs": "tables/T12b_seed_pairs.csv"},
+                    "seed_variability_07f": {
         "amendment": "A3.2, descriptive", "models": list(SEED_KEY),
         "extra_seeds": list(EXTRA_SEEDS),
         "tables": ["outputs/tables/T12_seed_variability.csv", "outputs/tables/T12b_seed_pairs.csv"],

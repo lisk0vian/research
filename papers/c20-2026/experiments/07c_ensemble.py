@@ -20,7 +20,8 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
-from _common import atomic_write_json, ensure_dirs, load_config, paths_report, write_manifest
+from _common import atomic_write_json, ensure_dirs, load_config, paths_report, primary_target, \
+    write_manifest
 from _panel import (
     MODELS_DIR,
     pred_frame,
@@ -33,7 +34,7 @@ from _panel import (
 from _scores import crps_quantile, rearrange
 
 KEYS = ["station", "fold", "issue_date", "horizon"]
-TARGET = "TT_mean"
+TARGET = primary_target()
 
 
 def dev_crps(preds: pd.DataFrame, index: pd.DataFrame, levels: list[float]) -> pd.DataFrame:

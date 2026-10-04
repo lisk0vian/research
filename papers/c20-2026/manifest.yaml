@@ -28,15 +28,76 @@ authors:
 # --- Claims: verifiable statements made by the paper ---
 # Each claim anchors a number/result in the text to its origin in the pipeline,
 # so paper-refs and the reviewers can audit that nothing was fabricated.
+# status: draft (written from the run of record, not yet quoted in the
+# manuscript) | verified (checked against the file by gate-claims) | stale
+# (the file has moved on). Every source is a file in outputs/.
 claims:
-  - id: claim-1
-    text: "EXAMPLE: The model reaches F1 = 0.469 on the 2025 test set."
-    source: "experiments/exp-01/results/metrics.json"   # where the number comes from
-    status: draft                                        # draft | verified | stale
+  - id: claim-h1-ridge
+    text: "Blind folds: Ridge_LG beats Ridge_L at every horizon (Clark-West 4.10/4.56/4.55; Holm p = 2.1e-5/8e-6/8e-6) and its CRPS is lower (delta CRPS 0.22/0.34/0.41 degC; Holm p = 0.016/0.0087/0.0087 at W1/W2/W3_4)."
+    source: "outputs/tables/T3_hypotheses.csv"
+    status: draft
+  - id: claim-h1-gbm
+    text: "The large-scale predictors help GBM at W2 and W3_4 but not W1: block-bootstrap delta MSE Holm p = 0.105/0.027/0.020, delta CRPS Holm p = 0.264/0.048/0.004 (W1/W2/W3_4)."
+    source: "outputs/tables/T3_hypotheses.csv"
+    status: draft
+  - id: claim-h2
+    text: "M* (Ensemble) beats damped persistence at W3_4 on the blind folds: MSSS_damp = 0.409, one-sided 95% lower bound 0.339, p = 1e-4."
+    source: "outputs/tables/T3_hypotheses.csv"
+    status: draft
+  - id: claim-h3
+    text: "M* has probabilistic skill against Clim at every horizon (CRPSS_clim 0.295/0.298/0.345; Holm p = 3e-4) but its blind 90% interval covers 0.75/0.69/0.63 of the outcomes, below the pre-registered 0.85-0.95."
+    source: "outputs/tables/T3_hypotheses.csv"
+    status: draft
+  - id: claim-h4
+    text: "Against the CFSv2 reference, delta CRPS(CFS_BC - M*) is -0.419 (W1), 0.001 (W2) and 0.383 degC (W3_4): M* wins only at W3_4 (Holm p = 0.0117); the other two horizons are non-rejections."
+    source: "outputs/tables/T3_hypotheses.csv"
+    status: draft
+  - id: claim-mstar-selection
+    text: "M* = Ensemble, chosen on dev CRPS 0.3926 degC against Ridge_LG 0.3943, LSTM_LG 0.3946 and GBM_LG 0.4207 (0.4% margin over Ridge_LG), with inverse-dev-CRPS weights giving Chronos 21.8-22.1%."
+    source: "outputs/models/primary_model.json"
+    status: draft
+  - id: claim-calibration-k
+    text: "Post hoc (A2): a dev-fitted spread factor k = 1.46-1.63 raises the blind 90% coverage of the Ensemble to 0.899/0.899/0.875 and its CRPSS_clim to 0.311/0.324/0.380 (W1/W2/W3_4)."
+    source: "outputs/tables/T9_calibration.csv"
+    status: draft
+  - id: claim-chronos-diagnosis
+    text: "Chronos' daily sample paths cover 0.20-0.22 of the observed daily anomalies (nominal 0.90) with a spread of 0.18-0.24 degC against a median RMSE of 1.12-1.32 degC, in dev and blind alike, so window averaging is not the cause of its narrow windows."
+    source: "outputs/tables/T10_chronos_diagnostic.csv"
+    status: draft
+  - id: claim-chronos-input
+    text: "On D3, absolute-temperature context lifts Chronos' daily 90% coverage from 0.20-0.22 to 0.75-0.78 and lowers CRPS by about 13% at W1 and W2 (0.46 vs 0.53, 0.52 vs 0.60 degC); float32 and bfloat16 give the same paths."
+    source: "outputs/tables/T11_chronos_sensitivity.csv"
+    status: draft
+  - id: claim-loso
+    text: "Under LOSO on the blind folds GBM_LG keeps CRPSS_clim > 0 at every held-out station and horizon (0.023-0.349), and its paired CRPS change against the temporal experiment stays within -0.025 to +0.066 degC per station and horizon."
+    source: "outputs/tables/T5_loso_gap.csv"
+    status: draft
 
 # --- Figures: registry of each figure and its origin ---
+# `file` is relative to paper/ for migrated figures (media/) and to the paper
+# root for generated ones (outputs/figures/), which stage 10 writes.
 figures:
-  - id: fig-1
-    caption: "EXAMPLE: Methodological workflow diagram."
-    file: "media/image2.png"          # path relative to paper/
-    source: "migrated"                # migrated (came from Word) | experiments/exp-XX
+  - id: fig-F1
+    caption: "CRPSS vs Clim of every model by horizon, blind folds, with 95% block-bootstrap intervals."
+    file: "outputs/figures/F1_skill_by_horizon.png"
+    source: "experiments/10_tables_figures.py"
+  - id: fig-F2
+    caption: "PIT histogram and tercile reliability of M* (Ensemble), blind folds. The numbers behind it are in outputs/tables/T15_pit_reliability.csv."
+    file: "outputs/figures/F2_calibration.png"
+    source: "experiments/10_tables_figures.py"
+  - id: fig-F3
+    caption: "M* skill by season, ENSO phase and MJO activity at issuance (descriptive, from T7)."
+    file: "outputs/figures/F3_conditional_skill.png"
+    source: "experiments/10_tables_figures.py"
+  - id: fig-F4
+    caption: "Dev vs blind CRPSS vs Clim, every model (robustness of the dev-to-blind drop)."
+    file: "outputs/figures/F4_dev_vs_blind.png"
+    source: "experiments/10_tables_figures.py"
+  - id: fig-F5
+    caption: "LOSO gap (CRPS lost when the station is left out of fitting) against station elevation."
+    file: "outputs/figures/F5_loso_vs_elevation.png"
+    source: "experiments/10_tables_figures.py"
+  - id: fig-F6
+    caption: "Predictability budget: CRPSS vs Damp of the local (L) and local-plus-large-scale (LG) variants."
+    file: "outputs/figures/F6_predictability_budget.png"
+    source: "experiments/10_tables_figures.py"

@@ -64,7 +64,7 @@ def cfg() -> dict:
         "qc_hourly": {
             "range": {"TT": [-15, 35], "HR": [0, 100], "PP": [640, 720],
                       "RR": [0, 60], "FF": [0, 40], "DD": [0, 360]},
-            "hr_clip_upper": 103, "step_TT_max_degC": 8, "stuck_run_hours": 6,
+            "step_TT_max_degC": 8, "stuck_run_hours": 6,
         },
         "daily_aggregation": {
             "min_hours": 20, "require_each_6h_block": True,

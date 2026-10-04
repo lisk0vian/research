@@ -30,12 +30,13 @@ import json
 import numpy as np
 import pandas as pd
 
-from _common import TABLES, atomic_write_csv, ensure_dirs, load_config, paths_report, write_manifest
+from _common import TABLES, atomic_write_csv, ensure_dirs, load_config, paths_report, \
+    primary_target, write_manifest
 from _panel import MODELS_DIR, qcols, quantile_levels, read_eval_index, read_preds
 from _scores import crps_quantile, rearrange
 
 KEYS = ["station", "fold", "issue_date", "horizon"]
-TARGET = "TT_mean"
+TARGET = primary_target()
 COVERAGE = 0.90
 
 
@@ -168,7 +169,8 @@ def main() -> None:
     table = pd.concat(tables, ignore_index=True)
     path = atomic_write_csv(table.round(4), TABLES / "T9_calibration.csv")
     print(table.round(3).to_string(index=False))
-    write_manifest({"calibration_09b": {
+    write_manifest({"tables": {"T9_calibration": "tables/T9_calibration.csv"},
+                    "calibration_09b": {
         "amendment": "A2, post hoc (after unblinding); H3 and M* unchanged",
         "table": "outputs/tables/T9_calibration.csv", "coverage_target": COVERAGE,
         "k_fit": "per horizon; dev folds cross-fitted on the other dev folds, "

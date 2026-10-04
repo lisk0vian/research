@@ -20,13 +20,15 @@ the pre-registered decision rule (§8 there) written before any real score.
 | Folds | **done.** July–June test windows (record ends 2024-06-30), D1–D3 dev, B1–B2 blind |
 | C3 climatology | **fixed.** Its trend column was day-of-year (a sawtooth); now elapsed years |
 | `06`–`10` | **implemented**: Niño + ROMI, Clim/Damp/Pers/Ridge/GBM, LSTM, Chronos, ensemble, metrics, H1–H3, LOSO, T1–T6, F1–F6 |
-| Tests | 343, about 50 s locally, no real data, no training |
-| Real-data run | **not yet.** First run happens on Colab (notebook §4b: smoke run, then full) |
+| Tests | 420, about 40 s locally, no real data, no training |
+| Real-data run | **one, 2026-10-03 on Colab (stages 00–10)**; it produced T1–T11 and F1–F6 but is not bound to this code (`run_meta.json` has no `code_hashes`), its `06b` entry is a failure against a clean dynamical section, and A3 (07e/07f/09e) never ran. A clean re-run is the next step; `experiments/README.md` §Status has the details |
+| Pipeline review | **2026-10-03, code reviewers.** The multi-station gap of §6 is closed (see there); the findings that remain are provenance and registry work, plus the claim wording the author must apply (§7.10) |
 | `references.bib` | **rebuilt**, 94 verified entries; the design checked against the literature in `LITERATURE_REVIEW.md` (R2–R4 implemented; R1 partly: CFSv2 benchmark on the blind folds instead of ECMWF, amendment A1 in `METHODOLOGY.md`) |
 | `paper/main.qmd` | owned by the author; title/highlights/abstract still describe v2 (§7.6) |
 
-**Resume here.** Sync `experiments/` and the notebook to Drive in place,
-run the notebook (smoke run, then full), read the tables, then apply the
+**Resume here.** Sync `experiments/` and the notebook to Drive in place, re-run
+cleanly **including the A3 stages** (`07e_chronos_variants`,
+`07f_seed_variability`, `09e_mstar2`), read the tables, then apply the
 pre-registered rule in METHODOLOGY §8 to fix the framing before writing.
 
 ### Settled, do not reopen
@@ -62,10 +64,10 @@ and an engineering application. `paper/main.qmd` is the author's.
   stated as a limitation, and the LOSO-vs-elevation result is what turns it
   into a finding.
 
-The split state is deliberate and temporary: the pipeline on disk is
-single-station because that is what was run, while the design of record is
-multi-station because that is what was decided. Sections 3 to 6 explain the
-evidence; §7 lists what closes the gap.
+The split state recorded here earlier — pipeline single-station on disk,
+design of record multi-station — was **closed on 2026-10-03**: the per-station
+loop is implemented and §6 below is now a historical inventory, not a to-do.
+Sections 3 to 6 explain the evidence; §7 lists what is still open.
 
 ## 2. The study
 
@@ -255,6 +257,12 @@ Every row was chosen deliberately; the rejected column records what was given up
 | 16 | Do not touch `paper/`; the author writes `main.qmd` | rewrite it here (framing not yet supported by numbers) |
 | 17 | Agriculture / frost as the engineering application | glaciers (no public product either); no use case (weakest for EAAI); hydrology (needs a link to impact) |
 | 18 | Six months to submission | one month (forces a single station and Q2/Q3) |
+| 19 | (2026-10-03) Delete `qc_hourly.hr_clip_upper` and `daily_aggregation.rr_flag_hours` | reinterpreting the HR clip (changes the QC'd data after the fact); inventing semantics for `rr_flag_hours`, which no stage read and nothing defined |
+| 20 | (2026-10-03) `target_variable`/`secondary_targets` read through `_common.primary_target()`/`secondary_targets()` | leaving `"TT_mean"` hardcoded next to the config (an edit would silently do nothing); renaming the target now (breaks every output for no gain) |
+| 21 | (2026-10-03) T10/T11 columns renamed `value`/`reference` | keeping `paths`/`observed`, whose names contradicted their content |
+| 22 | (2026-10-03) PIT and tercile reliability written as T15 by stage 10 | quoting them from F2 alone (no file of record in `outputs/`); a full reliability appendix (out of scope) |
+| 23 | (2026-10-03) Amendment A4: C1/C3 diagnostic-only, Thursday check not run | rescoring under C1/C3 after the blind scores were seen (post hoc); refitting every model on Thursday issuances for a descriptive check |
+| 24 | (2026-10-03) `paper/main.qmd` untouched; wording constraints recorded as §7.11 | rewriting it here (decision 16 stands); staying silent about the wording the review requires |
 
 ## 5. Design of record
 
@@ -294,9 +302,17 @@ quantiles on the 19-level grid with rearrangement to fix crossings.
 
 ## 6. Multi-station refactor inventory
 
-The science is already parameterised — QC thresholds, fold windows, horizons,
+**Closed 2026-10-03.** Kept as the record of what was broken and why, not as a
+to-do: the pipeline reviewers of 2026-10-03 checked every row against the code
+and the gap is closed. Where the fix lives: `01_qc_hourly.py:151` keeps `UBIGEO`
+and flags per station, `02_aggregate_daily.py:137` groups by station and date,
+`00_verify_source.py` checks the declared station set instead of asserting one
+value, `03`/`04`/`05` loop per station, and `_common.write_manifest` deep-merges
+so the per-station blocks accumulate instead of overwriting each other.
+
+The science was already parameterised — QC thresholds, fold windows, horizons,
 embargo, weekday, harmonics and window coverage are all read from `config.yaml`.
-What is hardcoded is the plumbing. Exact locations:
+What was hardcoded was the plumbing. Exact locations, as they stood:
 
 | What | Where | Why it breaks |
 |---|---|---|
@@ -311,30 +327,47 @@ What is hardcoded is the plumbing. Exact locations:
 | predictor constants hardcoded | `05_features_local.py:41-48` | `LAGS`, `MEAN_WINDOWS`, `RR_WINDOWS`, … ignore `config.predictors.local` |
 | year assumed present | `00_verify_source.py:101` | `per_day.loc[str(y)]` raises `KeyError` if a blind year is absent; stations have different coverage windows |
 
-Declared in `config.yaml` but never read by any code: `station.name`,
-`station.provider`, `station.lat`, `station.lon`, `station.elev_m`,
-`data.target_variable`, `data.non_predictors`, `predictors.local`,
-`predictors.large_scale.*`, `climatology.primary`, `models.*`, `metrics.*`,
-`inference.*`, `extensions_enabled`.
+**Declared in `config.yaml` and read by no code (re-checked 2026-10-03).** The
+list that stood here is largely obsolete: `stations[]` descriptors feed the LOSO
+static features (`_panel.station_frame`), `predictors.local` and
+`predictors.large_scale` are read by `05` and `06`, `models.*`, `metrics.frost`
+and `inference.*` by `07`–`09e`, and `data.target_variable` /
+`data.secondary_targets` since 2026-10-03 through
+`_common.primary_target()`/`secondary_targets()` — the stages used to hardcode
+`"TT_mean"` next to them, so a config edit changed nothing. What remains is
+documentation-only and stays that way unless someone wires it:
+`extensions_enabled`, `metrics.fair_scores`, `climatology.primary` (`03` writes
+the `C2_harmonic` label literally), `seeds.master`, `seeds.bootstrap_robustness`,
+`data.non_predictors` (named in `read_hourly`'s docstring only) and the
+`station.name`/`station.provider` labels. Two keys were deleted rather than left
+inert; see the decision record: the unreachable `qc_hourly.hr_clip_upper` and
+`daily_aggregation.rr_flag_hours`, which no stage ever read and nothing ever
+defined.
 
 **The 112 tests in `papers/c20-2026/tests/` should keep passing unchanged** if the
 per-station frame API is preserved and the loop is added above it. That is why
-decision 13 prefers the loop.
+decision 13 prefers the loop. (They do: 420 tests pass as of 2026-10-03, the
+suite having grown with the pipeline.)
 
 ## 7. Open before the paper can be written
 
-1. **Revise `METHODOLOGY.md`.** It still describes single-station Huancayo,
-   `E2_multistation: false` (§10), `D1 E2 multi-station: No` (§11), and
-   `journal: pending` (§11) while the format block and `manifest.yaml` both name
-   EAAI. Sections 2, 4, 6 and 10 need updating; the fold table changes to the
-   2015–2024 window; three targets replace one.
-2. **`config.variables` and the QC ranges.** The two entries that destroy data
-   silently. §9 has the measurements.
+1. **Revise `METHODOLOGY.md` — done (v3.0, 2026-10-02; A4, 2026-10-03).** It is
+   the design of record again: multi-station SENAMHI, 2015–2024 July–June
+   folds, three targets, EAAI, with amendments A1–A4 dated and scoped. The
+   complaint that used to stand here (`E2_multistation: false`,
+   `journal: pending`) is gone; what is left of "the text does not match the
+   design" is item 6, and that file is the author's.
+2. **`config.variables` and the QC ranges — done.** `TEMP→TT`, `HR→HR`,
+   `PP→RR` (precipitation here, not pressure), `TT: [-25, 35]` recalibrated so
+   IMATA's −16.7 °C survives. §9 has the measurements that forced both.
 3. **`pytest.ini` sets `testpaths = tests`**, so CI runs the repository suite but
-   never the paper's 309.
-4. **`manifest.yaml` is scaffold.** Its single claim cites
-   `experiments/exp-01/results/metrics.json`, which does not exist, and its only
-   figure points at `media/image2.png`, which does not exist either.
+   never the paper's 420.
+4. **`manifest.yaml` — registered 2026-10-03, still to be verified.** The
+   EXAMPLE entries are gone: every claim points at a file in `outputs/` and
+   F1–F6 are registered as figures. The numbers come from the 2026-10-03 run
+   of record and are marked `draft`: the clean re-run has to be checked against
+   them before anything is quoted, and the A3 claims (M*₂, H5) cannot be
+   written until `07e`/`07f`/`09e` have run.
 5. **`references.bib` — rebuilt 2026-10-02.** 94 entries, 88 generated from
    CrossRef metadata by DOI, 6 checked by hand against OpenAlex. The method,
    the decision each reference supports, and the errors found are in
@@ -368,6 +401,27 @@ decision 13 prefers the loop.
    and the Niño predictors both come back empty, the honest move is to reframe
    for a climate venue, where a rigorous negative is a first-class result. That
    decision should be written down before the numbers exist.
+10. **The run of record is provisional.** The 2026-10-03 run carries no
+   `code_hashes`, records a `06b_dynamical` failure against a clean dynamical
+   section, and never ran amendment A3 (`07e_chronos_variants`,
+   `07f_seed_variability`, `09e_mstar2`), so T12–T14 and `mstar2.json` do not
+   exist and H5 is untested. Details in `experiments/README.md` §Status. Until
+   the clean re-run exists, the blind numbers are for design review only.
+11. **Wording the author has to apply in `paper/main.qmd`** (decision 16 keeps
+   that file the author's; these are the constraints the review established):
+   scope the LOSO claim to "without its data in model fitting" (METHODOLOGY §5,
+   A4); put the blind coverage failure next to H3 and move the applied frost
+   probabilities to the dev-recalibrated `Ensemble+k` (T9), noting that the
+   inverse-dev-CRPS weights ignore calibration; enumerate the "seven model
+   families" explicitly, references included, or reword to five learning
+   families plus references and a dynamical baseline; narrow the "2054 m
+   altitude gradient" clause to a descriptive five-station observation unless
+   an elevation-dependence analysis is added (n = 5, elevation confounded with
+   region); say that Ensemble and Ridge_LG are indistinguishable on dev (0.4 %
+   margin) unless the seed study says otherwise; report the Holm family
+   structure as four sub-families of three (A4); and replace the title,
+   highlights and abstract, which still describe the v2 anomaly-decomposition
+   design (item 6).
 ## 8. Run observability
 
 Two decisions were taken because the compute runs in Colab and the runtime is

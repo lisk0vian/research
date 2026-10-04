@@ -10,8 +10,8 @@ in the completeness table T1:
 
 - `missing_source` the provider delivered an empty record (all variables at
   once, verified by 00/V3). Not a sensor problem, so no range check applies.
-- `out_of_range` a value outside `config.qc_hourly.range`, or HR above
-  `hr_clip_upper`.
+- `out_of_range` a value outside `config.qc_hourly.range` (HR included: the
+  range is the single policy, see `qc_hourly` in `config.yaml`).
 - `spike` / `stuck` TT discontinuities from `step_TT_max_degC` and
   `stuck_run_hours` runs of identical values.
 
@@ -48,9 +48,15 @@ def flag_missing_source(df) -> pd.DataFrame:
 
 
 def flag_out_of_range(df, cfg: dict) -> pd.DataFrame:
-    """Apply config.qc_hourly.range per variable, plus the HR clip."""
+    """Apply config.qc_hourly.range per variable.
+
+    One policy per variable, applied once. `hr_clip_upper` used to add a second
+    threshold for HR, but `range.HR` nulls every value above 100 before the
+    103 clip could ever fire, so two declared parameters carried contradictory
+    semantics and only one of them did anything. The key is gone; widening the
+    HR range is now the only way to change the policy.
+    """
     ranges = cfg.get("qc_hourly", {}).get("range", {})
-    hr_clip = cfg.get("qc_hourly", {}).get("hr_clip_upper")
     for var in NUMERIC_VARS:
         col = f"{var}_qc"
         if var in ranges and isinstance(ranges[var], (list, tuple)):
@@ -58,8 +64,6 @@ def flag_out_of_range(df, cfg: dict) -> pd.DataFrame:
             bad = df[var].notna() & ((df[var] < lo) | (df[var] > hi))
         else:
             bad = pd.Series(False, index=df.index)
-        if var == "HR" and hr_clip is not None:
-            bad = bad | (df[var].notna() & (df[var] > hr_clip))
         df.loc[bad, col] = "out_of_range"
         # A flagged value stops being data; downstream stages must not see it.
         df.loc[bad, var] = np.nan

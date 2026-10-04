@@ -20,7 +20,7 @@ import traceback
 
 import pandas as pd
 
-from _common import DATA_DIR, OUTPUTS
+from _common import DATA_DIR, OUTPUTS, primary_target
 
 TABLES = OUTPUTS / "tables"
 PROCESSED = DATA_DIR / "processed"
@@ -84,9 +84,9 @@ def _skill():
     print(f"M* = {info['primary_model']} (chosen on dev, frozen before the blind folds)")
     m = pd.read_csv(TABLES / "metrics_long.csv", dtype={"scope": str})
     sel = m[(m["experiment"] == "temporal") & (m["scope"] == "pooled")
-            & (m["target"] == "TT_mean")]
+            & (m["target"] == primary_target())]
     for role in ("dev", "blind"):
-        print(f"\nCRPSS vs Damp | {role} | TT_mean, pooled stations")
+        print(f"\nCRPSS vs Damp | {role} | {primary_target()}, pooled stations")
         print(sel[sel["role"] == role].pivot(index="model", columns="horizon",
                                              values="CRPSS_damp").round(3).to_string())
     print("\nCRPSS vs Clim | blind")
@@ -130,7 +130,7 @@ def _t9():
 @section("T10 Chronos diagnostic (amendment A2, post hoc)")
 def _t10():
     t10 = pd.read_csv(TABLES / "T10_chronos_diagnostic.csv")
-    print(t10[["role", "check", "scope", "paths", "observed", "metric"]]
+    print(t10[["role", "check", "scope", "value", "reference", "metric"]]
           .round(3).to_string(index=False))
 
 
@@ -139,7 +139,7 @@ def _t11():
     t11 = pd.read_csv(TABLES / "T11_chronos_sensitivity.csv")
     show = t11[t11["metric"].str.startswith(("cov90", "path SD", "CRPS"))]
     print(show.pivot_table(index=["check", "scope", "metric"], columns="variant",
-                           values="paths").round(3).to_string())
+                           values="value").round(3).to_string())
 
 
 @section("T12 seed variability (amendment A3.2)")
