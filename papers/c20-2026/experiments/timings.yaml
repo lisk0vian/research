@@ -1,0 +1,59 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Jerremi Aron Chancan Labajos
+# papers/c20-2026/experiments/timings.yaml
+#
+# A-priori time estimates for this pipeline, in seconds, per process. The
+# runtime writes outputs/timings.json (measured) and outputs/timings.md (the
+# human view) from these plus the run history; see `_colab_runtime.Timings`.
+#
+# These numbers are a YARDSTICK, not a measurement, and are never overwritten
+# from measurements. Their whole value is being independent of the history:
+# they are what says "this stage is taking too long" or "that finished
+# suspiciously fast", and what the expectation falls back to whenever a change
+# (config, data, RESULTS_VERSION or code) makes old measurements incomparable.
+# Update them by hand, with a note below, when a real run contradicts them.
+#
+# by: agent 2026-10-03. Seeded from the 2026-10-03 Colab run (T4 GPU) where it
+#   exists; 07e/07f/09e have never run, so theirs are order-of-magnitude
+#   guesses to be corrected by their first run. Ranges are deliberately wide:
+#   a free Colab runtime varies a lot between sessions.
+# Fields per process: min_s / typical_s / max_s, plus optional `unit` (what one
+#   unit of work is), `unit_typical_s`, and `units_from` for a stage that
+#   writes its own per-unit times.
+
+session:
+  mount: {min_s: 5, typical_s: 15, max_s: 120}
+  deps: {min_s: 90, typical_s: 300, max_s: 900}
+  data: {min_s: 30, typical_s: 180, max_s: 900}
+
+stages:
+  00_verify_source: {min_s: 3, typical_s: 10, max_s: 60}
+  01_qc_hourly: {min_s: 3, typical_s: 15, max_s: 90}
+  02_aggregate_daily: {min_s: 2, typical_s: 10, max_s: 60}
+  03_climatology: {min_s: 3, typical_s: 15, max_s: 90}
+  04_make_issuances: {min_s: 20, typical_s: 60, max_s: 240}
+  05_features_local: {min_s: 200, typical_s: 420, max_s: 900}
+  06_features_largescale: {min_s: 1, typical_s: 10, max_s: 300}
+  # A cold run fetches ~295 CFS dates x 4 members from S3; the 2026-10-03 entry
+  # (101 s) was a resumed run that then failed, so it is not a cold-run number.
+  06b_dynamical: {min_s: 300, typical_s: 1200, max_s: 7200, unit: date, unit_typical_s: 4}
+  07_models: {min_s: 2400, typical_s: 4200, max_s: 9000,
+              unit: target_fold, unit_typical_s: 200}
+  07b_deep: {min_s: 300, typical_s: 800, max_s: 2400, unit: fold, unit_typical_s: 120}
+  07c_ensemble: {min_s: 3, typical_s: 15, max_s: 120}
+  07d_cfs_benchmark: {min_s: 3, typical_s: 15, max_s: 300}
+  # A3.1: never run. Two Chronos variants x 5 folds of inference; the guess
+  # hangs off 07b (LSTM + Chronos over 5 folds = 742 s).
+  07e_chronos_variants: {min_s: 400, typical_s: 1200, max_s: 3600,
+                         unit: fold, unit_typical_s: 120}
+  # A3.2: never run. GBM_L, GBM_LG and LSTM_LG x 4 extra seeds over all folds.
+  07f_seed_variability: {min_s: 1800, typical_s: 5400, max_s: 14400,
+                         unit: model_seed, unit_typical_s: 200}
+  08_metrics: {min_s: 5, typical_s: 20, max_s: 180}
+  09_inference: {min_s: 60, typical_s: 180, max_s: 900}
+  09b_calibration: {min_s: 3, typical_s: 15, max_s: 180}
+  09c_chronos_diagnostic: {min_s: 200, typical_s: 500, max_s: 1800}
+  09d_chronos_sensitivity: {min_s: 200, typical_s: 450, max_s: 1800}
+  # A3.3: never run. 16 candidate configurations cross-fitted over D1-D3.
+  09e_mstar2: {min_s: 600, typical_s: 1800, max_s: 7200}
+  10_tables_figures: {min_s: 2, typical_s: 10, max_s: 120}

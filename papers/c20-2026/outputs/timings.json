@@ -1,0 +1,693 @@
+{
+  "schema_version": 1,
+  "paper": "c20-2026",
+  "modes": {
+    "full": {
+      "00_verify_source": {
+        "history": [
+          {
+            "run": "2026-10-04T00:20:50+00:00",
+            "elapsed_s": 7.63,
+            "status": "ok",
+            "key": null,
+            "code_sha": null,
+            "fresh": false,
+            "seeded": true,
+            "source": "log",
+            "outside_estimate": false
+          },
+          {
+            "run": "2026-10-04T00:20:50+00:00",
+            "elapsed_s": 1.09,
+            "status": "ok",
+            "key": null,
+            "code_sha": null,
+            "fresh": false,
+            "seeded": true,
+            "source": "log",
+            "outside_estimate": true
+          },
+          {
+            "run": "2026-10-04T00:20:50+00:00",
+            "elapsed_s": 1.35,
+            "status": "ok",
+            "key": null,
+            "code_sha": null,
+            "fresh": false,
+            "seeded": true,
+            "source": "log",
+            "outside_estimate": true
+          },
+          {
+            "run": "2026-10-04T00:20:50+00:00",
+            "elapsed_s": 1.24,
+            "status": "ok",
+            "key": null,
+            "code_sha": null,
+            "fresh": false,
+            "seeded": true,
+            "source": "log",
+            "outside_estimate": true
+          },
+          {
+            "run": "2026-10-04T00:20:50+00:00",
+            "elapsed_s": 5.3,
+            "status": "ok",
+            "key": null,
+            "code_sha": null,
+            "fresh": false,
+            "seeded": true,
+            "source": "manifest_index.json",
+            "outside_estimate": false
+          }
+        ],
+        "stats": {
+          "n": 0
+        },
+        "stale_n": 5,
+        "estimate": {
+          "min_s": 3,
+          "typical_s": 10,
+          "max_s": 60
+        },
+        "expected_s": 10.0,
+        "expected_source": "estimate"
+      },
+      "01_qc_hourly": {
+        "history": [
+          {
+            "run": "2026-10-04T00:20:50+00:00",
+            "elapsed_s": 11.34,
+            "status": "ok",
+            "key": null,
+            "code_sha": null,
+            "fresh": false,
+            "seeded": true,
+            "source": "log",
+            "outside_estimate": false
+          },
+          {
+            "run": "2026-10-04T00:20:50+00:00",
+            "elapsed_s": 1.42,
+            "status": "ok",
+            "key": null,
+            "code_sha": null,
+            "fresh": false,
+            "seeded": true,
+            "source": "log",
+            "outside_estimate": true
+          },
+          {
+            "run": "2026-10-04T00:20:50+00:00",
+            "elapsed_s": 7.31,
+            "status": "ok",
+            "key": null,
+            "code_sha": null,
+            "fresh": false,
+            "seeded": true,
+            "source": "manifest_index.json",
+            "outside_estimate": false
+          }
+        ],
+        "stats": {
+          "n": 0
+        },
+        "stale_n": 3,
+        "estimate": {
+          "min_s": 3,
+          "typical_s": 15,
+          "max_s": 90
+        },
+        "expected_s": 15.0,
+        "expected_source": "estimate"
+      },
+      "02_aggregate_daily": {
+        "history": [
+          {
+            "run": "2026-10-04T00:20:50+00:00",
+            "elapsed_s": 3.31,
+            "status": "ok",
+            "key": null,
+            "code_sha": null,
+            "fresh": false,
+            "seeded": true,
+            "source": "log",
+            "outside_estimate": false
+          },
+          {
+            "run": "2026-10-04T00:20:50+00:00",
+            "elapsed_s": 1.14,
+            "status": "ok",
+            "key": null,
+            "code_sha": null,
+            "fresh": false,
+            "seeded": true,
+            "source": "log",
+            "outside_estimate": true
+          },
+          {
+            "run": "2026-10-04T00:20:50+00:00",
+            "elapsed_s": 4.34,
+            "status": "ok",
+            "key": null,
+            "code_sha": null,
+            "fresh": false,
+            "seeded": true,
+            "source": "manifest_index.json",
+            "outside_estimate": false
+          }
+        ],
+        "stats": {
+          "n": 0
+        },
+        "stale_n": 3,
+        "estimate": {
+          "min_s": 2,
+          "typical_s": 10,
+          "max_s": 60
+        },
+        "expected_s": 10.0,
+        "expected_source": "estimate"
+      },
+      "03_climatology": {
+        "history": [
+          {
+            "run": "2026-10-04T00:20:51+00:00",
+            "elapsed_s": 4.32,
+            "status": "ok",
+            "key": null,
+            "code_sha": null,
+            "fresh": false,
+            "seeded": true,
+            "source": "log",
+            "outside_estimate": false
+          },
+          {
+            "run": "2026-10-04T00:20:51+00:00",
+            "elapsed_s": 4.15,
+            "status": "ok",
+            "key": null,
+            "code_sha": null,
+            "fresh": false,
+            "seeded": true,
+            "source": "log",
+            "outside_estimate": false
+          },
+          {
+            "run": "2026-10-04T00:20:51+00:00",
+            "elapsed_s": 5.06,
+            "status": "ok",
+            "key": null,
+            "code_sha": null,
+            "fresh": false,
+            "seeded": true,
+            "source": "log",
+            "outside_estimate": false
+          },
+          {
+            "run": "2026-10-04T00:20:51+00:00",
+            "elapsed_s": 5.18,
+            "status": "ok",
+            "key": null,
+            "code_sha": null,
+            "fresh": false,
+            "seeded": true,
+            "source": "log",
+            "outside_estimate": false
+          },
+          {
+            "run": "2026-10-04T00:20:51+00:00",
+            "elapsed_s": 5.75,
+            "status": "ok",
+            "key": null,
+            "code_sha": null,
+            "fresh": false,
+            "seeded": true,
+            "source": "log",
+            "outside_estimate": false
+          },
+          {
+            "run": "2026-10-04T00:20:51+00:00",
+            "elapsed_s": 5.23,
+            "status": "ok",
+            "key": null,
+            "code_sha": null,
+            "fresh": false,
+            "seeded": true,
+            "source": "manifest_index.json",
+            "outside_estimate": false
+          }
+        ],
+        "stats": {
+          "n": 0
+        },
+        "stale_n": 6,
+        "estimate": {
+          "min_s": 3,
+          "typical_s": 15,
+          "max_s": 90
+        },
+        "expected_s": 15.0,
+        "expected_source": "estimate"
+      },
+      "04_make_issuances": {
+        "history": [
+          {
+            "run": "2026-10-04T00:20:51+00:00",
+            "elapsed_s": 2.53,
+            "status": "ok",
+            "key": null,
+            "code_sha": null,
+            "fresh": false,
+            "seeded": true,
+            "source": "log",
+            "outside_estimate": true
+          },
+          {
+            "run": "2026-10-04T00:20:51+00:00",
+            "elapsed_s": 2.34,
+            "status": "ok",
+            "key": null,
+            "code_sha": null,
+            "fresh": false,
+            "seeded": true,
+            "source": "log",
+            "outside_estimate": true
+          },
+          {
+            "run": "2026-10-04T00:20:51+00:00",
+            "elapsed_s": 96.33,
+            "status": "ok",
+            "key": null,
+            "code_sha": null,
+            "fresh": false,
+            "seeded": true,
+            "source": "log",
+            "outside_estimate": false
+          },
+          {
+            "run": "2026-10-04T00:20:51+00:00",
+            "elapsed_s": 37.6,
+            "status": "ok",
+            "key": null,
+            "code_sha": null,
+            "fresh": false,
+            "seeded": true,
+            "source": "manifest_index.json",
+            "outside_estimate": false
+          }
+        ],
+        "stats": {
+          "n": 0
+        },
+        "stale_n": 4,
+        "estimate": {
+          "min_s": 20,
+          "typical_s": 60,
+          "max_s": 240
+        },
+        "expected_s": 60.0,
+        "expected_source": "estimate"
+      },
+      "05_features_local": {
+        "history": [
+          {
+            "run": "2026-10-04T00:20:51+00:00",
+            "elapsed_s": 47.23,
+            "status": "ok",
+            "key": null,
+            "code_sha": null,
+            "fresh": false,
+            "seeded": true,
+            "source": "log",
+            "outside_estimate": true
+          },
+          {
+            "run": "2026-10-04T00:20:51+00:00",
+            "elapsed_s": 57.66,
+            "status": "ok",
+            "key": null,
+            "code_sha": null,
+            "fresh": false,
+            "seeded": true,
+            "source": "log",
+            "outside_estimate": true
+          },
+          {
+            "run": "2026-10-04T00:20:51+00:00",
+            "elapsed_s": 376.76,
+            "status": "ok",
+            "key": null,
+            "code_sha": null,
+            "fresh": false,
+            "seeded": true,
+            "source": "manifest_index.json",
+            "outside_estimate": false
+          }
+        ],
+        "stats": {
+          "n": 0
+        },
+        "stale_n": 3,
+        "estimate": {
+          "min_s": 200,
+          "typical_s": 420,
+          "max_s": 900
+        },
+        "expected_s": 420.0,
+        "expected_source": "estimate"
+      },
+      "06_features_largescale": {
+        "history": [
+          {
+            "run": "2026-10-04T00:20:51+00:00",
+            "elapsed_s": 0.08,
+            "status": "failed",
+            "key": null,
+            "code_sha": null,
+            "fresh": false,
+            "seeded": true,
+            "source": "log",
+            "outside_estimate": true
+          },
+          {
+            "run": "2026-10-04T00:20:51+00:00",
+            "elapsed_s": 1.2,
+            "status": "ok",
+            "key": null,
+            "code_sha": null,
+            "fresh": false,
+            "seeded": true,
+            "source": "manifest_index.json",
+            "outside_estimate": false
+          }
+        ],
+        "stats": {
+          "n": 0
+        },
+        "stale_n": 2,
+        "estimate": {
+          "min_s": 1,
+          "typical_s": 10,
+          "max_s": 300
+        },
+        "expected_s": 10.0,
+        "expected_source": "estimate"
+      },
+      "06b_dynamical": {
+        "history": [
+          {
+            "run": "2026-10-04T00:20:51+00:00",
+            "elapsed_s": 100.94,
+            "status": "failed",
+            "key": null,
+            "code_sha": null,
+            "fresh": false,
+            "seeded": true,
+            "source": "manifest_index.json",
+            "outside_estimate": true
+          }
+        ],
+        "stats": {
+          "n": 0
+        },
+        "stale_n": 1,
+        "estimate": {
+          "min_s": 300,
+          "typical_s": 1200,
+          "max_s": 7200,
+          "unit": "date",
+          "unit_typical_s": 4
+        },
+        "expected_s": 1200.0,
+        "expected_source": "estimate"
+      },
+      "07_models": {
+        "history": [
+          {
+            "run": "2026-10-04T00:20:51+00:00",
+            "elapsed_s": 4115.64,
+            "status": "ok",
+            "key": null,
+            "code_sha": null,
+            "fresh": false,
+            "seeded": true,
+            "source": "manifest_index.json",
+            "outside_estimate": false
+          }
+        ],
+        "stats": {
+          "n": 0
+        },
+        "stale_n": 1,
+        "estimate": {
+          "min_s": 2400,
+          "typical_s": 4200,
+          "max_s": 9000,
+          "unit": "target_fold",
+          "unit_typical_s": 200
+        },
+        "expected_s": 4200.0,
+        "expected_source": "estimate"
+      },
+      "07b_deep": {
+        "history": [
+          {
+            "run": "2026-10-04T00:20:51+00:00",
+            "elapsed_s": 741.92,
+            "status": "ok",
+            "key": null,
+            "code_sha": null,
+            "fresh": false,
+            "seeded": true,
+            "source": "manifest_index.json",
+            "outside_estimate": false
+          }
+        ],
+        "stats": {
+          "n": 0
+        },
+        "stale_n": 1,
+        "estimate": {
+          "min_s": 300,
+          "typical_s": 800,
+          "max_s": 2400,
+          "unit": "fold",
+          "unit_typical_s": 120
+        },
+        "expected_s": 800.0,
+        "expected_source": "estimate"
+      },
+      "07c_ensemble": {
+        "history": [
+          {
+            "run": "2026-10-04T00:20:51+00:00",
+            "elapsed_s": 7.52,
+            "status": "ok",
+            "key": null,
+            "code_sha": null,
+            "fresh": false,
+            "seeded": true,
+            "source": "manifest_index.json",
+            "outside_estimate": false
+          }
+        ],
+        "stats": {
+          "n": 0
+        },
+        "stale_n": 1,
+        "estimate": {
+          "min_s": 3,
+          "typical_s": 15,
+          "max_s": 120
+        },
+        "expected_s": 15.0,
+        "expected_source": "estimate"
+      },
+      "07d_cfs_benchmark": {
+        "history": [
+          {
+            "run": "2026-10-04T00:20:51+00:00",
+            "elapsed_s": 6.6,
+            "status": "ok",
+            "key": null,
+            "code_sha": null,
+            "fresh": false,
+            "seeded": true,
+            "source": "manifest_index.json",
+            "outside_estimate": false
+          }
+        ],
+        "stats": {
+          "n": 0
+        },
+        "stale_n": 1,
+        "estimate": {
+          "min_s": 3,
+          "typical_s": 15,
+          "max_s": 300
+        },
+        "expected_s": 15.0,
+        "expected_source": "estimate"
+      },
+      "08_metrics": {
+        "history": [
+          {
+            "run": "2026-10-04T00:20:51+00:00",
+            "elapsed_s": 13.66,
+            "status": "ok",
+            "key": null,
+            "code_sha": null,
+            "fresh": false,
+            "seeded": true,
+            "source": "manifest_index.json",
+            "outside_estimate": false
+          }
+        ],
+        "stats": {
+          "n": 0
+        },
+        "stale_n": 1,
+        "estimate": {
+          "min_s": 5,
+          "typical_s": 20,
+          "max_s": 180
+        },
+        "expected_s": 20.0,
+        "expected_source": "estimate"
+      },
+      "09_inference": {
+        "history": [
+          {
+            "run": "2026-10-04T00:20:51+00:00",
+            "elapsed_s": 135.82,
+            "status": "ok",
+            "key": null,
+            "code_sha": null,
+            "fresh": false,
+            "seeded": true,
+            "source": "manifest_index.json",
+            "outside_estimate": false
+          }
+        ],
+        "stats": {
+          "n": 0
+        },
+        "stale_n": 1,
+        "estimate": {
+          "min_s": 60,
+          "typical_s": 180,
+          "max_s": 900
+        },
+        "expected_s": 180.0,
+        "expected_source": "estimate"
+      },
+      "09b_calibration": {
+        "history": [
+          {
+            "run": "2026-10-04T00:20:51+00:00",
+            "elapsed_s": 5.57,
+            "status": "ok",
+            "key": null,
+            "code_sha": null,
+            "fresh": false,
+            "seeded": true,
+            "source": "manifest_index.json",
+            "outside_estimate": false
+          }
+        ],
+        "stats": {
+          "n": 0
+        },
+        "stale_n": 1,
+        "estimate": {
+          "min_s": 3,
+          "typical_s": 15,
+          "max_s": 180
+        },
+        "expected_s": 15.0,
+        "expected_source": "estimate"
+      },
+      "09c_chronos_diagnostic": {
+        "history": [
+          {
+            "run": "2026-10-04T00:20:51+00:00",
+            "elapsed_s": 450.68,
+            "status": "ok",
+            "key": null,
+            "code_sha": null,
+            "fresh": false,
+            "seeded": true,
+            "source": "manifest_index.json",
+            "outside_estimate": false
+          }
+        ],
+        "stats": {
+          "n": 0
+        },
+        "stale_n": 1,
+        "estimate": {
+          "min_s": 200,
+          "typical_s": 500,
+          "max_s": 1800
+        },
+        "expected_s": 500.0,
+        "expected_source": "estimate"
+      },
+      "09d_chronos_sensitivity": {
+        "history": [
+          {
+            "run": "2026-10-04T00:20:51+00:00",
+            "elapsed_s": 400.19,
+            "status": "ok",
+            "key": null,
+            "code_sha": null,
+            "fresh": false,
+            "seeded": true,
+            "source": "manifest_index.json",
+            "outside_estimate": false
+          }
+        ],
+        "stats": {
+          "n": 0
+        },
+        "stale_n": 1,
+        "estimate": {
+          "min_s": 200,
+          "typical_s": 450,
+          "max_s": 1800
+        },
+        "expected_s": 450.0,
+        "expected_source": "estimate"
+      },
+      "10_tables_figures": {
+        "history": [
+          {
+            "run": "2026-10-04T00:20:51+00:00",
+            "elapsed_s": 5.01,
+            "status": "ok",
+            "key": null,
+            "code_sha": null,
+            "fresh": false,
+            "seeded": true,
+            "source": "manifest_index.json",
+            "outside_estimate": false
+          }
+        ],
+        "stats": {
+          "n": 0
+        },
+        "stale_n": 1,
+        "estimate": {
+          "min_s": 2,
+          "typical_s": 10,
+          "max_s": 120
+        },
+        "expected_s": 10.0,
+        "expected_source": "estimate"
+      }
+    }
+  },
+  "session": {},
+  "updated": "2026-10-04T00:20:51+00:00"
+}

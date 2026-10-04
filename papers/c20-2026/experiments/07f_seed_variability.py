@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import importlib
 import itertools
+import time
 
 import numpy as np
 import pandas as pd
@@ -124,6 +125,7 @@ def main() -> None:
                     frames.append(ck.load(unit))
                     continue
                 block = panel[panel["fold"] == fid]
+                t0 = time.perf_counter()
                 if model.startswith("GBM"):
                     train = target_rows(block, TARGET, "train")
                     evals = target_rows(block, TARGET, "eval").reset_index(drop=True)
@@ -144,7 +146,7 @@ def main() -> None:
                     q, mu = m07b.fit_predict_lstm(tr, ev, seqs[fid], horizons, levels, cfg, seed)
                     rows, qq, mm = m07b.explode(ev, q, mu, horizons, index[index["fold"] == fid])
                     frame = pred_frame(rows, "temporal", TARGET, model, qq, mm, cfg)
-                ck.save(unit, frame)
+                ck.save(unit, frame, elapsed_s=time.perf_counter() - t0)
                 frames.append(frame)
                 print(f"[{model} seed {seed}/{fid}] {len(frame)} rows")
             part = pd.concat(frames, ignore_index=True).assign(seed=seed, seed_index=k)

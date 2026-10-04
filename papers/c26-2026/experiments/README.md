@@ -31,6 +31,8 @@ The notebook downloads only this paper's folder of the repository, installs the 
 
 A full run takes about 30 minutes on a free Colab CPU. No GPU is needed. About 25 of those minutes are the clustering multiverse (stage 8). At the end, you can download the results as a ZIP file.
 
+Where those minutes go: `../outputs/timings.md` records how long each etapa took and how long to expect, and [`timings.yaml`](timings.yaml) holds the a-priori estimates the record falls back to before anything is measured.
+
 ### Option B: local run (Python 3.11–3.13)
 
 ```bash

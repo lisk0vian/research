@@ -9,6 +9,12 @@ manuscript; numbers go to `../outputs/` as CSV/JSON only. The design is in
 `notebooks/experiments.ipynb`. Locally only the test suite runs (about 50 s, no
 real data, no model training); nobody waits on a pipeline run on a laptop.
 
+**How long it takes.** `../outputs/timings.md` (rewritten as the run goes)
+says how long each stage took and how long is still expected; the a-priori
+estimates it falls back to before anything is measured live in
+[`timings.yaml`](timings.yaml). `python ../../scripts/paper_timings.py` shows
+all papers at once.
+
 ## Order
 
 | Stage | Writes | Runs on |

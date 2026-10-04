@@ -295,10 +295,12 @@ def run_temporal(panel: pd.DataFrame, cfg: dict, targets: list[str], ck=None) ->
                                                levels, gbm_params(cfg, seed)))
             _merge(preds, unit_preds)
             ridge_alphas.update(unit_alphas)
+            unit_s = time.perf_counter() - t0
             if ck is not None:
-                ck.save(unit, {"preds": unit_preds, "alphas": unit_alphas})
+                ck.save(unit, {"preds": unit_preds, "alphas": unit_alphas},
+                        elapsed_s=unit_s)
             print(f"[temporal/{target}/{fold}] train={len(train)} eval={len(evals)} "
-                  f"({time.perf_counter() - t0:.1f}s)")
+                  f"({unit_s:.1f}s)")
 
     atomic_write_csv(pd.concat(index_frames, ignore_index=True), eval_index_path("temporal"))
     written = {m: str(write_preds(f, "temporal", m)) for m, f in preds.items()}
@@ -353,6 +355,7 @@ def run_loso(panel: pd.DataFrame, cfg: dict, ck=None) -> dict:
                 print(f"[loso/{fold}] held out {st}: loaded from checkpoint")
                 continue
             unit_preds: dict[str, pd.DataFrame] = {}
+            t0 = time.perf_counter()
             for name, cols in {"L": fs["L"], "LG": fs["L"] + fs["G"]}.items():
                 seed = int(seeds.get("gbm_largescale" if name == "LG" else "gbm_local", 0))
                 for variant, static in variants.items():
@@ -362,7 +365,7 @@ def run_loso(panel: pd.DataFrame, cfg: dict, ck=None) -> dict:
                     unit_preds[model] = pred_frame(evals, "loso", target, model, q, mu, cfg)
             _merge(preds, unit_preds)
             if ck is not None:
-                ck.save(unit, unit_preds)
+                ck.save(unit, unit_preds, elapsed_s=time.perf_counter() - t0)
             print(f"[loso/{fold}] held out {st}: train={len(train)} eval={len(evals)}")
     atomic_write_csv(index, eval_index_path("loso"))
     return {"preds": {m: str(write_preds(f, "loso", m)) for m, f in preds.items()}}

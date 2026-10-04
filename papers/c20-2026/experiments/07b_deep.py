@@ -393,6 +393,7 @@ def run_chronos(panel: pd.DataFrame, seqs_by_fold: dict, index: pd.DataFrame,
             ctx.append(torch.tensor(s.to_numpy("float32")))
         paths, bs = predict_paths(pipe, ctx, horizon_len, int(ccfg["num_samples"]), bs)
         print(f"[chronos/{fold}] batch size {bs}")
+        t0 = time.perf_counter()
         wq = window_quantiles(paths, windows, levels)
         base = block[["station", "fold", "role", "issue_date"]].reset_index(drop=True)
         keys = index[["station", "fold", "issue_date", "horizon"]]
@@ -406,7 +407,7 @@ def run_chronos(panel: pd.DataFrame, seqs_by_fold: dict, index: pd.DataFrame,
                                           rearrange(q[sel]), mu[sel], cfg))
         frames.extend(fold_frames)
         if ck is not None:
-            ck.save(unit, fold_frames)
+            ck.save(unit, fold_frames, elapsed_s=time.perf_counter() - t0)
         print(f"[chronos/{fold}] {len(block)} contexts")
     return frames
 
@@ -468,9 +469,10 @@ def main(argv: list[str] | None = None) -> None:
             q, mu = fit_predict_lstm(tr, ev, seqs_by_fold[fid], horizons, levels, cfg, seed)
             rows, Q, M = explode(ev, q, mu, horizons, index_t[index_t["fold"] == fid])
             t_frames.append(pred_frame(rows, "temporal", TARGET, "LSTM_LG", Q, M, cfg))
-            ck.save(unit, t_frames[-1])
+            unit_s = time.perf_counter() - t0
+            ck.save(unit, t_frames[-1], elapsed_s=unit_s)
             print(f"[lstm/temporal/{fid}] train={len(tr)} eval={len(ev)} "
-                  f"({time.perf_counter() - t0:.1f}s)")
+                  f"({unit_s:.1f}s)")
         write_preds(t_frames, "temporal", "LSTM_LG")
 
         index_l = read_eval_index("loso")
@@ -494,6 +496,7 @@ def main(argv: list[str] | None = None) -> None:
                     continue
                 idx = index_l[(index_l["fold"] == fid) & (index_l["station"] == st)]
                 unit_frames = {}
+                t0 = time.perf_counter()
                 for variant, static in variants.items():
                     name = f"LSTM_LG@{variant}" if variant else "LSTM_LG"
                     q, mu = fit_predict_lstm(tr, ev, seqs_by_fold[fid], horizons, levels, cfg,
@@ -502,7 +505,7 @@ def main(argv: list[str] | None = None) -> None:
                     unit_frames[name] = pred_frame(rows, "loso", TARGET, name, Q, M, cfg)
                 for name, frame in unit_frames.items():
                     l_frames.setdefault(name, []).append(frame)
-                ck.save(unit, unit_frames)
+                ck.save(unit, unit_frames, elapsed_s=time.perf_counter() - t0)
                 print(f"[lstm/loso/{fid}] held out {st} ({len(variants)} static variants)")
         for name, frames in l_frames.items():
             write_preds(frames, "loso", name)

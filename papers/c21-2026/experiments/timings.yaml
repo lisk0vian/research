@@ -1,0 +1,29 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Jerremi Aron Chancan Labajos
+# papers/c21-2026/experiments/timings.yaml
+#
+# A-priori time estimates for this pipeline, in seconds, per process. The
+# runtime writes outputs/timings.json (measured) and outputs/timings.md (the
+# human view) from these plus the run history; see `_colab_runtime.Timings`.
+#
+# These numbers are a YARDSTICK, not a measurement, and are never overwritten
+# from measurements. Their whole value is being independent of the history:
+# they are what says "this stage is taking too long" or "that finished
+# suspiciously fast", and what the expectation falls back to whenever a change
+# (config, data, RESULTS_VERSION or code) makes old measurements incomparable.
+# Update them by hand, with a note below, when a real run contradicts them.
+#
+# by: agent 2026-10-03. This paper has no pipeline stages yet (run_all.py
+#   discovers `NN_*.py` and there are none), so there is nothing to estimate
+#   below `session`. Add one entry per stage as the stages appear; an unknown
+#   stage simply reports "no estimate" and the run's own history takes over.
+# Fields per process: min_s / typical_s / max_s, plus optional `unit` (what one
+#   unit of work is) and `unit_typical_s`, and `units_from` for a stage that
+#   writes its own per-unit times.
+
+session:
+  mount: {min_s: 5, typical_s: 15, max_s: 120}
+  deps: {min_s: 90, typical_s: 300, max_s: 900}
+  data: {min_s: 30, typical_s: 180, max_s: 900}
+
+stages: {}

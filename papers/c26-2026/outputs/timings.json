@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "paper": "c26-2026",
+  "modes": {
+    "full": {
+      "pipeline": {
+        "history": [
+          {
+            "run": "2026-10-04T00:20:51+00:00",
+            "elapsed_s": 1812.39,
+            "status": "ok",
+            "key": null,
+            "code_sha": null,
+            "fresh": false,
+            "seeded": true,
+            "source": "units_from",
+            "outside_estimate": false,
+            "n_units": 11,
+            "unit_median_s": 8.8,
+            "units": {
+              "1_datos_y_panel": 2.23,
+              "1b_territorios_prioritarios": 0.24,
+              "2_variables_por_fold": 0.68,
+              "3_seleccion_K": 125.75,
+              "4_multialgoritmo_y_perfiles": 1.06,
+              "5_auditoria_proxy": 64.86,
+              "6_validacion_temporal": 0.3,
+              "7_espacial": 8.8,
+              "8_multiverso_M1": 1532.1,
+              "8_multiverso_M2": 36.74,
+              "9_figuras_articulo": 39.63
+            }
+          }
+        ],
+        "stats": {
+          "n": 0
+        },
+        "stale_n": 1,
+        "estimate": {
+          "min_s": 1200,
+          "typical_s": 1800,
+          "max_s": 4200,
+          "unit": "etapa",
+          "unit_typical_s": 30
+        },
+        "expected_s": 1800.0,
+        "expected_source": "estimate"
+      }
+    }
+  },
+  "session": {},
+  "updated": "2026-10-04T00:20:51+00:00"
+}

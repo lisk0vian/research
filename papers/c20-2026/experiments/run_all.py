@@ -310,6 +310,12 @@ def main() -> int:
                           inputs=[_resolve_input(p) for p in spec["state_inputs"]],
                           results_version_all=spec.get("results_version", 0))
     fingerprints = state.fingerprints(available, mode_from=spec.get("smoke_from"))
+    # Same writer as every other paper: outputs/timings.{json,md}, updated after
+    # each stage. The stages record their own units through it, hence the env.
+    os.environ[rt.TIMINGS_ENV] = "1"
+    timings = rt.Timings.for_outputs(OUTPUTS, code_dir=BASE / "experiments", mode=mode)
+    timings.begin_run(stages)
+    timings.sync_fingerprints({s: (fingerprints[s], state.code_sha(s)) for s in available})
     # --only names stages the user wants run now, so they never skip.
     force = args.force or bool(args.only)
     log.update_status(state=rt.RUNNING, mode=mode,
@@ -335,8 +341,12 @@ def main() -> int:
         # The stage's key reaches it through the environment, so its unit
         # checkpoints (rt.Checkpoints) belong to this exact configuration.
         os.environ[rt.STAGE_KEY_ENV] = fingerprints[stage]
+        timings.begin_stage(stage)
         info = run_stage(stage, aggregate=aggregate)
         entries[stage] = info
+        timings.record_stage(stage, info["elapsed_s"],
+                             rt.OK if info["exit_code"] == 0 else rt.FAILED,
+                             key=fingerprints[stage], code_sha=state.code_sha(stage))
         if info["exit_code"] != 0:
             failed.append((stage, info["exit_code"]))
             state.invalidate_from(stage, available)

@@ -1,0 +1,37 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Jerremi Aron Chancan Labajos
+# papers/c26-2026/experiments/timings.yaml
+#
+# A-priori time estimates for this pipeline, in seconds, per process. The
+# runtime writes outputs/timings.json (measured) and outputs/timings.md (the
+# human view) from these plus the run history; see `_colab_runtime.Timings`.
+#
+# These numbers are a YARDSTICK, not a measurement, and are never overwritten
+# from measurements. Their whole value is being independent of the history:
+# they are what says "this stage is taking too long" or "that finished
+# suspiciously fast", and what the expectation falls back to whenever a change
+# (config, data, RESULTS_VERSION or code) makes old measurements incomparable.
+# Update them by hand, with a note below, when a real run contradicts them.
+#
+# by: agent 2026-10-03, seeded from outputs/results.json (a real full run:
+#   1812 s in total, 1532 s of it the clustering multiverse 8_multiverso_M1)
+#   and experiments/README.md ("about 30 minutes on a free Colab CPU").
+#   To Colab this paper is ONE process (`pipeline`, the package as a single
+#   stage); its real units are the etapas of reniped, which write their own
+#   times into outputs/results.json and are picked up through `units_from`.
+# Fields per process: min_s / typical_s / max_s, plus optional `unit`,
+#   `unit_typical_s`, and `units_from: {file, json_key}`.
+
+session:
+  mount: {min_s: 5, typical_s: 15, max_s: 120}
+  deps: {min_s: 90, typical_s: 300, max_s: 900}
+  data: {min_s: 30, typical_s: 120, max_s: 600}
+
+stages:
+  pipeline:
+    min_s: 1200
+    typical_s: 1800
+    max_s: 4200
+    unit: etapa
+    unit_typical_s: 30
+    units_from: {file: outputs/results.json, json_key: tiempos_por_etapa_s}
