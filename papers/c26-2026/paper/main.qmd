@@ -276,7 +276,7 @@ The profile of the four states reveals that they combine two types of difference
 
 Table 2 reports the global Moran's I of the 2019--2025 rates and of the alternative variables under the two main neighborhood definitions, with the two-sided permutation p-value in parentheses.
 
-: Global spatial autocorrelation of report rates. {#tbl-2}
+: Global spatial autocorrelation. {#tbl-2}
 
 | **Variable and period** | **Contiguity: I (p)** | **Four nearest neighbors: I (p)** |
 | --- | :---: | :---: |
