@@ -1,0 +1,122 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Jerremi Aron Chancan Labajos
+name: build-comment
+
+# Post or refresh the artifact download comment on the PR behind a build run.
+#
+# It runs from the default branch with a write token, which is what makes it
+# work for PRs opened from forks: there, the build workflow only receives a
+# read-only GITHUB_TOKEN and cannot comment (403 Resource not accessible by
+# integration). The rows come from the artifacts the run actually produced,
+# not from the detect job's matrix, so a failed build reports what is missing.
+
+on:
+  workflow_run:
+    workflows: ["build"]
+    types: [completed]
+
+permissions:
+  actions: read
+  contents: read
+  pull-requests: write
+
+concurrency:
+  # One comment job per source branch, queued rather than cancelled, so two
+  # builds of the same PR cannot race to create duplicate comments.
+  group: build-comment-${{ github.event.workflow_run.head_repository.full_name }}:${{ github.event.workflow_run.head_branch }}
+  cancel-in-progress: false
+
+jobs:
+  comment:
+    # Push and manual runs have no PR to comment on, and a cancelled run is
+    # superseded by the run that cancelled it, which will comment itself.
+    if: >-
+      github.event.workflow_run.event == 'pull_request' &&
+      github.event.workflow_run.conclusion != 'cancelled'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create or update PR comment
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const run = context.payload.workflow_run;
+            const repo = `${context.repo.owner}/${context.repo.repo}`;
+            const marker = '<!-- paper-build-artifacts -->';
+            const runUrl = `https://github.com/${repo}/actions/runs/${run.id}`;
+            const artifactsUrl = `${runUrl}#artifacts`;
+
+            // The payload usually carries the PR, but fork PRs have arrived
+            // with an empty list before; fall back to the head commit.
+            let prNumber = run.pull_requests?.[0]?.number;
+            if (!prNumber) {
+              const { data: prs } = await github.rest.repos.listPullRequestsAssociatedWithCommit({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                commit_sha: run.head_sha,
+              });
+              prNumber = prs.find((pr) => pr.state === 'open')?.number;
+            }
+            if (!prNumber) {
+              core.info(`No open pull request for run ${run.id}; nothing to comment.`);
+              return;
+            }
+
+            // One row per paper artifact the run actually produced.
+            const { data: artifacts } = await github.rest.actions.listWorkflowRunArtifacts({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              run_id: run.id,
+              per_page: 100,
+            });
+            const rows = artifacts.artifacts
+              .filter((art) => art.name.startsWith('paper-'))
+              .sort((a, b) => a.name.localeCompare(b.name))
+              .map((art) => {
+                const dlUrl = `${runUrl}/artifacts/${art.id}`;
+                const slug = art.name.replace(/^paper-/, '');
+                return `| ${slug} | ✅ | [⬇ PDF](${dlUrl}) | [⬇ DOCX](${dlUrl}) | [⬇ LaTeX](${dlUrl}) |`;
+              });
+            if (run.conclusion !== 'success') {
+              rows.push(`| — | ❌ | El build terminó con \`${run.conclusion}\`; revisa los [logs](${runUrl}). | — | — |`);
+            }
+            if (rows.length === 0) {
+              rows.push('| — | ⏭️ | No se generó ningún artifact en este run. | — | — |');
+            }
+
+            const body = [
+              marker,
+              '### 📦 Paper build artifacts',
+              '',
+              '| Paper | Status | PDF | DOCX | LaTeX |',
+              '|-------|--------|-----|------|-------|',
+              ...rows,
+              '',
+              `> Los artifacts están disponibles en la pestaña [Checks → Artifacts](${artifactsUrl}). Se eliminan después de 90 días.`,
+            ].join('\n');
+
+            // Refresh the bot's previous comment in place when it exists.
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+              per_page: 100,
+            });
+            const existing = comments.find(
+              (c) => c.user?.login === 'github-actions[bot]' && c.body?.includes(marker),
+            );
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+                body,
+              });
+            }
+            core.info(`Comment ${existing ? 'updated' : 'created'} on PR #${prNumber}.`);

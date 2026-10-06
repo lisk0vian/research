@@ -3,7 +3,9 @@
 name: build
 
 # Render changed papers to PDF + DOCX + LaTeX zip and upload as artifacts.
-# Comments on PRs with a download table; cancels superseded runs.
+# The download comment is posted by build-comment.yml (workflow_run): a PR
+# opened from a fork gets a read-only GITHUB_TOKEN here, so this workflow
+# cannot comment on it. Cancels superseded runs.
 
 on:
   pull_request:
@@ -25,7 +27,6 @@ on:
 
 permissions:
   contents: read
-  pull-requests: write
 
 concurrency:
   group: build-${{ github.head_ref || github.ref }}
@@ -123,81 +124,3 @@ jobs:
             papers/${{ matrix.paper.slug }}/build/${{ matrix.paper.slug }}-latex.zip
           if-no-files-found: warn
           retention-days: 90
-
-  # ── Job 3: comment on PR with download links ────────────────────────────
-  comment:
-    needs: build
-    if: github.event_name == 'pull_request' && always()
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v5
-        with:
-          fetch-depth: 0
-
-      - name: Build comment body
-        id: body
-        uses: actions/github-script@v8
-        with:
-          script: |
-            const runId = context.runId;
-            const repo = `${context.repo.owner}/${context.repo.repo}`;
-            const artifactsUrl = `https://github.com/${repo}/actions/runs/${runId}#artifacts`;
-
-            // Parse matrix results from build job
-            // We detect slugs from the matrix output of detect job
-            const detectMatrix = ${{ needs.detect.outputs.matrix || '[]' }};
-
-            // Get artifacts from this run
-            const { data: artifacts } = await github.rest.actions.listWorkflowRunArtifacts({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              run_id: runId,
-            });
-
-            const artifactByName = {};
-            for (const a of artifacts.artifacts) {
-              artifactByName[a.name] = a;
-            }
-
-            let rows = '';
-            for (const entry of detectMatrix) {
-              const slug = entry.slug;
-              const artName = `paper-${slug}`;
-              const art = artifactByName[artName];
-              if (art) {
-                const dlUrl = `https://github.com/${repo}/actions/runs/${runId}/artifacts/${art.id}`;
-                rows += `| ${slug} | ✅ | [⬇ PDF](${dlUrl}) | [⬇ DOCX](${dlUrl}) | [⬇ LaTeX](${dlUrl}) |\n`;
-              } else {
-                rows += `| ${slug} | ❌ | — | — | — |\n`;
-              }
-            }
-
-            const marker = '<!-- paper-build-artifacts -->';
-            const body = [
-              marker,
-              '### 📦 Paper build artifacts',
-              '',
-              '| Paper | Status | PDF | DOCX | LaTeX |',
-              '|-------|--------|-----|------|-------|',
-              rows.trim(),
-              '',
-              `> Los artifacts están disponibles en la pestaña [Checks → Artifacts](${artifactsUrl}). Se eliminan después de 90 días.`,
-            ].join('\n');
-
-            core.setOutput('body', body);
-
-      - name: Find existing comment
-        id: find-comment
-        uses: peter-evans/find-comment@v4
-        with:
-          issue-number: ${{ github.event.pull_request.number }}
-          comment-author: 'github-actions[bot]'
-          body-includes: '<!-- paper-build-artifacts -->'
-
-      - name: Create or update comment
-        uses: peter-evans/create-or-update-comment@v5
-        with:
-          issue-number: ${{ github.event.pull_request.number }}
-          comment-id: ${{ steps.find-comment.outputs.comment-id }}
-          edit-mode: replace
-          body: ${{ steps.body.outputs.body }}
