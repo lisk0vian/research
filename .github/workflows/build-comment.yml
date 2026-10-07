@@ -7,8 +7,9 @@ name: build-comment
 # It runs from the default branch with a write token, which is what makes it
 # work for PRs opened from forks: there, the build workflow only receives a
 # read-only GITHUB_TOKEN and cannot comment (403 Resource not accessible by
-# integration). The rows come from the artifacts the run actually produced,
-# not from the detect job's matrix, so a failed build reports what is missing.
+# integration). The rows come from the artifacts the run actually produced:
+# every format links to its own artifact and Todos to the bundle with all
+# three, so a failed build reports what is missing.
 #
 # workflow_dispatch re-posts the comment for an existing run (e.g. after an
 # outage or a deleted comment): pass the run id from the Actions URL.
@@ -84,34 +85,44 @@ jobs:
               return;
             }
 
-            // One row per paper artifact the run actually produced.
+            // One row per paper in the run: each format links to its own
+            // artifact, and Todos keeps the one-click bundle with all three.
             const { data: artifacts } = await github.rest.actions.listWorkflowRunArtifacts({
               owner,
               repo,
               run_id: run.id,
               per_page: 100,
             });
-            const rows = artifacts.artifacts
-              .filter((art) => art.name.startsWith('paper-'))
-              .sort((a, b) => a.name.localeCompare(b.name))
-              .map((art) => {
-                const dlUrl = `${runUrl}/artifacts/${art.id}`;
-                const slug = art.name.replace(/^paper-/, '');
-                return `| ${slug} | ✅ | [⬇ PDF](${dlUrl}) | [⬇ DOCX](${dlUrl}) | [⬇ LaTeX](${dlUrl}) |`;
-              });
+            const byName = new Map(artifacts.artifacts.map((art) => [art.name, art]));
+            const link = (art, label) =>
+              art ? `[⬇ ${label}](${runUrl}/artifacts/${art.id})` : '—';
+            const slugs = [...new Set(
+              [...byName.keys()]
+                .filter((name) => name.startsWith('paper-'))
+                .map((name) => name.replace(/^paper-/, '').replace(/-(pdf|docx|latex)$/, '')),
+            )].sort();
+            const rows = slugs.map((slug) => {
+              const all = byName.get(`paper-${slug}`);
+              // Runs predating the per-format split only carry the combined
+              // artifact: fall back to it so the cells still download.
+              const pdf = byName.get(`paper-${slug}-pdf`) ?? all;
+              const docx = byName.get(`paper-${slug}-docx`) ?? all;
+              const latex = byName.get(`paper-${slug}-latex`) ?? all;
+              return `| ${slug} | ✅ | ${link(pdf, 'PDF')} | ${link(docx, 'DOCX')} | ${link(latex, 'LaTeX')} | ${link(all, 'Todos')} |`;
+            });
             if (run.conclusion !== 'success') {
-              rows.push(`| — | ❌ | El build terminó con \`${run.conclusion}\`; revisa los [logs](${runUrl}). | — | — |`);
+              rows.push(`| — | ❌ | El build terminó con \`${run.conclusion}\`; revisa los [logs](${runUrl}). | — | — | — |`);
             }
             if (rows.length === 0) {
-              rows.push('| — | ⏭️ | No se generó ningún artifact en este run. | — | — |');
+              rows.push('| — | ⏭️ | No se generó ningún artifact en este run. | — | — | — |');
             }
 
             const body = [
               marker,
               '### 📦 Paper build artifacts',
               '',
-              '| Paper | Status | PDF | DOCX | LaTeX |',
-              '|-------|--------|-----|------|-------|',
+              '| Paper | Status | PDF | DOCX | LaTeX | Todos |',
+              '|-------|--------|-----|------|-------|-------|',
               ...rows,
               '',
               `> Los artifacts están disponibles en la pestaña [Checks → Artifacts](${artifactsUrl}). Se eliminan después de 90 días.`,

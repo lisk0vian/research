@@ -114,7 +114,31 @@ jobs:
           echo "::endgroup::"
           echo "slug=$slug" >> "$GITHUB_OUTPUT"
 
-      - name: Upload build artifacts
+      - name: Upload PDF
+        uses: actions/upload-artifact@v6
+        with:
+          name: paper-${{ matrix.paper.slug }}-pdf
+          path: papers/${{ matrix.paper.slug }}/build/${{ matrix.paper.slug }}.pdf
+          if-no-files-found: warn
+          retention-days: 90
+
+      - name: Upload DOCX
+        uses: actions/upload-artifact@v6
+        with:
+          name: paper-${{ matrix.paper.slug }}-docx
+          path: papers/${{ matrix.paper.slug }}/build/${{ matrix.paper.slug }}.docx
+          if-no-files-found: warn
+          retention-days: 90
+
+      - name: Upload LaTeX source
+        uses: actions/upload-artifact@v6
+        with:
+          name: paper-${{ matrix.paper.slug }}-latex
+          path: papers/${{ matrix.paper.slug }}/build/${{ matrix.paper.slug }}-latex.zip
+          if-no-files-found: warn
+          retention-days: 90
+
+      - name: Upload all formats
         uses: actions/upload-artifact@v6
         with:
           name: paper-${{ matrix.paper.slug }}
