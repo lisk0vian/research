@@ -9,11 +9,19 @@ name: build-comment
 # read-only GITHUB_TOKEN and cannot comment (403 Resource not accessible by
 # integration). The rows come from the artifacts the run actually produced,
 # not from the detect job's matrix, so a failed build reports what is missing.
+#
+# workflow_dispatch re-posts the comment for an existing run (e.g. after an
+# outage or a deleted comment): pass the run id from the Actions URL.
 
 on:
   workflow_run:
     workflows: ["build"]
     types: [completed]
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: "Build run id to post the artifact comment for"
+        required: true
 
 permissions:
   actions: read
@@ -28,33 +36,48 @@ concurrency:
 
 jobs:
   comment:
-    # Push and manual runs have no PR to comment on, and a cancelled run is
+    # Push and manual builds have no PR to comment on, and a cancelled run is
     # superseded by the run that cancelled it, which will comment itself.
     if: >-
-      github.event.workflow_run.event == 'pull_request' &&
-      github.event.workflow_run.conclusion != 'cancelled'
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.event == 'pull_request' &&
+      github.event.workflow_run.conclusion != 'cancelled')
     runs-on: ubuntu-latest
     steps:
       - name: Create or update PR comment
         uses: actions/github-script@v8
         with:
           script: |
-            const run = context.payload.workflow_run;
-            const repo = `${context.repo.owner}/${context.repo.repo}`;
+            const { owner, repo } = context.repo;
+            const repoFull = `${owner}/${repo}`;
             const marker = '<!-- paper-build-artifacts -->';
-            const runUrl = `https://github.com/${repo}/actions/runs/${run.id}`;
+
+            const run = context.eventName === 'workflow_dispatch'
+              ? (await github.rest.actions.getWorkflowRun({
+                  owner,
+                  repo,
+                  run_id: Number(context.payload.inputs.run_id),
+                })).data
+              : context.payload.workflow_run;
+
+            const runUrl = `https://github.com/${repoFull}/actions/runs/${run.id}`;
             const artifactsUrl = `${runUrl}#artifacts`;
 
-            // The payload usually carries the PR, but fork PRs have arrived
-            // with an empty list before; fall back to the head commit.
+            // The payload usually carries the PR, but for PRs from forks
+            // GitHub leaves pull_requests empty, so fall back to the head
+            // repository/branch the run came from.
             let prNumber = run.pull_requests?.[0]?.number;
-            if (!prNumber) {
-              const { data: prs } = await github.rest.repos.listPullRequestsAssociatedWithCommit({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                commit_sha: run.head_sha,
+            if (!prNumber && run.head_branch && run.head_repository?.owner?.login) {
+              const { data: prs } = await github.rest.pulls.list({
+                owner,
+                repo,
+                state: 'open',
+                head: `${run.head_repository.owner.login}:${run.head_branch}`,
+                base: context.payload.repository?.default_branch,
+                per_page: 100,
               });
-              prNumber = prs.find((pr) => pr.state === 'open')?.number;
+              const match = prs.find((pr) => pr.head.sha === run.head_sha) ?? prs[0];
+              prNumber = match?.number;
             }
             if (!prNumber) {
               core.info(`No open pull request for run ${run.id}; nothing to comment.`);
@@ -63,8 +86,8 @@ jobs:
 
             // One row per paper artifact the run actually produced.
             const { data: artifacts } = await github.rest.actions.listWorkflowRunArtifacts({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
+              owner,
+              repo,
               run_id: run.id,
               per_page: 100,
             });
@@ -96,8 +119,8 @@ jobs:
 
             // Refresh the bot's previous comment in place when it exists.
             const { data: comments } = await github.rest.issues.listComments({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
+              owner,
+              repo,
               issue_number: prNumber,
               per_page: 100,
             });
@@ -106,15 +129,15 @@ jobs:
             );
             if (existing) {
               await github.rest.issues.updateComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
+                owner,
+                repo,
                 comment_id: existing.id,
                 body,
               });
             } else {
               await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
+                owner,
+                repo,
                 issue_number: prNumber,
                 body,
               });
