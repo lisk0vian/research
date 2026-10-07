@@ -61,8 +61,6 @@ keywords:
   - GeoAI
   - Spatiotemporal clustering
   - Spatial autocorrelation
-  - Report rates
-  - Multilevel validation
   - Administrative records
 bibliography: references.bib
 ---
