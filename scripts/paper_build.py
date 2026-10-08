@@ -165,6 +165,21 @@ def qmd_front_matter(paper_dir: Path) -> dict:
         return {}
 
 
+def short_in_text_citations(paper_dir: Path) -> bool:
+    """True when the paper drops natbib's longnamesfirst.
+
+    cas.lua: journal.natbib-options replaces the default
+    'authoryear,longnamesfirst', so a non-empty value without longnamesfirst
+    makes the PDF use "X et al." from the first citation (e.g. EAAI's
+    cas-model2-names-etal). The docx path mirrors that policy.
+    """
+    journal = qmd_front_matter(paper_dir).get("journal")
+    if not isinstance(journal, dict):
+        return False
+    natbib = str(journal.get("natbib-options") or "")
+    return bool(natbib) and "longnamesfirst" not in natbib
+
+
 def running_heads(repo: Path, paper_dir: Path) -> tuple[str, str]:
     """(short title, first author full name) for the docx header/footer.
 
@@ -287,6 +302,10 @@ def patch_docx_heads(repo: Path, paper_dir: Path, docx: Path) -> None:
         if latex_zip.is_file():
             # references and citations from the PDF's .bbl (identical text)
             cmd += ["--latex-zip", str(latex_zip)]
+        if short_in_text_citations(paper_dir):
+            # the PDF uses short citations from the first citation; keep the
+            # docx in step with it.
+            cmd += ["--short-citations"]
         rc, out = run(cmd)
         print("  layout: cas_docx_post applied" if rc == 0 else
               "  layout: [warn] cas_docx_post failed\n  "
@@ -367,8 +386,16 @@ def render(repo: Path, slug: str, fmt: str, quarto_format: str, extension: str) 
         target = quarto_format if kind == "pdf" else docx_target(repo, paper_dir)
         if kind == "pdf" and not extension:
             target = "pdf"
+        extra: list[str] = []
+        if kind == "docx":
+            etal_csl = Path("_extensions/quarto-journals/elsevier-cas/elsevier-harvard-etal.csl")
+            if short_in_text_citations(paper_dir) and (render_dir / etal_csl).is_file():
+                # short in-text citations from the first citation, as the PDF
+                # renders them (citeproc fallback path; cas_docx_post relabels
+                # from the .bbl when it is available).
+                extra = ["-M", f"csl:{etal_csl.as_posix()}"]
         rc, out = run(
-            ["quarto", "render", "main.qmd", "--to", target, "--output-dir", ".."],
+            ["quarto", "render", "main.qmd", "--to", target, "--output-dir", "..", *extra],
             cwd=render_dir,
         )
         produced = build_dir / f"main.{kind}"

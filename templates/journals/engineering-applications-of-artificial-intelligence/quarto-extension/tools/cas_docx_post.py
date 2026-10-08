@@ -31,6 +31,9 @@ of the built DOCX so that it follows cas-sc as rendered by pdfTeX:
   --latex-zip    references rebuilt from the zip's .bbl (cas-model2-names.bst
                  text, doi:/URL: in typewriter) and citations relabelled from
                  its natbib labels, long author lists first (longnamesfirst)
+  --short-citations
+                 with cas-model2-names-etal.bst: keep every citation in the
+                 short form ("Hwang et al., 2019"), as that bst's PDF does
 
 Every number is measured on the CAS PDF; scripts/paper_parity.py measures the
 result. Stdlib only (plus Poppler's pdftotext for --pdf). Usage
@@ -944,9 +947,12 @@ def fix_bibliography(body: ET.Element, entries: list[dict], rels: dict) -> None:
             pos += 1
 
 
-def fix_citations(body: ET.Element, entries: list[dict]) -> None:
+def fix_citations(body: ET.Element, entries: list[dict],
+                  short_citations: bool = False) -> None:
     """natbib with longnamesfirst: the first citation of a work lists every
-    author (the label's long form), later ones the short form."""
+    author (the label's long form), later ones the short form. With
+    ``short_citations`` (biblio style cas-model2-names-etal), every citation
+    keeps the short label, as the PDF does."""
     by_key = {e["key"]: e for e in entries}
     seen: set[str] = set()
     for h in body.iter(q("hyperlink")):
@@ -955,7 +961,8 @@ def fix_citations(body: ET.Element, entries: list[dict]) -> None:
             continue
         e = by_key[anchor[4:]]
         old = text(h)
-        names = e["long"] if (e["long"] and e["key"] not in seen) else e["short"]
+        names = e["short"] if short_citations else (
+            e["long"] if (e["long"] and e["key"] not in seen) else e["short"])
         seen.add(e["key"])
         if re.fullmatch(r"\d{4}[a-z]?", old.strip()):
             new = e["year"]                                   # [-@key]
@@ -1253,7 +1260,8 @@ def read_bbl(latex_zip: Path | None) -> str:
 
 
 def process(docx: Path, pdf: Path | None = None,
-            latex_zip: Path | None = None) -> None:
+            latex_zip: Path | None = None,
+            short_citations: bool = False) -> None:
     src = zipfile.ZipFile(docx)
     parts = {n: src.read(n) for n in src.namelist()}
     infos = {i.filename: i for i in src.infolist()}
@@ -1288,7 +1296,7 @@ def process(docx: Path, pdf: Path | None = None,
         return rid
 
     if entries:
-        fix_citations(body, entries)
+        fix_citations(body, entries, short_citations)
         fix_bibliography(body, entries, {"add": add_rel})
     floats = fix_figures_and_tables(body)
     place_floats(body, floats, pdf)
@@ -1326,8 +1334,10 @@ def main() -> int:
                     help="the paper's rendered PDF: top floats go to its pages")
     ap.add_argument("--latex-zip", type=Path, default=None,
                     help="the submission zip: references/citations from its .bbl")
+    ap.add_argument("--short-citations", action="store_true",
+                    help="cas-model2-names-etal: every citation in short form")
     args = ap.parse_args()
-    process(args.docx, args.pdf, args.latex_zip)
+    process(args.docx, args.pdf, args.latex_zip, args.short_citations)
     print(f"cas layout applied to {args.docx}")
     return 0
 

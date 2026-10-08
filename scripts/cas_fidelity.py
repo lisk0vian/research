@@ -700,13 +700,37 @@ def run_docx_suite(rep: Report) -> None:
 
         # --- Elsevier-Harvard citations + bibliography ----------------------
         cite: list[str] = []
-        # natbib longnamesfirst (the PDF): a first citation lists every author
+        # natbib longnamesfirst (the default cas-model2-names.bst PDF):
+        # a first citation lists every author
         if "Reichstein, Camps-Valls, Stevens" not in full:
             cite.append("in-text (Reichstein, Camps-Valls, ..., 2019)")
         if "Deep learning and process understanding" not in full:
             cite.append("bibliography entry")
         rep.add("docx citations (elsevier-harvard)", not cite,
                 "; ".join(cite) or "author-date in text + bibliography")
+
+        # --- et al. from the first citation (cas-model2-names-etal) ---------
+        # -M csl picks the etal variant: the citeproc fallback used when the
+        # latex zip is absent must keep every citation short, as that bst's
+        # PDF does (paper_build passes the same override for -etal papers).
+        etal_csl = ("_extensions/quarto-journals/elsevier-cas/"
+                    "elsevier-harvard-etal.csl")
+        rc_e, out_e = run(["quarto", "render", "fixture.qmd",
+                           "--to", "elsevier-cas-docx", "-o", "fixture-etal.docx",
+                           "-M", f"csl:{etal_csl}"], cwd=fixture)
+        etal_docx = fixture / "fixture-etal.docx"
+        etal: list[str] = []
+        if rc_e != 0 or not etal_docx.is_file():
+            etal.append("etal render: " + out_e[-300:])
+        else:
+            with zipfile.ZipFile(etal_docx) as ze:
+                full_e = re.sub(r"[\s\u00a0]+", " ", _docx_texts(ze))
+            if "Reichstein et al. (2019)" not in full_e:
+                etal.append("short citation (Reichstein et al. (2019)) missing")
+            if "Reichstein, Camps-Valls, Stevens" in full_e:
+                etal.append("long author list still on the first citation")
+        rep.add("docx citations (etal variant)", not etal,
+                "; ".join(etal) or "short in-text from the first citation")
 
         # --- non-blocking visual aid: LibreOffice ---------------------------
         z.close()  # Windows: release fixture.docx before soffice/temp cleanup
