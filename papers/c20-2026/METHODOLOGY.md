@@ -390,6 +390,50 @@ Clarifications (nothing is dropped):
   lived only inside the PNG. Stage 10 now writes `T15_pit_reliability.csv` per
   role and horizon, and §10 lists it.
 
+### Amendment A5 (2026-10-07, post hoc): a CFSv2 hybrid on the blind folds
+
+Written after every blind score of A1-A4 is known, and **before** stage
+`09f_hybrid_cfs` exists or has been run, and committed as such. The blind
+scores showed CFS_BC ahead of M* at W1 and behind it at W3_4 (H4); A1 had
+dropped the hybrid because it cannot be trained in D1-D2. A5 adds it as a
+descriptive, explicitly post hoc analysis. It changes no pre-registered number,
+hypothesis or the decision rule in §8, and M* and M*₂ stay as they are.
+
+- **Scope.** Blind folds B1-B2 only, TT_mean, temporal experiment, the rows
+  where CFSv2 has a forecast (as CFS_BC). There is no dev fold in which a
+  hybrid could be selected, so **nothing is selected or tuned**: every choice
+  below is fixed here, before the first hybrid score.
+- **The CFS predictor.** `cfs_anom`: the CFS window-mean forecast minus its own
+  harmonic climatology (K = 2), fitted per station and horizon on the fold's
+  training Mondays, exactly step 1 of CFS_BC (A1). A cell with fewer than
+  `dynamical.min_train` training Mondays gets no prediction, as in CFS_BC.
+- **Trained hybrids.** `Ridge_LG@CFS` and `GBM_LG@CFS`: Ridge_LG and GBM_LG of
+  §5 with `cfs_anom` as one more predictor, every hyperparameter, alpha grid,
+  seed and the residual-SD construction as in stage 07.
+- **Same-rows controls.** `Ridge_LG@cfsrows` and `GBM_LG@cfsrows`: the same
+  models without `cfs_anom`, fitted on exactly the same training rows (the
+  Mondays with a CFS forecast), so a gain of a hybrid over its control is the
+  CFS predictor's and not the shorter, weekly training sample's.
+- **Untrained blend.** `Blend_CFS_Mstar`: the equal-weight quantile average
+  (Vincentization, as 07c) of CFS_BC and M*, rearranged. Equal weights because
+  no fold exists to fit them on.
+- **Reported (T16, descriptive):** per system and horizon, on the common blind
+  rows: CRPS, 90 % coverage, CRPSS_clim and CRPSS_damp with block-bootstrap
+  95 % intervals, for the five A5 systems and CFS_BC, M*, Ridge_LG and GBM_LG.
+- **H6 (blind, pooled stations, per horizon; block bootstrap of the paired
+  CRPS difference as H1; Holm over the three horizons within each test):**
+  each of the three hybrids against (a) CFS_BC and (b) M*; each trained hybrid
+  against (c) its same-rows control. T16b lists every test, the uncorrected
+  and the Holm p-value.
+- **What this cannot say.** The blind folds were seen before A5 was written, so
+  H6 is evidence about a hybrid fixed after the fact, not a pre-registered
+  confirmation; the paper reports it in that order and with this date. The
+  hybrids train on ~185 Mondays per station (CFSv2 starts 2018-10-31), a
+  fraction of the daily training pool of the §5 models.
+
+Predictions go to `outputs/models/hybrid/`, outside the folder stages 08-10
+read, so no A5 model enters `metrics_long.csv`, T2 or M*.
+
 ## 8. Pre-registered decision rule
 
 Written before any real score exists, so the framing cannot follow the numbers.
@@ -426,7 +470,7 @@ T4 Murphy, T5 LOSO gap, T6 secondary targets and frost, T7 conditional skill,
 T8 CFS calibration, T9 calibration of M*, T10 Chronos diagnostic and T11 Chronos
 precision/scale sensitivity (A2, post hoc), T12/T12b seed variability and
 T13/T14 M*₂ selection and blind scores (A3), T15 PIT and tercile reliability of
-M* (A4), `metrics_long.csv`.
+M* (A4), T16/T16b CFSv2 hybrid skill and tests (A5, post hoc), `metrics_long.csv`.
 Figures (`outputs/figures/`): F1 skill vs horizon, F2 PIT and reliability of
 M*, F3 skill by season and ENSO phase, F4 dev vs blind, F5 LOSO vs elevation,
 F6 predictability budget (L vs LG). Every number in the manuscript is a claim
@@ -434,8 +478,9 @@ in `manifest.yaml` pointing at one of these files.
 
 ## 11. Limitations stated in the paper
 
-No ECMWF benchmark and no hybrid (dynamical forecasts as predictors); the only
-dynamical reference is the open CFSv2, on the blind folds. Five stations in one country; 9.5 years, so climatologies rest on 4.5–8.5
+No ECMWF benchmark; the only dynamical reference is the open CFSv2, on the
+blind folds, and the CFSv2 hybrid (A5) is post hoc, untuned and trained on
+~185 Mondays per station. Five stations in one country; 9.5 years, so climatologies rest on 4.5–8.5
 training years and few ENSO events (La Niña 2020–23, El Niño 2023–24); no wind,
 pressure or ERA5 predictors; hourly-mean temperature for the frost index; no
 dynamical S2S benchmark (ECMWF reforecasts are future work); skill as a lower

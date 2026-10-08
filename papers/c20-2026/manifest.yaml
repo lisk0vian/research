@@ -5,15 +5,15 @@
 # data: it references authors/<id>.yaml by id only.
 
 paper: c20-2026
-title: "Subseasonal Temperature Forecasting in Andean Stations: A Benchmark of Machine Learning and Deep Learning Models with Anomaly Decomposition"
+title: "Hybrid machine learning and dynamical forecasts for subseasonal temperature prediction at high-Andean stations: a blind benchmark with foundation models and conformal calibration"
 
 # --- Editorial target ---
 journal: engineering-applications-of-artificial-intelligence          # must exist under templates/journals/<journal>/
 internal_code: "C20-2026" # institutional code (empty "" if none)
 
 # --- Funding / institution ---
-institution: "SENATI"
-funding: "This work was funded by SENATI, Peru (Project C20-2026)."             # exact text for the paper's Funding section
+institution: "Servicio Nacional de Adiestramiento en Trabajo Industrial"
+funding: "This work was funded by the Servicio Nacional de Adiestramiento en Trabajo Industrial, Peru (Project C20-2026)."             # exact text for the paper's Funding section
 
 # --- Authors (id + role + order for THIS paper only) ---
 # Full details (name, orcid, email, affiliation) live in authors/<id>.yaml
@@ -73,9 +73,76 @@ claims:
     source: "outputs/tables/T5_loso_gap.csv"
     status: draft
 
+  # --- Claims quoted in main.qmd (manuscript draft 2026-10-08) ---
+  - id: claim-qc
+    text: "416,273 station-hours; 13,268 (3.2%) carry no variable; 428 temperature spikes and 2,114 stuck-sensor hours flagged; 3,469 days per station, 2015-01-01 to 2024-06-30."
+    source: "outputs/manifest_index.json"
+    status: draft
+  - id: claim-blind-sample
+    text: "Blind folds: 102/100/96 issuance dates and 506/497/478 station forecasts at W1/W2/W3_4."
+    source: "outputs/tables/T16_hybrid_cfs.csv"
+    status: draft
+  - id: claim-blind-skill
+    text: "Blind CRPSS_clim (95% CI): CFS_BC 0.415 (0.32-0.50) / 0.298 / 0.218 (0.14-0.28); Ridge_LG 0.297/0.324/0.385; LSTM_LG 0.273/0.309/0.378; M* 0.295 (0.20-0.39) / 0.298 (0.20-0.38) / 0.345 (0.24-0.43)."
+    source: "outputs/tables/T2_blind_skill.csv"
+    status: draft
+  - id: claim-comparative-metrics
+    text: "Comparative blind metrics (Table 5): at W3_4 Ridge_LG RMSE 0.612 degC and MSSS_clim 0.598; ACC 0.794 (LSTM_LG) and 0.795 (M*); raw Chronos ACC 0.64-0.69."
+    source: "outputs/tables/metrics_long.csv"
+    status: draft
+  - id: claim-ec-sensitivity
+    text: "Replacing Nino 3.4/1+2 by the E/C indices changes the CRPSS_clim of Ridge_LG and GBM_LG by at most 0.02."
+    source: "outputs/tables/metrics_long.csv"
+    status: draft
+  - id: claim-h5-mstar2
+    text: "M*2 (with Chronos@abs, Vincentization, conformal) beats M*: delta CRPS 0.098/0.159/0.241 (Holm p 0.0016/0.0016/0.0012); blind 90% coverage 0.903/0.887/0.866; CRPSS_clim 0.323/0.348/0.426."
+    source: "outputs/tables/T14_mstar2_blind.csv"
+    status: draft
+  - id: claim-mstar2-selection
+    text: "Selected configuration: dev CRPS 0.382 degC, dev coverage 0.892/0.900/0.904; EMOS has the best blind CRPS (0.398 vs 0.415) but higher dev CRPS (0.395)."
+    source: "outputs/tables/T13_mstar2_selection.csv"
+    status: draft
+  - id: claim-h6-hybrid
+    text: "Hybrid Ridge_LG@CFS: CRPSS_clim 0.424 (0.34-0.50) / 0.384 (0.26-0.50) / 0.411 (0.28-0.53); vs CFS_BC delta CRPS 0.031 (p 0.26) / 0.274 (Holm 0.012) / 0.579 (0.0024); vs M* 0.450/0.273/0.196 (Holm 0.0003/0.017/0.031); vs same-rows control 0.462/0.262/0.035 (Holm 0.0003/0.012/0.026); coverage 0.836/0.843/0.812."
+    source: "outputs/tables/T16b_hybrid_tests.csv"
+    status: draft
+  - id: claim-hybrid-others
+    text: "GBM hybrid coverage 0.47-0.70 and worse than CFS_BC (Holm p = 1); blend matches CFS_BC at W1 and beats it at W3_4 (Holm 0.0012) but is worse than M* at W3_4."
+    source: "outputs/tables/T16_hybrid_cfs.csv"
+    status: draft
+  - id: claim-cfs-correlation
+    text: "Correlation of the bias-corrected CFSv2 anomaly with the observed anomaly on the blind folds (mean over stations and folds): 0.70 (W1), 0.44 (W2), 0.21 (W3_4)."
+    source: "outputs/tables/T8_cfs_calibration.csv"
+    status: draft
+  - id: claim-mstar-pit
+    text: "M* PIT at W3_4 on the blind folds: 17% of outcomes in the lowest decile and 32% in the highest."
+    source: "outputs/tables/T15_pit_reliability.csv"
+    status: draft
+  - id: claim-chronos-variants
+    text: "Blind window-mean 90% coverage and width: raw Chronos 0.22-0.31, 0.49-0.61 degC; Chronos@abs 0.74-0.86, 2.03-2.38 degC (CRPSS 0.271/0.256/0.320); Chronos-Bolt 0.90-0.95, 3.05-3.49 degC (CRPSS 0.18-0.22)."
+    source: "outputs/tables/metrics_long.csv"
+    status: draft
+  - id: claim-conditional
+    text: "M* CRPSS_clim by ENSO phase: El Nino 0.37-0.43 (n 240-250), La Nina 0.16-0.23 (n 175), neutral 0.06-0.20 (n 63-81); DJF 0.39-0.46, JJA 0.15-0.31; MJO active 0.32-0.38, inactive 0.26-0.32."
+    source: "outputs/tables/T7_conditional_skill.csv"
+    status: draft
+  - id: claim-loso-mstar
+    text: "LOSO: M* CRPS increases by at most 0.052 degC; no increase at Carania and Imata; San Jose de Uzuna W3_4 CRPSS 0.41 to 0.34, Matucana 0.44 to 0.33."
+    source: "outputs/tables/T5_loso_gap.csv"
+    status: draft
+  - id: claim-seeds
+    text: "Five seeds: CRPSS_clim SD <= 0.005 (GBM) and <= 0.020 (LSTM_LG); GBM_L never beats GBM_LG or LSTM_LG and GBM_LG never beats LSTM_LG in any seed."
+    source: "outputs/tables/T12_seed_variability.csv"
+    status: draft
+  - id: claim-secondary
+    text: "Ridge_LG on TT_min: CRPSS_clim 0.205/0.225/0.282; frost Brier skill 0.134/0.265/0.291."
+    source: "outputs/tables/T6_secondary_targets.csv"
+    status: draft
+
 # --- Figures: registry of each figure and its origin ---
 # `file` is relative to paper/ for migrated figures (media/) and to the paper
-# root for generated ones (outputs/figures/), which stage 10 writes.
+# root for generated ones (outputs/figures/), which stage 10 writes; the paper
+# figures (outputs/figures/paper/) come from stage 11 and its QA.
 figures:
   - id: fig-F1
     caption: "CRPSS vs Clim of every model by horizon, blind folds, with 95% block-bootstrap intervals."
@@ -101,3 +168,60 @@ figures:
     caption: "Predictability budget: CRPSS vs Damp of the local (L) and local-plus-large-scale (LG) variants."
     file: "outputs/figures/F6_predictability_budget.png"
     source: "experiments/10_tables_figures.py"
+  - id: fig-fig01
+    caption: "Study area: the five SENAMHI stations on the map of Peru, coloured by elevation (a), and their harmonic climatologies (b)."
+    file: "outputs/figures/paper/Fig01_study_area.png"
+    source: "experiments/11_paper_figures.py"
+  - id: fig-fig02
+    caption: "Forecasting system: data and predictors, models (Ridge, GBM, LSTM, Chronos), the M* ensemble and its conformal calibration M*2, the CFSv2 hybrid, and the blind evaluation."
+    file: "outputs/figures/paper/Fig02_workflow.png"
+    source: "experiments/11_paper_figures.py"
+  - id: fig-fig03
+    caption: "Validation design: expanding training windows, 28-day embargo, dev and blind test years, the freeze point of M*, the CFSv2 archive and ENSO episodes."
+    file: "outputs/figures/paper/Fig03_validation_design.png"
+    source: "experiments/11_paper_figures.py"
+  - id: fig-fig04
+    caption: "Blind skill by horizon: CRPSS vs climatology (a) and vs damped persistence (b) with 95% block-bootstrap intervals; filled markers have intervals above zero."
+    file: "outputs/figures/paper/Fig04_blind_skill.png"
+    source: "experiments/11_paper_figures.py"
+  - id: fig-fig05
+    caption: "Paired tests of the CFSv2 hybrid and the blend (H6, amendment A5, post hoc): CRPS difference with 95% intervals; filled markers have p_holm < 0.05."
+    file: "outputs/figures/paper/Fig05_hybrid_tests.png"
+    source: "experiments/11_paper_figures.py"
+  - id: fig-fig06
+    caption: "Calibration: 90% interval coverage by horizon (a) and PIT histograms at Weeks 3-4 for M*, M*2 and the hybrid (b)."
+    file: "outputs/figures/paper/Fig06_calibration.png"
+    source: "experiments/11_paper_figures.py"
+  - id: fig-fig07
+    caption: "Adapting the time-series foundation model: CRPSS (a), 90% interval coverage (b) and 90% interval width (c) of raw Chronos, Chronos with absolute-temperature context and Chronos-Bolt, with M* as reference."
+    file: "outputs/figures/paper/Fig07_chronos.png"
+    source: "experiments/11_paper_figures.py"
+  - id: fig-fig08
+    caption: "Windows of opportunity: M* skill by ENSO phase (a), season (b) and MJO activity (c) at issuance (descriptive)."
+    file: "outputs/figures/paper/Fig08_conditional_skill.png"
+    source: "experiments/11_paper_figures.py"
+  - id: fig-fig09
+    caption: "Transfer to unseen stations: CRPS lost under leave-one-station-out against the held-out station's elevation."
+    file: "outputs/figures/paper/Fig09_loso.png"
+    source: "experiments/11_paper_figures.py"
+  - id: fig-fig10
+    caption: "Case study at the station of median hybrid CRPS (chosen a priori): Weeks 3-4 observed anomalies, hybrid and M*2 intervals, and the CFSv2 median, blind period. The gap before the dotted B1 | B2 line is by design: issuances whose Weeks 3-4 target would fall in the next fold's test year are not evaluated."
+    file: "outputs/figures/paper/Fig10_case_study.png"
+    source: "experiments/11_paper_figures.py"
+  - id: fig-figs1
+    caption: "Seed variability: mean and range of CRPSS over five seeds (supplementary)."
+    file: "outputs/figures/paper/FigS1_seed_variability.png"
+    source: "experiments/11_paper_figures.py"
+  - id: fig-figs2
+    caption: "Dev vs blind skill (dumbbell plot): CRPSS vs climatology of each model in the dev folds (hollow) and the blind folds (filled), by horizon (supplementary)."
+    file: "outputs/figures/paper/FigS2_dev_vs_blind.png"
+    source: "experiments/11_paper_figures.py"
+  - id: fig-figs3
+    caption: "Predictability budget: CRPSS vs damped persistence of the L and LG variants (supplementary)."
+    file: "outputs/figures/paper/FigS3_predictability_budget.png"
+    source: "experiments/11_paper_figures.py"
+zenodo_status: published
+zenodo_deposit_id: 23242814
+zenodo_version: 1.0.0
+zenodo_doi: 10.5281/zenodo.23242814
+zenodo_record_url: https://zenodo.org/records/23242814

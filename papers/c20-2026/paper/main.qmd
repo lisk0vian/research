@@ -4,7 +4,8 @@
 #   python scripts/paper_build.py --slug c20-2026 --format all
 # Fidelity against the official Elsevier CAS sample is checked by:
 #   python scripts/cas_fidelity.py
-title: "Subseasonal Temperature Forecasting in Andean Stations: A Benchmark of Machine Learning and Deep Learning Models with Anomaly Decomposition"
+# Every number in the text is a claim in manifest.yaml pointing at outputs/.
+title: "Hybrid machine learning and dynamical forecasts for subseasonal temperature prediction at high-Andean stations: a blind benchmark with foundation models and conformal calibration"
 format:
   elsevier-cas-pdf: {}
   elsevier-cas-docx: {}
@@ -15,18 +16,25 @@ journal:
   name: "Engineering Applications of Artificial Intelligence"
   issn: 0952-1976
   publisher: "Elsevier"
-  short-title: "Subseasonal temperature forecasting in Andean stations"
+  short-title: "Hybrid subseasonal temperature forecasts at Andean stations"
   cite-style: authoryear
+  # EAAI style: "Kramer et al., 2023" from the first citation (no full author
+  # lists), and display equations centred.
+  natbib-options: "authoryear"
+  # Reference list: up to six authors, then "et al." (consistent style accepted
+  # at submission; the journal applies its own at proof).
+  biblio-style: "cas-model2-names-etal"
+  equations: centered
   corresponding:
     - mark: cor1
       text: "Corresponding author"
-  # Journal requirement: 3-5 highlights (absorbed from the former highlights.txt).
+  # Journal requirement: 3-5 highlights of at most 85 characters.
   highlights:
-    - "Zero-leakage climatology isolates thermal anomaly signal"
-    - "Sliding 2025 windows benchmark ensembles vs LSTM vs TFT"
-    - "Public IGP Huayao hourly data enables full replication"
-    - "Ablation quantifies physical feature group contributions"
-    - "Probabilistic skill supports subseasonal planning use"
+    - "Ridge–CFSv2 hybrid ties CFSv2 at week 1 and outperforms it at weeks 2–4"
+    - "Models frozen before a two-year blind test; block bootstrap, Holm correction"
+    - "Raw Chronos is over-confident; absolute-temperature context restores spread"
+    - "Conformal calibration lifts ensemble 90% coverage from 0.63–0.75 to ~0.90"
+    - "ENSO/MJO predictors add measurable skill at weeks 2–4 at five Andean stations"
 author:
   - name: Moisés Evangelista Gamarra
     email: mevangelistag@senati.pe
@@ -34,99 +42,1055 @@ author:
     affiliation: [{ref: aff-1}]
     cas:
       cormark: 1
-      # TODO: real CRediT roles (the manifest claims carry the audit trail).
-      credit: "Conceptualization, Methodology, Software, Writing - original draft"
   - name: Jerremi Aron Chancan Labajos
     email: 1520481@senati.pe
     orcid: "0009-0005-6789-076X"
     affiliation: [{ref: aff-1}]
-    cas:
-      # TODO: real CRediT roles.
-      credit: "Data curation, Validation, Investigation"
 affiliations:
   - id: aff-1
-    name: SENATI
+    name: Servicio Nacional de Adiestramiento en Trabajo Industrial
     country: Perú
 abstract: |
-  TODO (draft abstract): Subseasonal temperature forecasting supports energy
-  planning and agriculture in the Andes, where steep terrain produces strong
-  local gradients between stations. We benchmark classical machine learning
-  and deep learning models for one-to-four-week horizons on a shared protocol
-  over an Andean station network (2018--2025), with and without anomaly
-  decomposition as a preprocessing stage. Every reported number is anchored to
-  a machine-readable artefact under `experiments/`.
+  Temperature forecasts one to four weeks ahead support frost warnings and
+  agricultural planning in the tropical Andes, where machine learning has
+  rarely been tested at subseasonal leads. We present an artificial intelligence forecasting
+  system for weekly mean temperature anomalies at five Peruvian stations
+  between 2,421 and 4,475 m, evaluated under a protocol in which every model,
+  hyperparameter and the primary system were frozen before two blind years
+  (July 2022 to June 2024) were scored. The system combines quantile forecasts
+  from ridge regression, gradient boosting, a long short-term memory network
+  and the Chronos time-series foundation model, trained on leakage-free
+  anomalies with local and large-scale (El Niño–Southern Oscillation,
+  Madden–Julian Oscillation) predictors, and is compared with the
+  bias-corrected Climate Forecast System version 2 (CFSv2). The ensemble
+  improves on climatology at every horizon (continuous ranked probability
+  skill score 0.30, 0.30 and 0.35 at weeks 1, 2 and 3–4), but its 90%
+  intervals cover only 0.63–0.75 of the outcomes; a conformal calibration
+  selected on development years brings the coverage to 0.87–0.90. A ridge
+  model that uses the CFSv2 forecast as a predictor reaches skill scores of
+  0.42, 0.38 and 0.41: it matches CFSv2 at week 1 and improves on it at weeks
+  2 and 3–4. Unadapted Chronos is over-confident (coverage 0.22–0.31) until it
+  receives absolute-temperature context. These results, partly from analyses
+  declared after the blind scores were seen, indicate that calibrated
+  subseasonal guidance is attainable at high-elevation stations when
+  statistical learning and dynamical forecasts are combined.
 keywords:
-  - Subseasonal temperature forecasting
-  - Machine learning
-  - Deep learning
-  - Anomaly decomposition
-  - Andean meteorological stations
+  - Subseasonal forecasting
+  - Time-series foundation models
+  - Conformal calibration
+  - Hybrid dynamical–statistical forecasting
+  - Andes
 bibliography: references.bib
 ---
 
 # Introduction
 
-Short- and subseasonal-horizon temperature forecasts drive energy demand
-planning, frost alerts and agricultural scheduling in the Andes, where
-elevation and aspect create large temperature differences between nearby
-stations. Data-driven methods have become the default baseline for such
-tasks: tree-based models for tabular regression and recurrent or temporal
-convolutional architectures for sequence learning
- [@Reichstein2019; @SalinasDeepAR2020].
+Air temperature in the high Andes changes over a few kilometres of distance
+and a few hundred metres of elevation, and its week-to-week anomalies decide
+whether a frost damages a potato crop, whether pastures recover after a cold
+spell, or whether irrigation can be postponed [@Condori2014; @LopezMoreno2015; @Pepin2015].
+Forecasts between two and four weeks ahead fall in the subseasonal range,
+which has long been called a predictability gap: too far for the atmospheric
+initial conditions to dominate and too close for the slowly varying boundary
+conditions that drive seasonal forecasts [@Vitart2017; @Robertson2015;
+@Mariotti2018]. Operational subseasonal-to-seasonal (S2S) systems have
+narrowed that gap over the last decade, and their skill is known to depend on
+windows of opportunity such as the state of the El Niño–Southern Oscillation
+(ENSO) and the Madden–Julian Oscillation (MJO) [@Mariotti2020; @Domeisen2022;
+@White2022]. Their grid cells, however, do not resolve the stations at which
+decisions are taken, and their raw output needs statistical correction before
+it is useful at a point [@Monhart2018; @Robertson2023].
 
-This paper contributes a reproducible benchmark of machine learning and deep
-learning models for temperature forecasting on an Andean station network,
-with a controlled ablation of anomaly decomposition as a preprocessing stage.
-All results in this manuscript are produced by the pipeline under
-`experiments/` and are listed in `manifest.yaml` as auditable claims.
+Machine learning has become a natural candidate for that correction and, more
+ambitiously, for forecasting the anomalies directly. Gradient-boosted trees,
+regularised linear models and neural networks have been benchmarked against
+dynamical models for subseasonal temperature over the contiguous United
+States [@Hwang2019; @He2021; @Mouatadid2023usa] and globally [@Weyn2021;
+@Chen2024], and probabilistic neural post-processing improves ensemble
+forecasts [@RaspLerch2018; @Scheuerer2020]. Three aspects of this
+literature limit what it says about high-mountain stations. First, most
+evaluations use reanalysis grids in the mid-latitudes, where ENSO and the MJO
+act differently from the tropical Andes [@Garreaud2009; @Sulca2018]. Second,
+few studies freeze the model choice before scoring a blind period, although
+temporal cross-validation without such a separation can overstate skill
+[@Tashman2000; @Bergmeir2012; @Roberts2017]. Third, time-series foundation
+models such as Chronos [@Ansari2024] are now offered as zero-shot
+forecasters, but how their predictive distributions behave on a physical
+target with strong seasonality has not been examined in this setting; nor has
+the value of combining station-based learning with an operational dynamical
+forecast been quantified for the Andes.
 
-# Data
+This paper addresses these points with a forecasting system for weekly mean
+temperature anomalies at five Peruvian stations between 2,421 and 4,475 m and
+an evaluation designed to be hard to over-interpret. Its contributions are:
 
-The benchmark uses hourly records from Andean meteorological stations
-(2018--2025), distributed as `data/raw/dataset.csv`. TODO: document the
-stations, gaps, quality control and train/validation/test split windows.
+- **A blind evaluation protocol for subseasonal machine learning.** All
+  models, hyperparameters and the primary ensemble were fixed on three
+  development years and frozen before two blind years were scored; every
+  later analysis is declared as a dated amendment, and every comparison is
+  tested with a moving-block bootstrap and Holm's correction.
+- **A hybrid dynamical–statistical model.** A ridge regression that uses the
+  bias-corrected forecast of the Climate Forecast System version 2 (CFSv2)
+  as one more predictor, evaluated against a control fitted on exactly the
+  same rows without that predictor, so that its gain can be attributed.
+- **A diagnosis of a time-series foundation model on a physical target.** We
+  show why Chronos produces intervals that are too narrow for window-mean
+  anomalies and how an absolute-temperature context, or the Chronos-Bolt
+  variant, changes the balance between calibration and sharpness.
+- **Calibrated probabilistic forecasts.** A conformal calibration of the
+  ensemble, selected on development years only, which corrects the
+  over-confidence of the combined forecast.
 
-| Station | Altitude (m.a.s.l.) | Period | Records | Missing |
+Section @sec-related reviews the related work. Section @sec-data describes the stations and
+predictors, Section @sec-methods the forecasting system and its evaluation, and
+Section @sec-results the blind results. Section @sec-discussion discusses them against the
+literature and states the limitations, and Section @sec-conclusions concludes.
+
+# Related work {#sec-related}
+
+## Subseasonal prediction and windows of opportunity
+
+The S2S prediction project established a common framework of weekly and
+fortnightly targets, reforecasts and verification for the one-to-eight-week
+range [@Vitart2017; @VitartRobertson2018]. Skill at these leads is
+intermittent: it depends on whether the initial state contains a slowly
+evolving signal, such as an active MJO, a developing ENSO event or
+persistent soil-moisture anomalies [@Mariotti2018; @Mariotti2020;
+@Domeisen2022]. The MJO modulates tropical convection and, through it,
+temperature and rainfall far from its centre of action
+[@WheelerHendon2004; @Kiladis2014], and the reforecasts of the Subseasonal
+Experiment showed how strongly verification depends on these states
+[@Pegion2019]. The practical response has been to report skill
+conditioned on the state at issuance, a practice we follow.
+
+## Machine learning for subseasonal temperature
+
+Statistical baselines remain strong at these leads: damped persistence and
+climatology are hard to beat beyond two weeks [@Hwang2019; @DelSoleTippett2014],
+which is why both are used as references throughout. Gradient-boosted trees
+[@Ke2017] and regularised regressions on large-scale indices compete with
+dynamical models for weeks 3–4 over North America [@He2021;
+@Mouatadid2023usa], and deep architectures such as recurrent networks
+[@Hochreiter1997], temporal fusion transformers [@Lim2021] or global
+convolutional models [@Weyn2021; @Chen2024] extend the approach. For
+hydrological forecasting at many gauges, a single recurrent network trained on
+all basins transfers to ungauged ones [@Kratzert2019hess; @Kratzert2019wrr], a
+result that motivates our leave-one-station-out test. Reviews of the field
+note that gains over simple models are often smaller than architectural
+complexity suggests [@Petropoulos2022; @Slater2023].
+
+## Time-series foundation models
+
+Foundation models pretrained on large collections of time series now produce
+probabilistic forecasts without task-specific training. Chronos tokenises
+scaled values and samples future trajectories from a language-model
+architecture [@Ansari2024]; related work explores foundation models and
+large language models for forecasting more broadly [@Liang2024; @Tan2024].
+Their benchmarks emphasise short-horizon accuracy on heterogeneous datasets;
+the calibration of window-averaged quantities derived from their sample paths,
+which is what a subseasonal user needs, has received little attention.
+
+## Post-processing and hybrids with dynamical models
+
+Raw dynamical forecasts at subseasonal leads are biased and under-dispersive
+at stations, and simple local corrections recover much of their value
+[@Monhart2018]. CFSv2 is a widely used coupled system whose reforecasts are
+openly available [@Saha2014]. Statistical post-processing ranges from
+regression on the ensemble mean to ensemble model output statistics (EMOS)
+[@Gneiting2005] and neural networks [@RaspLerch2018]; machine-learning models
+that take dynamical forecasts as inputs or correct their biases have improved
+subseasonal temperature over North America [@He2021; @Mouatadid2023abc], and
+hybrid forecasting that blends climate predictions with machine learning is an
+active field [@Slater2023]. Whether such a hybrid adds value over both of its
+components at tropical mountain stations is one of the questions addressed
+here.
+
+## Probabilistic verification and calibration
+
+A probabilistic forecast should be as sharp as possible subject to being
+calibrated [@Gneiting2007]. The continuous ranked probability score (CRPS) is
+the standard proper score for continuous variables [@Hersbach2000;
+@GneitingRaftery2007], and the probability integral transform (PIT) and
+interval coverage diagnose calibration [@Hamill2001; @GneitingRanjan2011].
+Combining forecasts by averaging their quantiles (Vincentization) tends to
+produce sharper but possibly over-confident distributions, whereas linear
+pooling widens them [@Genest1992; @Lichtendahl2013]. Conformal prediction
+offers finite-sample coverage guarantees for any model and has been extended
+to quantile regression [@Romano2019; @AngelopoulosBates2023]; we use it as one
+of the candidate calibrations of the ensemble.
+
+## Temperature variability in the tropical Andes
+
+Interannual temperature variability in the tropical Andes is dominated by
+ENSO, with warm anomalies during El Niño and a modulation by the regional
+coastal and central-Pacific modes [@Vuille2000; @VuilleBradley2000;
+@Garreaud2009]. The coastal (Niño 1+2) and central-Pacific (Niño 3.4) sectors
+affect Peru differently, which led to the E and C indices
+[@Takahashi2011]; ENSO teleconnections to Andean temperature and rainfall
+have been documented for the Altiplano and the western slope
+[@LavadoEspinoza2014; @Sulca2018; @Imfeld2020]. Warming is
+elevation-dependent [@Pepin2015], and the observing network is sparse and
+heterogeneous, which makes quality control an integral part of any
+station-based study [@Hunziker2017; @Condori2014].
+
+# Study area and data {#sec-data}
+
+## Stations
+
+We use hourly records from five automatic stations of the Peruvian national
+meteorological service, SENAMHI, published as an open dataset [@SENAMHI2024]
+whose variables are defined in the provider's data dictionary
+[@SENAMHI2024dict], selected to span the western
+Andean slope and the Altiplano margin from 2,421 to 4,475 m
+(Fig. @fig-study; Table @tbl-stations). Two belong to the global basic observing network
+(GBON) and three to the regional one (RBON). The common record runs from
+1 January 2015 to 30 June 2024 (3,469 days per station). The harmonic
+climatologies in Fig. @fig-study b illustrate the gradient: the mean daily
+temperature drops by about 12 °C from Matucana to Imata, and the amplitude of
+the annual cycle at the highest station is about three times that at the
+lowest.
+
+![Study area: (a) stations coloured by elevation over the Andes (shaded); (b) climatological daily mean temperature at each station.](media/Fig01_study_area.pdf){#fig-study width=1}
+
+: Stations used in this study (hourly records, 2015–2024). {#tbl-stations}
+
+| Station | Department | Network | Latitude (°) | Longitude (°) | Elevation (m) |
+|---|---|---|---:|---:|---:|
+| Matucana | Lima | GBON | $-11.839$ | $-76.378$ | 2,421 |
+| San José de Uzuña | Arequipa | RBON | $-16.581$ | $-71.328$ | 3,269 |
+| Candarave | Tacna | RBON | $-17.268$ | $-70.254$ | 3,410 |
+| Carania | Lima | GBON | $-12.344$ | $-75.872$ | 3,840 |
+| Imata | Arequipa | RBON | $-15.843$ | $-71.091$ | 4,475 |
+
+Table @tbl-variables lists the variables used, from the station dataset and the
+external sources described in Section @sec-largescale.
+
+: Variables used in this study. [Station variable names and definitions follow the provider's data dictionary; TEMP is the hourly mean and PP the hourly total. L, G and S as in the predictor sets of Section 4.3.]{.note} {#tbl-variables}
+
+| Variable | Description | Unit | Resolution | Source | Use |
+|---|---|---|---|---|---|
+| TEMP | Air temperature | °C | Hourly | SENAMHI | Target; L |
+| HR | Relative humidity | % | Hourly | SENAMHI | L |
+| PP | Precipitation | mm h$^{-1}$ | Hourly | SENAMHI | L |
+| ALTITUD | Station elevation | m | Static | SENAMHI | S |
+| LATITUD, LONGITUD | Station coordinates | ° | Static | SENAMHI | S |
+| Niño 3.4, Niño 1+2 | SST anomaly | °C | Weekly | NOAA CPC | G |
+| ROMI 1, 2, amplitude | MJO index | — | Daily | NOAA PSL | G |
+| E, C | ENSO indices | — | Monthly | IGP | Sensitivity |
+| CFSv2 tmp2m | 2 m temperature forecast | °C | 6-hourly, 1° | NOAA | CFS_BC; hybrid |
+
+## Quality control and daily aggregation
+
+The hourly file contains 416,273 station-hours. We first verified the time
+convention (the diurnal cycle peaks at 13:00 and bottoms at 06:00 local time,
+consistent with local civil time), the 24-hour coverage and the absence of
+duplicated timestamps, and treated empty fields as missing; 13,268
+station-hours (3.2%) have no variable at all. Temperature values then went
+through range, spike and stuck-sensor checks adapted from
+@Hunziker2017: 428 spikes and 2,114 stuck-sensor hours were flagged. Daily
+means were computed from the remaining hours, and a day was kept only when
+enough hours were valid; targets were never imputed.
+
+## Large-scale indices and the dynamical forecast {#sec-largescale}
+
+The large-scale predictors are the weekly Niño 3.4 and Niño 1+2 sea-surface
+temperature anomalies from the NOAA optimum interpolation analysis
+[@Reynolds2002; @NOAACPCWeeklySST], used with a seven-day publication lag,
+and the two components and amplitude of the real-time outgoing-longwave-
+radiation MJO index (ROMI) [@Kiladis2014; @Wang2018; @NOAAPSLROMI], used with
+a one-day lag. The E and C indices [@Takahashi2011; @IGPECIndex] enter only
+as a sensitivity analysis. Indices published with a delay longer than the
+issuance (such as the Oceanic Niño Index) were excluded to avoid look-ahead.
+The dynamical forecast is the four-member 00 UTC CFSv2 run issued each Monday
+[@Saha2014; @NOAACFSv2Open], whose 6-hourly 2 m temperature on the 1° grid was
+interpolated bilinearly to each station and averaged over each target window; the open archive starts on
+31 October 2018.
+
+# Methodology {#sec-methods}
+
+## Problem formulation
+
+A forecast is issued every Monday $t$ for each station $s$ and three targets:
+the mean temperature anomaly over days 1–7 (week 1, W1), days 8–14 (week 2,
+W2) and days 15–28 (weeks 3–4, W3–4) after issuance. Window means are the
+standard S2S target because day-to-day weather is unpredictable at these
+leads while averages retain signal [@Vitart2017; @Robertson2015;
+@Pegion2019], and the same three windows are used by recent machine-learning
+benchmarks [@Hwang2019; @He2021; @Mouatadid2023usa]. Each horizon has its own
+model (direct strategy), so no forecast is fed back as an input. Models are
+trained on issuances made every day of the training period, which multiplies
+the sample size, and evaluated on Mondays only. The complete system is shown
+in Fig. @fig-workflow.
+
+![Forecasting system, from station data to blind evaluation.](media/Fig02_workflow.pdf){#fig-workflow width=1}
+
+## Anomaly decomposition
+
+All models forecast anomalies with respect to a climatology fitted only on
+each fold's training days, so that no information from the test period enters
+the reference. The climatology of station $s$ is a harmonic regression of the
+daily mean temperature on the day of the year $d$
+[@Epstein1991], Eq. @eq-clim:
+
+$$
+c_s(d) = a_0 + \sum_{k=1}^{K} \left[ a_k \cos\!\left(\frac{2\pi k d}{P}\right) + b_k \sin\!\left(\frac{2\pi k d}{P}\right) \right], \qquad K = 3,\; P = 365.25,
+$$ {#eq-clim}
+
+with $K = 3$ chosen on the development years against $K = 1$ and $K = 5$
+by the out-of-sample variance of the monthly mean residual. Three harmonics
+capture the asymmetric annual cycle of the Altiplano stations, which a single
+harmonic cannot represent [@VuilleBradley2000; @Pepin2015]. The target (Eq. @eq-target) is the
+mean anomaly over the window $\mathcal{W}_h$ of horizon $h$,
+
+$$
+y_{s,t,h} = \frac{1}{|\mathcal{W}_h|} \sum_{\ell \in \mathcal{W}_h} \left[ T_s(t+\ell) - c_s\big(d(t+\ell)\big) \right],
+$$ {#eq-target}
+
+where $T_s$ is the daily mean temperature. A window counts only when at least
+5 of 7 (W1, W2) or 10 of 14 (W3–4) days are valid.
+
+## Predictors
+
+The local predictor set (L) contains lagged daily temperature anomalies (lags
+0–6 days) and their 7-, 14- and 30-day means, anomalies of the diurnal
+temperature range, daily maximum and minimum temperature and relative
+humidity, log-transformed 7- and 30-day rainfall totals, and the sine and
+cosine of the target day of the year, all computed from trailing windows that
+end on the issuance date; persistence of recent anomalies is the main source of skill
+at week 1 [@DelSoleTippett2014]. The large-scale set (G) adds the Niño 3.4,
+Niño 1+2 and ROMI predictors described above, because ENSO and the MJO are the
+main sources of subseasonal predictability for the region
+[@LavadoEspinoza2014; @Sulca2018; @Mariotti2020]. Models with the suffix LG
+use L and G, models with the suffix L only L, which isolates the
+contribution of the large-scale indices. The CFSv2 predictor is described in
+Section @sec-hybrid. Table @tbl-models summarises inputs and outputs.
+
+: Predictor sets and forecasting systems. [L: local predictors; G: large-scale predictors; S: elevation, latitude and longitude. Gauss.: Gaussian with the training residual SD by quarter; Q19: 19 quantile levels (0.05–0.95). Ref.: reference; Cand.: pre-registered candidate; A3, A5: post hoc amendments.]{.note} {#tbl-models}
+
+| System | Inputs | Distribution | Status |
+|---|---|---|---|
+| Climatology (Clim) | Training targets, $\pm 15$ days | Empirical | Ref. |
+| Damped persistence (Damp) | Last 7-day anomaly | Gauss. | Ref. |
+| CFS_BC | CFSv2 window mean | Gauss. | Ref. (A1) |
+| Ridge L / Ridge LG | L / L + G | Gauss. | Cand. |
+| GBM L / GBM LG | L / L + G, with S | Q19 | Cand. |
+| LSTM LG | 60-day sequences of L + G, with S | Q19 | Cand. |
+| Chronos | Daily anomalies, 512 days | 100 paths | Cand. |
+| Chronos (abs.), Chronos-Bolt | Absolute temperature | Paths, Q19 | A3 |
+| M\* (ensemble) | Ridge LG, GBM LG, LSTM LG, Chronos | Q19, Vincentized | Primary |
+| M\*~2~ | M\* members, Chronos (abs.) | Q19, conformal | A3 |
+| Hybrid | L + G + CFSv2 anomaly | Gauss. | A5 |
+
+## Forecasting models
+
+**References.** Climatology and damped persistence are the references against
+which skill is measured, because a subseasonal forecast is only useful if it
+improves on what these simple rules already provide [@Murphy1993;
+@DelSoleTippett2014]. Damped persistence regresses the target on the most
+recent 7-day anomaly $A^{(7)}_{s,t}$ for each station, horizon and season
+quarter $q$ (Eq. @eq-damp):
+
+$$
+\hat{y}_{s,t,h} = \beta_{0,shq} + \beta_{1,shq}\, A^{(7)}_{s,t}, \qquad Y \sim \mathcal{N}\!\left(\hat{y}, \sigma^2_{shq}\right),
+$$ {#eq-damp}
+
+with $\sigma_{shq}$ the standard deviation of the training residuals of that
+cell. The bias-corrected CFSv2 forecast (CFS_BC) follows the station-level
+correction of @Monhart2018: the CFSv2 window mean $F_{s,t,h}$ is converted to
+an anomaly with respect to its own harmonic climatology $\tilde{c}_{sh}$
+($K = 2$, fitted on the training Mondays), and the observed anomaly is
+regressed on it,
+
+$$
+f_{s,t,h} = F_{s,t,h} - \tilde{c}_{sh}\big(d_{\mathrm{mid}}\big), \qquad \hat{y}_{s,t,h} = \gamma_{0,sh} + \gamma_{1,sh}\, f_{s,t,h},
+$$ {#eq-cfs}
+
+with a Gaussian distribution whose standard deviation is that of the training
+residuals by quarter, as for damped persistence, so that differences in CRPS
+come from the mean.
+
+**Ridge regression.** A standardised ridge regression per station and
+horizon, with the penalty chosen on the last training year separated by the
+embargo, is the simplest learned model; its predictive distribution is
+Gaussian with the inner-validation residual standard deviation by quarter.
+
+**Gradient boosting.** LightGBM [@Ke2017] is pooled over stations per horizon,
+with elevation, latitude and longitude as static descriptors. One model is
+fitted per quantile level $\tau$ by minimising the pinball loss of quantile
+regression [@KoenkerBassett1978] (Eq. @eq-pinball),
+
+$$
+\rho_\tau(u) = u\,\big(\tau - \mathbb{1}\{u < 0\}\big), \qquad \hat{q}_\tau = \arg\min_{q} \sum_i \rho_\tau\big(y_i - q(x_i)\big),
+$$ {#eq-pinball}
+
+and quantile crossings are removed by rearrangement, which never increases
+the quantile loss [@Chernozhukov2010].
+
+**Long short-term memory network.** An LSTM [@Hochreiter1997] reads 60-day
+sequences of the LG predictors, together with the static descriptors of the
+station, and is trained on all stations at once, following the regional
+training strategy of @Kratzert2019hess; it outputs the 19 quantiles with the
+pinball loss, with early stopping on the last training dates separated by the
+embargo.
+
+**Time-series foundation model.** Chronos-T5-small [@Ansari2024] forecasts
+the daily anomaly series from a 512-day context, and each of its 100 sample
+paths is averaged over the target window, which gives an empirical
+distribution of the window mean. After the first blind scores showed
+intervals that were far too narrow (Section @sec-chronos), amendment A3 added two
+configurations: Chronos with the absolute temperature as context, the
+climatology being subtracted afterwards, and Chronos-Bolt, which returns
+quantiles of weekly and fortnightly block means directly. All Chronos
+variants are used zero-shot, without fine-tuning. Table @tbl-hyper lists every
+hyperparameter.
+
+: Hyperparameters, frozen before the blind folds. [The ridge penalty is selected per station and horizon on the last training year, after the embargo. Chronos-Bolt levels 0.05 and 0.95 come from a normal fitted to its 0.1–0.9 spread.]{.note} {#tbl-hyper}
+
+| Component | Setting |
+|---|---|
+| Ridge | $\lambda \in \{0.1, 1, 10, 100, 1000\}$ |
+| GBM (LightGBM) | 300 trees, learning rate 0.03, 15 leaves, $\ge 40$ samples per leaf |
+|  | Row and column subsampling 0.8; one model per quantile |
+| LSTM | 60-day sequences, 32 units, 1 layer, dropout 0.1 |
+|  | 30 epochs, batch 256, learning rate $10^{-3}$, patience 5 |
+| Chronos | chronos-t5-small, 512-day context, 100 paths, bfloat16 |
+| Chronos-Bolt (A3) | chronos-bolt-small, 7- and 14-day block means |
+| Quantile grid | 19 levels, 0.05–0.95, rearranged |
+| M\* | Vincentization, inverse development-CRPS weights |
+| M\*~2~ (A3) | Best of 16 configurations, development coverage 0.85–0.95 |
+| Hybrid (A5) | Ridge LG settings, no tuning |
+| Validation | Expanding window from 2015, 28-day embargo, 5 folds |
+| Bootstrap | Blocks of 8 weeks (4 and 13 as sensitivity), $B = 10{,}000$ |
+| Seeds | GBM 101/202, LSTM 505, bootstrap 303; 4 extra seeds (A3) |
+
+## Ensemble and calibration
+
+The primary system M\* averages the quantiles of the candidate models
+(Vincentization) with weights inversely proportional to their mean CRPS on
+the development folds, per horizon (Eq. @eq-vincent):
+
+$$
+q^{\mathrm{M}^*}_{\tau} = \sum_{m} w_{m,h}\, q^{(m)}_{\tau}, \qquad w_{m,h} = \frac{1/\overline{\mathrm{CRPS}}^{\,\mathrm{dev}}_{m,h}}{\sum_{m'} 1/\overline{\mathrm{CRPS}}^{\,\mathrm{dev}}_{m',h}}.
+$$ {#eq-vincent}
+
+Combining forecasts generally reduces error relative to the members
+[@BatesGranger1969; @Busetti2017], and Vincentization keeps the combined
+distribution sharp [@Genest1992; @Lichtendahl2013]. M\* was chosen as primary
+because its pooled development CRPS (0.3926 °C) was the lowest among the
+candidates, ahead of Ridge LG (0.3943 °C), LSTM LG (0.3946 °C) and GBM LG
+(0.4207 °C); the weights were close to equal (0.22–0.27 per member).
+
+Vincentization is known to produce over-confident distributions when the
+members disagree [@Lichtendahl2013], and the blind coverage of M\* confirmed
+this (Section @sec-calibration). Amendment A3 therefore defined M\*~2~, chosen on the
+development folds only among 16 configurations: two member sets (with or
+without the best Chronos variant), two combinations (Vincentization or linear
+pool) and four calibrations per horizon (none, a spread factor, EMOS
+[@Gneiting2005] and conformalised quantiles [@Romano2019;
+@AngelopoulosBates2023]). The conformal calibration widens each central pair
+of quantiles $(\tau, 1-\tau)$ by the empirical quantile of the conformity
+score on the calibration rows (Eq. @eq-conformal),
+
+$$
+E_i = \max\!\left(q_{\tau,i} - y_i,\; y_i - q_{1-\tau,i}\right), \qquad \delta_\tau = \hat{Q}_{\lceil (n+1)(1-2\tau) \rceil / n}\big(\{E_i\}\big), \qquad \tilde{q}_\tau = q_\tau - \delta_\tau,\; \tilde{q}_{1-\tau} = q_{1-\tau} + \delta_\tau ,
+$$ {#eq-conformal}
+
+leaving the median unchanged. Weights and calibrations were cross-fitted
+(fitted on two development folds, scored on the third), and the winner was
+the configuration with the lowest cross-fitted CRPS whose 90% coverage lay in
+0.85–0.95 at every horizon. It was refitted on all development years and
+written to disk before any blind row was scored.
+
+## Hybrid dynamical–statistical model {#sec-hybrid}
+
+Amendment A5, written after the blind scores of M\* and CFS_BC were known,
+tests whether the two sources of information are complementary. The hybrid
+(Eq. @eq-hybrid) adds the CFSv2 anomaly of Eq. @eq-cfs to the ridge regression of Ridge LG,
+
+$$
+\hat{\mu}_{s,t,h} = \beta_0 + \boldsymbol{\beta}_L^{\top} \mathbf{x}^{L}_{s,t} + \boldsymbol{\beta}_G^{\top} \mathbf{x}^{G}_{t} + \beta_F\, f_{s,t,h}, \qquad \min_{\boldsymbol{\beta}} \sum_i \left(y_i - \hat{\mu}_i\right)^2 + \lambda \lVert \boldsymbol{\beta}_{-0} \rVert_2^2 ,
+$$ {#eq-hybrid}
+
+with the same penalty grid, inner validation and residual distribution as
+Ridge LG. Using a dynamical forecast as a predictor of a statistical model
+follows earlier subseasonal hybrids [@He2021; @Mouatadid2023abc]. Because the
+CFSv2 archive starts in October 2018, the hybrid can only be trained in the
+blind folds, on about 185 training Mondays per station and horizon, and
+nothing could be tuned. To separate the effect of the CFSv2 predictor from
+that of the shorter, weekly training sample, we fitted a control with the
+same rows and without $f$; this control has no direct precedent in the
+literature and follows from the logic of a paired ablation. We also report a
+gradient-boosting hybrid and an untrained blend, the equal-weight quantile
+average of CFS_BC and M\*.
+
+## Validation design and leakage control
+
+Figure @fig-design shows the design. Five one-year test folds, from July to June,
+are evaluated with an expanding training window that starts on 1 January
+2015 (rolling origin; @Tashman2000). The first three folds (D1–D3,
+2019–2022) were used for development; the last two (B1, B2, July 2022 to
+June 2024) were blind. A 28-day embargo separates the last training target
+from the first test day, so that no training window overlaps a test window,
+as required for serially dependent data [@Bergmeir2012; @Roberts2017]. The
+climatology, scalers, penalties, residual distributions and ensemble weights
+are all estimated on training rows only. Hyperparameters and the primary
+model were frozen before B1; the blind folds contain 102, 100 and 96
+issuance dates at W1, W2 and W3–4 (506, 497 and 478 station forecasts).
+Because a W3–4 forecast issued in June would have a target in the next fold's
+test year, those issuances are not evaluated in either fold. Transfer to
+stations without history was tested by leave-one-station-out (LOSO) training
+of the pooled models on the blind folds [@Kratzert2019wrr]. In Fig. @fig-design, El Niño and La Niña episodes are periods of at least 60 days in which the 91-day mean Niño 3.4 anomaly exceeds +0.5 °C or falls below $-0.5$ °C.
+
+![Validation design: expanding training windows, 28-day embargo, development and blind test years, CFSv2 archive and ENSO episodes; models were frozen at the dashed line.](media/Fig03_validation_design.pdf){#fig-design width=1}
+
+**Reproducibility.** The pipeline, its configuration and the two notebooks
+that run it end to end are archived on Zenodo [@c20-2026-code], and the station
+data are the open dataset described in Section @sec-data [@SENAMHI2024]. Every
+number in this paper is read from a machine-readable output of that pipeline.
+
+## Verification metrics
+
+The CRPS is computed from the 19 quantiles as twice the mean pinball loss,
+which approximates the integral of the quantile score over $\tau$
+[@GneitingRaftery2007; @Hersbach2000] (Eq. @eq-crps):
+
+$$
+\mathrm{CRPS}(F, y) \approx \frac{2}{|\mathcal{T}|} \sum_{\tau \in \mathcal{T}} \rho_\tau\big(y - q_\tau\big).
+$$ {#eq-crps}
+
+Skill against a reference $r$ is reported as a skill score computed from the
+sums over all stations and issuances, which weights each forecast equally and
+avoids the instability of averaging per-case ratios [@Murphy1988; @Wilks2019] (Eq. @eq-skill):
+
+$$
+\mathrm{CRPSS}_r = 1 - \frac{\sum_{i} \mathrm{CRPS}_{i}}{\sum_{i} \mathrm{CRPS}^{(r)}_{i}}, \qquad \mathrm{MSSS}_r = 1 - \frac{\sum_{i} (y_i - \hat{y}_i)^2}{\sum_{i} (y_i - \hat{y}^{(r)}_i)^2}.
+$$ {#eq-skill}
+
+Calibration is diagnosed with the 90% interval coverage and the PIT
+[@Hamill2001; @GneitingRanjan2011] (Eq. @eq-coverage):
+
+$$
+\mathrm{Cov}_{90} = \frac{1}{n} \sum_{i=1}^{n} \mathbb{1}\{q_{0.05,i} \le y_i \le q_{0.95,i}\}, \qquad u_i = \hat{F}_i(y_i),
+$$ {#eq-coverage}
+
+where a calibrated forecast has $\mathrm{Cov}_{90} \approx 0.90$ and uniform
+PIT values; coverage in 0.85–0.95 was the pre-registered criterion. We also
+report the mean absolute error, root-mean-square error, anomaly correlation
+(ACC), the ranked probability skill score for terciles (RPSS) [@Epstein1969]
+and the mean width of the 90% interval as a measure of sharpness.
+
+## Statistical inference and pre-registration
+
+All tests use the blind folds only, with stations pooled. Because the
+forecasts of consecutive weeks and of different stations are correlated,
+differences are aggregated per issuance date and resampled by a moving-block
+bootstrap of 8 weeks [@Kunsch1989], with the same blocks for every station;
+the nested ridge comparison uses the Clark–West statistic with a
+heteroscedasticity- and autocorrelation-consistent variance
+[@ClarkWest2007; @NeweyWest1987]. A one-sided p-value is the share of
+bootstrap replicates of the centred statistic at least as large as the
+observed one, and p-values are adjusted by Holm's procedure within each
+family of three horizons [@Holm1979; @Wilks2016] (Eq. @eq-test):
+
+$$
+p = \frac{1 + \#\{b : \Delta^*_b - \bar{\Delta} \ge \bar{\Delta}\}}{B + 1}, \qquad p^{\mathrm{Holm}}_{(j)} = \max_{i \le j} \min\!\big(1, (m - i + 1)\, p_{(i)}\big).
+$$ {#eq-test}
+
+The design, the hypotheses H1–H4 and the decision rule were written before
+any score existed; analyses added after the blind scores were seen are dated
+amendments, reported as such (Table @tbl-hypotheses).
+
+: Hypotheses and amendments. [Pre-registered: written before any score existed. Post hoc: written after the blind scores were seen. Amendment A4 only changed the scope of the secondary analyses.]{.note} {#tbl-hypotheses}
+
+| ID | Statement | Status |
+|---|---|---|
+| H1 | LG better than L, for Ridge and GBM | Pre-registered |
+| H2 | M\* better than Damp at W3–4 (MSSS) | Pre-registered |
+| H3 | M\* skilful against Clim (CRPSS) | Pre-registered |
+| H4 | M\* better than CFS_BC (CRPS) | Pre-registered (A1) |
+| A2 | Calibration diagnostics of M\* and Chronos | Post hoc |
+| H5 | M\*~2~ better than M\*, coverage 0.85–0.95 | Post hoc (A3) |
+| H6 | Hybrid better than CFS_BC, M\* and control | Post hoc (A5) |
+
+# Results {#sec-results}
+
+## Blind skill overview
+
+Figure @fig-skill and Tables [-@tbl-metrics]–[-@tbl-metrics-w34] summarise the blind results. Every learned model
+improves on climatology at every horizon, and every one except raw Chronos
+improves on damped persistence. Two patterns stand out. CFS_BC is the best
+single system at W1 (CRPSS against climatology 0.415, 95% interval
+0.32–0.50), but its skill falls to 0.218 (0.14–0.28) at W3–4, the steepest
+decline of any system; the dynamical forecast is most useful where its
+initial conditions still matter, as expected from the S2S literature
+[@Vitart2017; @Pegion2019]. The statistical and machine-learning models
+follow the opposite course: their skill is flat or increases with the
+horizon, from 0.297 to 0.385 for Ridge LG and from 0.273 to 0.378 for LSTM
+LG. Window means over 14 days filter out unpredictable daily weather and keep
+the slowly varying component driven by persistence and large-scale indices,
+the mechanism that @Mariotti2018 and @Domeisen2022 identify as the source of
+subseasonal skill.
+
+![Blind skill by horizon against (a) climatology and (b) damped persistence, with 95% intervals; filled markers: interval above zero.](media/Fig04_blind_skill.pdf){#fig-skill width=1}
+
+The primary ensemble M\* has CRPSS of 0.295 (0.20–0.39), 0.298 (0.20–0.38)
+and 0.345 (0.24–0.43) against climatology, which supports H3 (Holm
+p = 0.0003 at each horizon), and its mean-square skill against damped
+persistence at W3–4 is 0.409 (one-sided 95% lower bound 0.339; p = 0.0001),
+which supports H2. M\* is not, however, better than its best member: Ridge LG
+reaches 0.297, 0.324 and 0.385, within the sampling uncertainty of M\* at
+every horizon. The deterministic metrics tell the same story (Table @tbl-metrics-w34).
+At W3–4 Ridge LG has the lowest root-mean-square error (0.612 °C) and the
+highest mean-square skill (0.598), and LSTM LG has the highest anomaly
+correlation together with M\* (0.794 and 0.795).
+
+: Blind verification metrics at week 1. [Folds B1–B2, stations pooled. MAE, RMSE and Width90 in °C; MSSS and CRPSS are skill scores against climatology (Clim) or damped persistence (Damp); Cov90: 90% interval coverage (nominal 0.90). Bold: best pre-registered system (Clim to M\*); for Cov90, closest to 0.90. The last four rows are post hoc systems, for which only probabilistic scores were computed.]{.note} {#tbl-metrics}
+
+| System | MAE | RMSE | ACC | MSSS~Clim~ | CRPS | CRPSS~Clim~ | CRPSS~Damp~ | RPSS | Cov90 | Width90 |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| Clim | 0.939 | 1.188 | — | 0.000 | 0.705 | 0.000 | $-0.154$ | 0.000 | 0.773 | 2.851 |
+| Persistence | 0.872 | 1.117 | 0.533 | 0.115 | — | — | — | — | — | — |
+| Damp | 0.823 | 1.038 | 0.492 | 0.235 | 0.611 | 0.134 | 0.000 | 0.157 | 0.814 | 2.721 |
+| CFS_BC | **0.552** | **0.711** | **0.788** | **0.641** | **0.413** | **0.415** | **0.324** | **0.423** | **0.852** | 2.006 |
+| Ridge L | 0.713 | 0.918 | 0.668 | 0.403 | 0.540 | 0.235 | 0.117 | 0.293 | 0.802 | 2.349 |
+| Ridge LG | 0.656 | 0.848 | 0.709 | 0.490 | 0.496 | 0.297 | 0.189 | 0.330 | 0.812 | 2.263 |
+| GBM L | 0.754 | 0.969 | 0.596 | 0.334 | 0.549 | 0.222 | 0.101 | 0.263 | 0.777 | 2.211 |
+| GBM LG | 0.708 | 0.918 | 0.617 | 0.402 | 0.535 | 0.241 | 0.124 | 0.264 | 0.769 | 2.040 |
+| LSTM LG | 0.687 | 0.878 | 0.693 | 0.454 | 0.513 | 0.273 | 0.161 | 0.280 | 0.838 | 2.528 |
+| Chronos | 0.680 | 0.850 | 0.687 | 0.488 | 0.617 | 0.126 | $-0.009$ | 0.206 | 0.219 | 0.488 |
+| M\* | 0.651 | 0.840 | 0.727 | 0.500 | 0.497 | 0.295 | 0.186 | 0.339 | 0.753 | 1.889 |
+| Chronos (abs.) | 0.672 | 0.845 | 0.689 | 0.493 | 0.514 | 0.271 | 0.158 | 0.306 | 0.739 | 2.028 |
+| Chronos-Bolt | 0.749 | 0.960 | 0.586 | 0.347 | 0.555 | 0.213 | 0.091 | 0.246 | 0.895 | 3.054 |
+| M\*~2~ | — | — | — | — | 0.478 | 0.323 | 0.218 | — | 0.903 | — |
+| Hybrid | — | — | — | — | 0.407 | 0.424 | 0.335 | — | 0.836 | — |
+
+: Blind verification metrics at week 2. [Conventions as for week 1.]{.note} {#tbl-metrics-w2}
+
+| System | MAE | RMSE | ACC | MSSS~Clim~ | CRPS | CRPSS~Clim~ | CRPSS~Damp~ | RPSS | Cov90 | Width90 |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| Clim | 0.846 | 1.057 | — | 0.000 | 0.641 | 0.000 | $-0.126$ | 0.000 | 0.716 | 2.361 |
+| Persistence | 0.817 | 1.050 | 0.545 | 0.014 | — | — | — | — | — | — |
+| Damp | 0.754 | 0.941 | 0.467 | 0.208 | 0.570 | 0.112 | 0.000 | 0.122 | 0.746 | 2.255 |
+| CFS_BC | 0.609 | 0.754 | 0.702 | 0.491 | 0.450 | 0.298 | 0.209 | 0.322 | **0.805** | 1.977 |
+| Ridge L | 0.652 | 0.833 | 0.650 | 0.379 | 0.502 | 0.217 | 0.118 | 0.287 | 0.708 | 1.911 |
+| Ridge LG | **0.569** | **0.731** | 0.733 | **0.521** | **0.434** | **0.324** | **0.238** | **0.389** | 0.787 | 1.790 |
+| GBM L | 0.737 | 0.924 | 0.502 | 0.235 | 0.542 | 0.155 | 0.049 | 0.204 | 0.654 | 1.704 |
+| GBM LG | 0.633 | 0.813 | 0.623 | 0.409 | 0.489 | 0.237 | 0.141 | 0.299 | 0.656 | 1.544 |
+| LSTM LG | 0.594 | 0.749 | 0.737 | 0.498 | 0.443 | 0.309 | 0.222 | 0.353 | 0.799 | 2.070 |
+| Chronos | 0.661 | 0.820 | 0.641 | 0.398 | 0.585 | 0.087 | $-0.028$ | 0.110 | 0.290 | 0.606 |
+| M\* | 0.581 | 0.742 | **0.749** | 0.506 | 0.450 | 0.298 | 0.210 | 0.378 | 0.686 | 1.545 |
+| Chronos (abs.) | 0.637 | 0.789 | 0.659 | 0.443 | 0.477 | 0.256 | 0.163 | 0.297 | 0.841 | 2.378 |
+| Chronos-Bolt | 0.662 | 0.848 | 0.617 | 0.356 | 0.499 | 0.222 | 0.124 | 0.291 | 0.954 | 3.345 |
+| M\*~2~ | — | — | — | — | 0.418 | 0.348 | 0.266 | — | 0.887 | — |
+| Hybrid | — | — | — | — | 0.395 | 0.384 | 0.306 | — | 0.843 | — |
+
+: Blind verification metrics at weeks 3–4. [Conventions as for week 1.]{.note} {#tbl-metrics-w34}
+
+| System | MAE | RMSE | ACC | MSSS~Clim~ | CRPS | CRPSS~Clim~ | CRPSS~Damp~ | RPSS | Cov90 | Width90 |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| Clim | 0.783 | 0.965 | — | 0.000 | 0.602 | 0.000 | $-0.170$ | 0.000 | 0.686 | 1.925 |
+| Persistence | 0.765 | 0.967 | 0.600 | $-0.003$ | — | — | — | — | — | — |
+| Damp | 0.668 | 0.840 | 0.514 | 0.243 | 0.515 | 0.145 | 0.000 | 0.181 | 0.713 | 1.800 |
+| CFS_BC | 0.614 | 0.783 | 0.647 | 0.342 | 0.471 | 0.218 | 0.084 | 0.295 | 0.728 | 1.671 |
+| Ridge L | 0.577 | 0.739 | 0.691 | 0.414 | 0.452 | 0.250 | 0.122 | 0.340 | 0.684 | 1.517 |
+| Ridge LG | **0.477** | **0.612** | 0.780 | **0.598** | **0.370** | **0.385** | **0.281** | **0.471** | 0.724 | 1.341 |
+| GBM L | 0.661 | 0.831 | 0.538 | 0.259 | 0.499 | 0.171 | 0.030 | 0.248 | 0.584 | 1.282 |
+| GBM LG | 0.548 | 0.704 | 0.689 | 0.468 | 0.428 | 0.289 | 0.168 | 0.420 | 0.571 | 1.085 |
+| LSTM LG | 0.501 | 0.630 | 0.794 | 0.574 | 0.375 | 0.378 | 0.272 | 0.462 | **0.751** | 1.560 |
+| Chronos | 0.607 | 0.774 | 0.644 | 0.357 | 0.539 | 0.105 | $-0.047$ | 0.099 | 0.310 | 0.578 |
+| M\* | 0.509 | 0.646 | **0.795** | 0.553 | 0.394 | 0.345 | 0.234 | 0.466 | 0.630 | 1.169 |
+| Chronos (abs.) | 0.541 | 0.697 | 0.699 | 0.479 | 0.409 | 0.320 | 0.205 | 0.370 | 0.862 | 2.149 |
+| Chronos-Bolt | 0.648 | 0.835 | 0.665 | 0.251 | 0.491 | 0.184 | 0.045 | 0.336 | 0.952 | 3.489 |
+| M\*~2~ | — | — | — | — | 0.346 | 0.426 | 0.328 | — | 0.866 | — |
+| Hybrid | — | — | — | — | 0.355 | 0.411 | 0.310 | — | 0.812 | — |
+
+: CRPSS against climatology of the main systems, with 95% intervals (blind folds). {#tbl-ci}
+
+| System | W1 | W2 | W3–4 |
+|---|---|---|---|
+| Damped persistence | 0.134 (0.06, 0.20) | 0.112 (0.04, 0.18) | 0.145 (0.06, 0.21) |
+| CFS_BC | 0.415 (0.32, 0.50) | 0.298 (0.21, 0.39) | 0.218 (0.14, 0.28) |
+| Ridge LG | 0.297 (0.21, 0.39) | 0.324 (0.23, 0.41) | 0.385 (0.27, 0.48) |
+| LSTM LG | 0.273 (0.18, 0.37) | 0.309 (0.20, 0.41) | 0.378 (0.27, 0.48) |
+| M\* | 0.295 (0.20, 0.39) | 0.298 (0.20, 0.38) | 0.345 (0.24, 0.43) |
+| M\*~2~ (A3) | 0.323 (0.23, 0.42) | 0.348 (0.24, 0.44) | 0.426 (0.30, 0.52) |
+| Hybrid (A5) | 0.424 (0.34, 0.50) | 0.384 (0.26, 0.50) | 0.411 (0.28, 0.53) |
+
+## Value of the large-scale predictors
+
+The comparison of each model with and without the ENSO and MJO predictors
+tests H1 (Table @tbl-tests; Fig. @fig-budget). For the ridge regression the gain is
+clear at every horizon: the Clark–West statistics are 4.10, 4.56 and 4.55
+(Holm p < $10^{-4}$), and the CRPS difference is 0.22, 0.34 and 0.41 °C summed
+over stations per issuance (Holm p = 0.016, 0.009 and 0.009). For gradient
+boosting the large-scale predictors help at W2 and W3–4 (Holm p = 0.048 and
+0.004 for CRPS) but not at W1 (p = 0.26). The pattern, no gain from remote
+indices at week 1 and an increasing gain after it, agrees with the
+windows-of-opportunity view in which persistence dominates the first week and
+slowly varying modes the following ones [@Mariotti2020; @Domeisen2022].
+Replacing the Niño indices by the E and C indices of @Takahashi2011 changes
+the CRPSS of Ridge LG and GBM LG by at most 0.02 (sensitivity runs, not
+tabulated), so the result does not depend on how ENSO is described.
+
+: Hypothesis tests on the blind folds. [$\Delta$CRPS: paired difference, reference minus system, summed over stations per issuance (°C); positive values favour the system. In parentheses: one-sided p adjusted by Holm's procedure within each test over the three horizons (unadjusted for H2).]{.note} {#tbl-tests}
+
+| Hypothesis | Test | W1 | W2 | W3–4 |
 |---|---|---|---|---|
-| TODO-station-1 | 0000 | 2018--2025 | 00000 | 00.0% |
-| TODO-station-2 | 0000 | 2018--2025 | 00000 | 00.0% |
-| TODO-station-3 | 0000 | 2018--2025 | 00000 | 00.0% |
+| H1 | Clark–West, Ridge L vs Ridge LG | 4.10 (Holm < $10^{-4}$) | 4.56 (< $10^{-5}$) | 4.55 (< $10^{-5}$) |
+| H1 | $\Delta$CRPS, Ridge L $-$ Ridge LG | 0.218 (0.016) | 0.341 (0.009) | 0.407 (0.009) |
+| H1 | $\Delta$CRPS, GBM L $-$ GBM LG | 0.068 (0.264) | 0.261 (0.048) | 0.354 (0.004) |
+| H2 | MSSS of M\* against Damp | — | — | 0.409 (p = 0.0001) |
+| H3 | CRPSS of M\* against Clim | 0.295 (0.0003) | 0.298 (0.0003) | 0.345 (0.0003) |
+| H4 | $\Delta$CRPS, CFS_BC $-$ M\* | $-0.419$ (0.999) | 0.001 (0.693) | 0.383 (0.012) |
+| H5 | $\Delta$CRPS, M\* $-$ M\*~2~ | 0.098 (0.002) | 0.159 (0.002) | 0.241 (0.001) |
+| H6 | $\Delta$CRPS, CFS_BC $-$ Hybrid | 0.031 (0.264) | 0.274 (0.012) | 0.579 (0.002) |
+| H6 | $\Delta$CRPS, M\* $-$ Hybrid | 0.450 (0.0003) | 0.273 (0.017) | 0.196 (0.031) |
+| H6 | $\Delta$CRPS, control $-$ Hybrid | 0.462 (0.0003) | 0.262 (0.012) | 0.035 (0.026) |
 
-: Stations included in the benchmark. TODO: fill from `data/raw/dataset.csv`
-and keep the table in sync with the pipeline. {#tbl-stations}
+## Against the dynamical model and the hybrid
 
-# Methodology
+The pre-registered comparison with CFS_BC (H4) is mixed. M\* is clearly
+worse at W1 ($\Delta$CRPS $-0.419$), indistinguishable at W2 (0.001; Holm p = 0.69)
+and better at W3–4 (0.383; Holm p = 0.012). The crossover between a
+dynamical forecast that is strong early and a statistical one that is
+stronger later reproduces, at stations and at a tropical latitude, what
+@Monhart2018 found for bias-corrected European forecasts and @He2021 and
+@Mouatadid2023usa found for North America.
 
-![TODO: replace with the anomaly-decomposition and training workflow diagram
-(source: `experiments/`).](media/cas-grabs.pdf){#fig-workflow width=.9}
+The hybrid of amendment A5 exploits that crossover (Fig. @fig-hybrid; Table @tbl-ci). It
+reaches CRPSS of 0.424 (0.34–0.50), 0.384 (0.26–0.50) and 0.411 (0.28–0.53),
+the highest point estimates of any system at W1 and W2 and the second highest
+at W3–4. Against CFS_BC it is indistinguishable at W1 ($\Delta$CRPS 0.031;
+p = 0.26) and better at W2 and W3–4 (Holm p = 0.012 and 0.002); against M\*
+it is better at all three horizons (Holm p = 0.0003, 0.017 and 0.031). The
+same-rows control shows that the gain comes from the CFSv2 predictor rather
+than from the weekly training sample: the hybrid beats it by 0.462 and 0.262
+at W1 and W2 (Holm p = 0.0003 and 0.012), and by a small margin at W3–4
+(0.035; Holm p = 0.026, two-sided interval $-0.006$ to 0.070), where the
+CFSv2 signal itself is weak. The correlation between the bias-corrected
+CFSv2 anomaly and the observation falls from 0.70 at W1 to 0.21 at W3–4 on
+the blind folds, which explains why the hybrid converges towards its control
+at the longest horizon. These results are post hoc and the hybrid was not
+tuned; they suggest, rather than establish, that a regularised linear
+combination of station predictors and a dynamical forecast is the most
+skilful of the systems tested.
 
-@fig-workflow summarizes the pipeline and @tbl-stations lists the stations.
-Each forecasting model is trained per horizon (1, 2, 3 and 4 weeks) under the
-same split protocol, once on the raw series and once on the residuals after
-anomaly decomposition. TODO: name the concrete models, hyperparameter search
-budget and evaluation metrics (MASE, MAE, RMSE).
+![Paired CRPS differences of the hybrid and the blend against their references, with 95% intervals; filled markers: Holm-adjusted p < 0.05.](media/Fig05_hybrid_tests.pdf){#fig-hybrid width=0.55}
 
-# Results
+Two other hybrids behave differently. The gradient-boosting hybrid also
+improves on its own control at every horizon (Holm p $\le 0.004$), but with
+about 185 Mondays per station its quantile models are poorly calibrated (90%
+coverage 0.47–0.70) and it does not beat CFS_BC. The untrained blend matches
+CFS_BC at W1 and improves on it at W3–4 (Holm p = 0.001), but it is worse
+than M\* at W3–4, because equal weights give the weak CFSv2 forecast too much
+influence at that lead. A regularised model that learns how much to trust
+the dynamical forecast at each horizon is therefore preferable to a fixed
+combination, consistent with the post-processing literature
+[@RaspLerch2018; @Slater2023].
 
-TODO: report the benchmark table and learning curves; every number must trace
-back to a file under `outputs/` (see `claims` in `manifest.yaml`, e.g.
-`claim-1`).
+## Calibration of the ensemble {#sec-calibration}
 
-# Discussion
+M\* is skilful but over-confident (Fig. @fig-calibration). Its blind 90% interval
+covers 0.753, 0.686 and 0.630 of the outcomes, outside the pre-registered
+0.85–0.95, and its PIT histogram at W3–4 is U-shaped, with 17% and 32% of the
+outcomes in the lowest and highest deciles. The cause is the Vincentization
+of members that disagree [@Lichtendahl2013]: averaging quantiles narrows the
+distribution exactly when member uncertainty is largest. The dev-selected
+M\*~2~ combines the same members with Chronos (absolute context) and a
+conformal calibration. Its coverage is 0.903, 0.887 and 0.866, within the
+target range, and its CRPS is lower than that of M\* at all horizons (H5;
+Holm p $\le 0.002$), with CRPSS of 0.323, 0.348 and 0.426. The selection is
+visible in Table @tbl-mstar2 (Section @sec-app-tables): the conformal calibration had the lowest
+cross-fitted development CRPS among the in-range configurations, and EMOS,
+although best on the blind CRPS (0.398 °C against 0.415 °C), was not chosen
+because its development coverage at W3–4 (0.872) was in range but its
+development CRPS was higher (0.395 °C against 0.382 °C). Reporting all
+candidates keeps the post hoc selection auditable. The hybrid, which has no
+calibration step, covers 0.81–0.84; CFS_BC covers 0.85 at W1 but only 0.73 at
+W3–4.
 
-TODO: where decomposition helps or hurts per model family and horizon, and
-how the stations' altitude modulates the ranking.
+![Calibration on the blind folds: (a) 90% interval coverage, with the nominal band; (b) PIT histograms at weeks 3–4.](media/Fig06_calibration.pdf){#fig-calibration width=1}
 
-# Conclusions
+## Adapting the time-series foundation model {#sec-chronos}
 
-TODO: headline findings and practical guidance for station-network
-forecasting.
+Raw Chronos, used zero-shot on the daily anomaly series, has the lowest
+probabilistic skill of the learned models (CRPSS 0.126, 0.087 and 0.105)
+despite an anomaly correlation (0.64–0.69) similar to that of the other
+models (Fig. @fig-chronos; Tables [-@tbl-metrics]–[-@tbl-metrics-w34]). Its intervals are the problem: they
+cover 0.22–0.31 of the outcomes and are 0.5–0.6 °C wide, less than half the
+width of any other system. The diagnostic of amendment A2 locates the
+cause in the daily paths. Their 90% interval covers 0.21–0.22 of the daily
+anomalies, and their spread is about one fifth of the error of their median
+(path standard deviation 0.20–0.24 °C against 1.14–1.32 °C), so averaging
+them over a window cannot recover the missing spread. With absolute
+temperature as context, the model sees the seasonal cycle it was pretrained
+on, and its window-mean intervals widen to 2.0–2.4 °C with coverage
+0.74–0.86 and CRPSS 0.271, 0.256 and 0.320, comparable to GBM LG.
+Chronos-Bolt, which forecasts block means directly, reaches nominal coverage
+(0.90–0.95) but with intervals of 3.1–3.5 °C, the widest of any system, and
+its CRPSS (0.18–0.22) stays below that of Chronos with absolute context. The
+three variants span the balance between calibration and sharpness that
+@Gneiting2007 describe: a forecast can be calibrated by being vague, and a
+proper score rewards the system that is sharp subject to calibration.
 
-# Acknowledgements {.unnumbered}
+![Chronos variants on the blind folds: (a) skill, (b) 90% interval coverage and (c) interval width, with M\* as reference.](media/Fig07_chronos.pdf){#fig-chronos width=1}
 
-This work was funded by SENATI, Peru (Project C20-2026).
+## Robustness
 
-# Data availability {.unnumbered}
+**Windows of opportunity.** Skill depends on the state of ENSO at issuance
+(Fig. @fig-conditional). The CRPSS of M\* is 0.37–0.43 when El Niño conditions
+prevail (n = 240–250 forecasts), 0.16–0.23 under La Niña (n = 175) and
+0.06–0.20 in neutral conditions (n = 63–81). It is also higher in austral
+summer (0.39–0.46 in December–February) than in winter (0.15–0.31 in
+June–August), and slightly higher with an active MJO (0.32–0.38) than with
+an inactive one (0.26–0.32). Skill is positive in every condition, so it is
+not confined to the 2023–24 El Niño, but that event contributes a large
+share of the blind forecasts; this dependence on the regime is what
+@Mariotti2020 call a window of opportunity, and it matches the strong ENSO
+control of Andean temperature [@Vuille2000; @Garreaud2009]. These splits are
+descriptive, and the neutral cell is small.
 
-TODO: repository or DOI for `data/raw/dataset.csv` and the exact command
-that regenerates every figure and table of this paper.
+![Skill of M\* by (a) ENSO phase, (b) season and (c) MJO activity at issuance (blind folds).](media/Fig08_conditional_skill.pdf){#fig-conditional width=1}
+
+**Transfer to unseen stations.** When the pooled models are trained without
+the station they forecast, their skill changes little (Fig. @fig-loso). For M\*
+the CRPS increases by at most 0.052 °C, and at the two highest stations it
+does not increase at all; the largest losses are at San José de Uzuña and
+Matucana at W3–4, where the CRPSS drops from 0.41 to 0.34 and from 0.44 to
+0.33 (Table @tbl-loso). The pooled models therefore transfer to stations within
+the range of the training elevations, as in the multi-basin transfer of
+@Kratzert2019wrr, although five stations are too few to test transfer across
+climates.
+
+![CRPS lost when a station is left out of training, by station elevation, with 95% intervals.](media/Fig09_loso.pdf){#fig-loso width=1}
+
+**Training noise and period.** Re-training GBM L, GBM LG and LSTM LG with
+four additional seeds changes their CRPSS by a standard deviation of at most
+0.005 for the gradient-boosting models and 0.020 for the LSTM, and the
+ranking GBM L < GBM LG < LSTM LG holds in every seed and horizon
+(Table @tbl-seeds; Fig. @fig-seeds in Section @sec-app-figures). All models have higher skill on the blind folds
+than on the development folds (Fig. @fig-devblind), M\* for example 0.29–0.35
+against 0.12–0.16. The order of the models is preserved, which indicates that
+the increase reflects the more predictable blind years, dominated by the
+2023–24 El Niño, rather than a model selection effect.
+
+## Case study
+
+Figure @fig-case shows the W3–4 forecasts at San José de Uzuña, the station with the
+median hybrid CRPS, chosen before the figure was drawn. During the 2022–23
+La Niña the observed anomalies are mostly negative; the hybrid median is
+negative too but weaker, and several observations fall near or below the
+lower edge of its 90% band. From mid-2023 the anomalies build up with the
+onset of El Niño, and the hybrid median follows the rise to about +1.5 °C in
+early 2024, above the CFSv2 median, which stays mostly between 0 and +1 °C. M\*~2~ brackets the observations with a
+wider band. The gap before July 2023 corresponds to the issuances whose
+target would fall in the next fold's test year.
+
+![Weeks 3–4 forecasts at San José de Uzuña (3,269 m) over the blind period; the dotted line marks the B1–B2 fold boundary.](media/Fig10_case_study.pdf){#fig-case width=1}
+
+# Discussion {#sec-discussion}
+
+## What the system adds
+
+The central result is that the statistical and dynamical forecasts fail in
+different places. CFS_BC is the best single system at W1 and the weakest
+among the weakest at W3–4; the station-based models are the reverse. The
+hybrid ridge model, which learns how much weight the CFSv2 anomaly deserves
+at each horizon, is at least as good as the better of the two at every
+horizon. This complementarity has been reported for subseasonal forecasts in
+North America [@He2021; @Mouatadid2023abc] and, through bias correction of
+dynamical forecasts, for Europe [@Monhart2018], and it is the premise of
+hybrid forecasting more broadly [@Slater2023]; our results extend it to
+high-elevation stations in the tropics, where ENSO is the dominant source of
+predictability [@Vuille2000; @LavadoEspinoza2014; @Sulca2018]. In engineering terms, the hybrid is a
+low-cost addition to an existing station-based system: it requires one
+dynamical forecast per week and per station and a linear model refitted on a
+few hundred cases.
+
+## Lessons for time-series foundation models
+
+Chronos is a capable point forecaster on this problem but, used as offered,
+a poor probabilistic one. The problem is not the accuracy of its median but
+the spread of its sample paths, which is too small at the daily scale to
+survive averaging. Giving the model the absolute temperature, closer to the
+data it was pretrained on [@Ansari2024], restores most of the spread, and
+Chronos-Bolt shows the opposite failure. For users of foundation models in
+environmental applications, the practical implication is that interval
+coverage of the derived quantity, not only point accuracy, has to be checked
+before such models enter an ensemble, and that the input representation
+matters as much as the model choice [@Liang2024; @Tan2024].
+
+## Simple versus complex models
+
+Ridge LG matches or exceeds every more complex model, including the LSTM, the
+foundation models and the ensemble, on the blind folds. The gain from adding
+the large-scale indices (H1) is larger than any gain from changing the
+architecture, and the best gradient-boosting and LSTM models differ by less
+than their seed-to-seed range at W1. With about ten years of data at five
+stations, the limiting factor is the information in the predictors rather
+than the capacity of the model, a conclusion that echoes forecasting
+competitions [@Petropoulos2022] and contrasts with settings where large
+training sets let deep models learn shared structure across hundreds of
+sites [@Kratzert2019hess].
+
+## Operational implications
+
+A forecasting service needs probabilities it can trust. The conformal
+calibration selected on development years delivers 90% intervals that cover
+close to 90% of the blind outcomes without sacrificing skill, and the case
+study shows forecasts that track an evolving El Niño anomaly several weeks in
+advance. Both are relevant for frost and agricultural planning, where the
+cost of a missed cold anomaly differs from that of a false alarm. The
+secondary results support this use: Ridge LG has positive skill for the
+minimum temperature at every horizon (CRPSS 0.21–0.28) and for the
+probability of frost (Brier skill 0.13–0.29; Table @tbl-secondary), although the
+frost index is computed from hourly means and understates true frost.
+
+## Limitations
+
+The study has five limitations that bound its conclusions. (i) Five stations
+and two blind years give wide confidence intervals; several differences
+between the best systems are not distinguishable, and the results should not
+be generalised to the whole Andes without further stations. (ii) The hybrid,
+M\*~2~ and the Chronos variants are post hoc; their designs were fixed before
+their own scores but after the blind scores of the pre-registered systems,
+and they should be confirmed on later years. (iii) The hybrid is trained on
+about 185 Mondays per station because the open CFSv2 archive starts in 2018,
+and its 90% coverage (0.81–0.84) is below the target range; a calibration
+step could not be selected without development years. (iv) The only
+dynamical reference is CFSv2 at 1° resolution; the ECMWF extended-range
+system, usually the strongest S2S reference, was not available to us, so our
+comparison is with an open dynamical forecast rather than with the state of
+the art. (v) The blind period includes the 2023–24 El Niño, which raises the
+skill of all systems; the conditional results show positive skill in all
+ENSO phases, but the size of the gains is tied to that period.
+
+# Conclusions {#sec-conclusions}
+
+Subseasonal temperature forecasts at high-Andean stations can be both skilful
+and calibrated, provided that the forecasting system is designed and
+evaluated with the same discipline. That is the thread that connects the
+methodological and technical results of this study.
+
+On the methodological side, freezing the models and their hyperparameters
+before scoring two blind years, separating training and test targets by an
+embargo and testing every comparison with a block bootstrap and Holm's
+correction made it possible to tell real skill from favourable sampling. The
+same protocol exposed what cross-validation alone would have hidden: the
+blind years were more predictable than the development years for every
+model, and the primary ensemble, although skilful, was over-confident. A
+leakage-free anomaly decomposition gave statistical, deep and foundation
+models a common target, and declaring every later analysis as a dated
+amendment kept the post hoc results distinguishable from the confirmatory
+ones, in line with recommendations for forecast evaluation
+[@Tashman2000; @Bergmeir2012; @DelSoleTippett2014].
+
+On the technical side, four findings follow. A ridge regression that adds the
+bias-corrected CFSv2 forecast to station and large-scale predictors matched
+CFSv2 at week 1 and improved on it at weeks 2–4, with skill scores of 0.42,
+0.38 and 0.41 against climatology; its same-rows control attributes the gain
+to the dynamical predictor, extending to the tropical Andes the
+complementarity reported elsewhere [@Monhart2018; @He2021]. The ENSO and MJO
+indices contributed more skill than any change of architecture, so that a
+regularised linear model was as good as a recurrent network and a foundation
+model [@Petropoulos2022]. Chronos, used zero-shot, produced intervals about
+four times too narrow for window-mean anomalies until it received
+absolute-temperature context, a reminder that foundation models must be
+checked for calibration on the quantity a user needs [@Gneiting2007;
+@Ansari2024]. Finally, a conformal calibration chosen on development years
+turned an over-confident ensemble into one whose 90% intervals covered close
+to 90% of the blind outcomes [@Romano2019].
+
+The two sides depend on each other. The technical results are credible
+because the protocol was fixed in advance, and the protocol is worth its cost
+because the results it validates change what a forecaster can offer for frost
+and agricultural decisions. The evidence comes from five stations and two
+blind years, and the hybrid and the calibrated ensemble were defined after the
+first blind scores; confirming them on later years and more stations, adding
+the ECMWF extended-range forecasts and calibrating the hybrid are the next
+steps. Within these limits, the study shows that combining station-based
+learning with an open dynamical forecast yields calibrated guidance for the
+weeks that matter most to Andean farmers and water managers.
+
+# References {.unnumbered}
+
+::: {#refs}
+:::
+
+\appendix
+
+# Supplementary tables {#sec-app-tables}
+
+: Selection of M\*~2~ among 16 configurations (amendment A3). [Development CRPS and coverage are cross-fitted over D1–D3. The selected configuration (bold) has the lowest development CRPS among those with coverage in 0.85–0.95 at every horizon.]{.note} {#tbl-mstar2}
+
+| Members | Combination | Calibration | Dev CRPS | Dev Cov90 (W1/W2/W3–4) | Blind CRPS |
+|---|---|---|---:|---|---:|
+| With Chronos | Vincentization | None | 0.385 | 0.81 / 0.84 / 0.83 | 0.419 |
+| With Chronos | Vincentization | Spread factor | 0.383 | 0.89 / 0.90 / 0.90 | 0.415 |
+| **With Chronos** | **Vincentization** | **Conformal** | **0.382** | **0.89 / 0.90 / 0.90** | **0.415** |
+| With Chronos | Vincentization | EMOS | 0.395 | 0.90 / 0.89 / 0.87 | 0.398 |
+| With Chronos | Linear pool | None | 0.384 | 0.83 / 0.86 / 0.88 | 0.420 |
+| With Chronos | Linear pool | Spread factor | 0.383 | 0.89 / 0.90 / 0.90 | 0.418 |
+| With Chronos | Linear pool | Conformal | 0.383 | 0.89 / 0.90 / 0.90 | 0.418 |
+| With Chronos | Linear pool | EMOS | 0.395 | 0.90 / 0.89 / 0.87 | 0.398 |
+| Without Chronos | Vincentization | None | 0.394 | 0.81 / 0.79 / 0.76 | 0.444 |
+| Without Chronos | Vincentization | Spread factor | 0.390 | 0.89 / 0.88 / 0.90 | 0.436 |
+| Without Chronos | Vincentization | Conformal | 0.388 | 0.89 / 0.89 / 0.90 | 0.436 |
+| Without Chronos | Vincentization | EMOS | 0.400 | 0.90 / 0.89 / 0.89 | 0.423 |
+| Without Chronos | Linear pool | None | 0.393 | 0.81 / 0.80 / 0.78 | 0.443 |
+| Without Chronos | Linear pool | Spread factor | 0.390 | 0.89 / 0.89 / 0.89 | 0.436 |
+| Without Chronos | Linear pool | Conformal | 0.388 | 0.90 / 0.89 / 0.90 | 0.436 |
+| Without Chronos | Linear pool | EMOS | 0.400 | 0.90 / 0.89 / 0.89 | 0.423 |
+
+: CRPSS against climatology over five training seeds (blind folds). {#tbl-seeds}
+
+| Model | Horizon | Mean | SD | Min | Max |
+|---|---|---:|---:|---:|---:|
+| GBM L | W1 | 0.222 | 0.001 | 0.220 | 0.223 |
+| GBM L | W2 | 0.159 | 0.004 | 0.155 | 0.164 |
+| GBM L | W3–4 | 0.178 | 0.005 | 0.171 | 0.184 |
+| GBM LG | W1 | 0.239 | 0.002 | 0.236 | 0.241 |
+| GBM LG | W2 | 0.236 | 0.002 | 0.234 | 0.239 |
+| GBM LG | W3–4 | 0.289 | 0.004 | 0.283 | 0.293 |
+| LSTM LG | W1 | 0.262 | 0.010 | 0.248 | 0.273 |
+| LSTM LG | W2 | 0.296 | 0.020 | 0.266 | 0.320 |
+| LSTM LG | W3–4 | 0.363 | 0.020 | 0.341 | 0.389 |
+
+: Skill for the secondary targets (blind folds). [CRPSS against climatology of the daily minimum (TT_min) and maximum (TT_max) temperature anomalies. BSS: Brier skill score of the frost probability (TT_min below 0 °C, from hourly means).]{.note} {#tbl-secondary}
+
+| Target | Model | CRPSS W1 | CRPSS W2 | CRPSS W3–4 | BSS W1 | BSS W2 | BSS W3–4 |
+|---|---|---:|---:|---:|---:|---:|---:|
+| TT_min | Damp | 0.090 | 0.067 | 0.103 | $-0.025$ | $-0.072$ | 0.042 |
+| TT_min | GBM LG | 0.123 | 0.124 | 0.149 | 0.021 | 0.070 | 0.130 |
+| TT_min | Ridge LG | 0.205 | 0.225 | 0.282 | 0.134 | 0.265 | 0.291 |
+| TT_max | Damp | 0.064 | 0.061 | 0.084 | — | — | — |
+| TT_max | GBM LG | 0.191 | 0.160 | 0.160 | — | — | — |
+| TT_max | Ridge LG | 0.215 | 0.192 | 0.218 | — | — | — |
+
+: Leave-one-station-out transfer of M\* (blind folds). [CRPSS with the station in training (temporal) and left out (LOSO); $\Delta$CRPS: increase in CRPS (°C) with its 95% interval.]{.note} {#tbl-loso}
+
+| Station (elevation) | Horizon | CRPSS temporal | CRPSS LOSO | $\Delta$CRPS (95% interval) |
+|---|---|---:|---:|---|
+| Matucana (2,421 m) | W1 | 0.366 | 0.334 | 0.017 ($-0.002$, 0.038) |
+| Matucana (2,421 m) | W2 | 0.361 | 0.304 | 0.028 (0.000, 0.057) |
+| Matucana (2,421 m) | W3–4 | 0.442 | 0.333 | 0.051 (0.010, 0.088) |
+| San José de Uzuña (3,269 m) | W1 | 0.336 | 0.323 | 0.011 (0.001, 0.026) |
+| San José de Uzuña (3,269 m) | W2 | 0.355 | 0.311 | 0.032 (0.017, 0.053) |
+| San José de Uzuña (3,269 m) | W3–4 | 0.410 | 0.338 | 0.052 (0.033, 0.077) |
+| Candarave (3,410 m) | W1 | 0.303 | 0.287 | 0.013 (0.000, 0.027) |
+| Candarave (3,410 m) | W2 | 0.314 | 0.285 | 0.022 (0.006, 0.043) |
+| Candarave (3,410 m) | W3–4 | 0.348 | 0.320 | 0.021 (0.002, 0.051) |
+| Carania (3,840 m) | W1 | 0.097 | 0.091 | 0.003 ($-0.009$, 0.012) |
+| Carania (3,840 m) | W2 | 0.067 | 0.068 | $-0.001$ ($-0.016$, 0.015) |
+| Carania (3,840 m) | W3–4 | 0.128 | 0.147 | $-0.005$ ($-0.022$, 0.008) |
+| Imata (4,475 m) | W1 | 0.305 | 0.306 | $-0.001$ ($-0.020$, 0.018) |
+| Imata (4,475 m) | W2 | 0.293 | 0.304 | $-0.009$ ($-0.037$, 0.021) |
+| Imata (4,475 m) | W3–4 | 0.299 | 0.317 | $-0.014$ ($-0.050$, 0.022) |
+
+# Supplementary figures {#sec-app-figures}
+
+![Seed variability of CRPSS: mean and range over five seeds.](media/FigS1_seed_variability.pdf){#fig-seeds width=0.55}
+
+![Skill on the development (hollow) and blind (filled) folds, by model and horizon.](media/FigS2_dev_vs_blind.pdf){#fig-devblind width=1}
+
+![Skill against damped persistence of local-only (L) and local plus large-scale (LG) models.](media/FigS3_predictability_budget.pdf){#fig-budget width=0.55}

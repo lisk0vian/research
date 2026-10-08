@@ -201,6 +201,20 @@ def _t13():
     print(pd.read_csv(TABLES / "T14_mstar2_blind.csv").round(4).to_string(index=False))
 
 
+@section("T16 CFSv2 hybrid (amendment A5, post hoc)")
+def _t16():
+    t16 = pd.read_csv(TABLES / "T16_hybrid_cfs.csv")
+    require_columns(t16, ["system", "horizon", "n_dates", "crps", "cov90", "CRPSS_clim",
+                          "CRPSS_clim_low", "CRPSS_clim_high"],
+                    TABLES / "T16_hybrid_cfs.csv", "09f_hybrid_cfs")
+    print(t16.pivot_table(index="system", columns="horizon", values="CRPSS_clim")
+          .round(3).to_string())
+    print()
+    t16b = pd.read_csv(TABLES / "T16b_hybrid_tests.csv")
+    print(t16b[["system", "test", "horizon", "dCRPS_ref_minus_system", "ci_low", "ci_high",
+                "p_holm"]].round(4).to_string(index=False))
+
+
 @section("Figures")
 def _figures():
     figs = sorted((OUTPUTS / "figures").glob("F*.png"))

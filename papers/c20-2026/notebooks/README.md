@@ -39,4 +39,6 @@
 | `09c_chronos_diagnostic` | `outputs/tables/T10_chronos_diagnostic.csv (amendment A2, post hoc; GPU)` |
 | `09d_chronos_sensitivity` | `outputs/tables/T11_chronos_sensitivity.csv (A2, post hoc; D3 only; GPU)` |
 | `09e_mstar2` | `outputs/models/mstar2.json, outputs/tables/T13_mstar2_selection.csv, T14_mstar2_blind.csv (A3.3)` |
+| `09f_hybrid_cfs` | `outputs/tables/T16_hybrid_cfs.csv, T16b_hybrid_tests.csv, outputs/models/hybrid/ (A5, post hoc; CPU)` |
 | `10_tables_figures` | `outputs/tables/T4_murphy.csv, T6_secondary_targets.csv, outputs/figures/F1..F6.png` |
+| `11_paper_figures` | `outputs/figures/paper/Fig*.{png,pdf,csv}, qa.md, contact_sheet.png (CPU; also the figures notebook)` |

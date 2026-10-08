@@ -13,9 +13,10 @@
 # (config, data, RESULTS_VERSION or code) makes old measurements incomparable.
 # Update them by hand, with a note below, when a real run contradicts them.
 #
-# by: agent 2026-10-03. Seeded from the 2026-10-03 Colab run (T4 GPU) where it
-#   exists; 07e/07f/09e have never run, so theirs are order-of-magnitude
-#   guesses to be corrected by their first run. Ranges are deliberately wide:
+# by: agent 2026-10-03, revised 2026-10-07. Seeded from the 2026-10-03 Colab
+#   run (T4 GPU) where it exists; 07e/07f have no cold-run measurement and 09f
+#   has never run, so theirs are order-of-magnitude guesses to be corrected by
+#   their first cold run. Ranges are deliberately wide:
 #   a free Colab runtime varies a lot between sessions.
 # Fields per process: min_s / typical_s / max_s, plus optional `unit` (what one
 #   unit of work is), `unit_typical_s`, and `units_from` for a stage that
@@ -42,11 +43,13 @@ stages:
   07b_deep: {min_s: 300, typical_s: 800, max_s: 2400, unit: fold, unit_typical_s: 120}
   07c_ensemble: {min_s: 3, typical_s: 15, max_s: 120}
   07d_cfs_benchmark: {min_s: 3, typical_s: 15, max_s: 300}
-  # A3.1: never run. Two Chronos variants x 5 folds of inference; the guess
-  # hangs off 07b (LSTM + Chronos over 5 folds = 742 s).
+  # A3.1: Two Chronos variants x 5 folds of inference; the guess hangs off 07b
+  # (LSTM + Chronos over 5 folds = 742 s). Not yet measured cold: the 23 s of
+  # 2026-10-04 loaded Chronos@abs from checkpoints and ran only Bolt.
   07e_chronos_variants: {min_s: 400, typical_s: 1200, max_s: 3600,
                          unit: fold, unit_typical_s: 120}
-  # A3.2: never run. GBM_L, GBM_LG and LSTM_LG x 4 extra seeds over all folds.
+  # A3.2: GBM_L, GBM_LG and LSTM_LG x 4 extra seeds over all folds. The 1946 s
+  # of 2026-10-07 resumed from checkpoints, so it is not a cold-run number.
   07f_seed_variability: {min_s: 1800, typical_s: 5400, max_s: 14400,
                          unit: model_seed, unit_typical_s: 200}
   08_metrics: {min_s: 5, typical_s: 20, max_s: 180}
@@ -54,6 +57,15 @@ stages:
   09b_calibration: {min_s: 3, typical_s: 15, max_s: 180}
   09c_chronos_diagnostic: {min_s: 200, typical_s: 500, max_s: 1800}
   09d_chronos_sensitivity: {min_s: 200, typical_s: 450, max_s: 1800}
-  # A3.3: never run. 16 candidate configurations cross-fitted over D1-D3.
-  09e_mstar2: {min_s: 600, typical_s: 1800, max_s: 7200}
+  # A3.3: 16 candidate configurations cross-fitted over D1-D3. The first guess
+  # (1800 s) was two orders too high: 2026-10-07 measured 17 s on a T4 runtime.
+  09e_mstar2: {min_s: 5, typical_s: 30, max_s: 600}
+  # A5 (post hoc): 4 trained models (2 Ridge, 2 GBM with 20 fits each) on ~185
+  # Mondays per station x 2 blind folds x 3 horizons, then ~80 block bootstraps
+  # (B = 10000) on CPU. Order of magnitude from 07f (one GBM over 5 folds ~43 s)
+  # and 09e (bootstraps 17 s); never run, correct after the first run.
+  09f_hybrid_cfs: {min_s: 30, typical_s: 180, max_s: 900}
   10_tables_figures: {min_s: 2, typical_s: 10, max_s: 120}
+  # 13 figures + QA on CPU; the first run also downloads Natural Earth (~20 MB).
+  # Never run, an order of magnitude from stage 10 (6 figures, 9 s) plus the map.
+  11_paper_figures: {min_s: 20, typical_s: 90, max_s: 600}

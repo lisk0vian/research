@@ -1,30 +1,124 @@
 {
-  "finished_at": "2026-10-03T19:42:46+00:00",
+  "finished_at": "2026-10-08T05:03:10+00:00",
   "stages_run": [
-    "00_verify_source",
-    "01_qc_hourly",
-    "02_aggregate_daily",
-    "03_climatology",
-    "04_make_issuances",
-    "05_features_local",
-    "06_features_largescale",
-    "06b_dynamical",
-    "07_models",
-    "07b_deep",
-    "07c_ensemble",
-    "07d_cfs_benchmark",
-    "08_metrics",
-    "09_inference",
-    "09b_calibration",
-    "09c_chronos_diagnostic",
-    "09d_chronos_sensitivity",
-    "10_tables_figures"
+    "11_paper_figures"
   ],
-  "python": "3.13.15",
+  "python": "3.13.16",
   "python_executable": "/usr/bin/python3",
   "config": "experiments/config.yaml",
   "git_commit": null,
   "git_dirty": false,
+  "code_hashes": {
+    "experiments/00_verify_source.py": "d9b9474fe9abaabd37435b49489f49334706d3d5d688ac854d2d3b06fd0b8af2",
+    "experiments/01_qc_hourly.py": "97bebd5817848bba0082d9829aa2f87419df3c721271da64e8869456d8bbe51b",
+    "experiments/02_aggregate_daily.py": "f77fb7b01e2022dc37cf915640798586a299a198ec8c052daeb6ae37628464eb",
+    "experiments/03_climatology.py": "7f52b5b0921ea06742669ae37e4dce424ab87e39ff367a8fdbf1ff840a49e313",
+    "experiments/04_make_issuances.py": "c72e72fc4bb6cde0543c9a16819c192cc670ac6a80d85a9041396dc7f74f30ec",
+    "experiments/05_features_local.py": "5b86f4e4f479607e8f3a48aeb87e458e0e34b92e0b90891774f15e9b9c3e093e",
+    "experiments/06_features_largescale.py": "6d4e6588d6720610edd956a2dc625c2c9e5f980c76965c78250cae0e8ee3e8ac",
+    "experiments/06b_dynamical.py": "3862a7bf5c24d5424b2ffdbab4d649ca097f5c562ce76b04f4f3b28b3cb3ea15",
+    "experiments/07_models.py": "5ed4454d9b53e2d112fefa5ff4c8fda9edbc88dffeb5c7b9ab7d9835b2ba592a",
+    "experiments/07b_deep.py": "d13b938542d2de6395f693bdde0d2d4491ec4fc4f57e5dde99f9b57e4e489cf5",
+    "experiments/07c_ensemble.py": "a7a14b91c34c5ec4bb1fed945a5c2202d03fb9df1a92c4b5604b409846cbd6d8",
+    "experiments/07d_cfs_benchmark.py": "37969f62974a95d08f30fae32c12243749ad8928a76d161ebafb14ec10b16522",
+    "experiments/07e_chronos_variants.py": "bf2ec90eef594e7a3534e138972da8b46b64b0d5fa1fe426fdd5bcb605ef3dc1",
+    "experiments/07f_seed_variability.py": "a8e98ccc8d736dc0ac576d5c144070709b9a0fd97023e5f32deb370b0981e124",
+    "experiments/08_metrics.py": "d7a870df11e80f905e094dc94203b4c4e7fb3dbd8cc979810b4b77521f8e6123",
+    "experiments/09_inference.py": "8bc087c6185fd0095ff293882d333304bea73fe357346d2ebf44edb1aeb443d8",
+    "experiments/09b_calibration.py": "9dd311380eb7f99858b0e87b21e58665f5e0d521d493b989dbdeacbbf84b5607",
+    "experiments/09c_chronos_diagnostic.py": "6ffd4b2472659ffd0abc95ddab38f1756ab749c7f0e7fc1d952bb28ed9fbeccc",
+    "experiments/09d_chronos_sensitivity.py": "86bd303aeaf3f4ea86580baf74fa8137205e00ff7057f3fdcfb2d6d7d0d4cad4",
+    "experiments/09e_mstar2.py": "a4aa8f3bf026926d8c889699bdf1c5991ca0e18867533b3ecda3f9ebabfd9e00",
+    "experiments/09f_hybrid_cfs.py": "7c4802ea6406d8ed58c499827d9a23838fcbbf7f0e7d4aa39542ffe869866ae8",
+    "experiments/10_tables_figures.py": "c2eb333b998055a5340d87991e18b112be9cdf083a439266f67962d2f2603cee",
+    "experiments/11_paper_figures.py": "6b9c08b47ac4310cc7086347550b8b21a0e868333d2bdd8f9557d986388e671b",
+    "experiments/_colab_runtime.py": "8f575b2e8bde85631eaeb7cf00b1b607eea6f9df830cd1dfee631bb2192efe44",
+    "experiments/_common.py": "09d68b514107555fd48ec1891dd5e8e794f1411896c9b84c64d900733906748b",
+    "experiments/_figqa.py": "b1b24090e5607b4a2de88b8a31140286ef9a77fe532a2144a4c97f46a2e686f5",
+    "experiments/_figstyle.py": "39598ee5dfd7cf1ee96036971bff23e3c7b110508bd30bbd3a31d103cc052b74",
+    "experiments/_harmonic.py": "6d90a2b723764d7731c39071268eba9949b98e96ad667f0bc0c4ca674d8d661e",
+    "experiments/_panel.py": "81da820be047f21034bcdb7735de169047ca2b0180fc3d14fb20dcf8b4a94c07",
+    "experiments/_progress.py": "5a7536ca5f70769418831f114b29ca6c93477754356e7294e64448bbe84133e3",
+    "experiments/_sample_data.py": "295440748c565fcb8cd97d805282fb39c02cadb87644cac110b74dbfaaf8bb8d",
+    "experiments/_scores.py": "b2f084cceb731ed0685a5d42629113370217f5b52057bd77cb92cb8bdf630bd2",
+    "experiments/fetch_source.py": "f80d0095de40051c4844f77f737b65f91cbd4b9a92e23deb0ef059fdae2ca2a7",
+    "experiments/portal_docs.py": "ed1585cbc160073917db854906be26c714bd71545e2ded039fc0faba1e9d08df",
+    "experiments/report.py": "733a476f6f309bb0d342f750ea613bdbd66cd424e3c1fbf87f9f6db9d341a62f",
+    "experiments/run_all.py": "1145f4d7ed81d7d50e6fb30c8a8ba65bba5a57989e7446418f311a4e4b0e33c4",
+    "experiments/config.yaml": "115fc82fe389b0afcd0fb327880ec62b18e68ae75fc00feb323b05bebfece986"
+  },
+  "splits": {
+    "D1": {
+      "train_min": "2015-01-01",
+      "train_max": "2019-06-02",
+      "test_min": "2019-07-01",
+      "test_max": "2020-06-22",
+      "n_train": 24210,
+      "n_eval": 52,
+      "gap_days": 2,
+      "embargo_days": 28,
+      "test_window": [
+        "2019-07-01",
+        "2020-06-30"
+      ]
+    },
+    "D2": {
+      "train_min": "2015-01-01",
+      "train_max": "2020-06-02",
+      "test_min": "2020-07-06",
+      "test_max": "2021-06-21",
+      "n_train": 29700,
+      "n_eval": 51,
+      "gap_days": 7,
+      "embargo_days": 28,
+      "test_window": [
+        "2020-07-01",
+        "2021-06-30"
+      ]
+    },
+    "D3": {
+      "train_min": "2015-01-01",
+      "train_max": "2021-06-02",
+      "test_min": "2021-07-05",
+      "test_max": "2022-06-20",
+      "n_train": 35175,
+      "n_eval": 51,
+      "gap_days": 6,
+      "embargo_days": 28,
+      "test_window": [
+        "2021-07-01",
+        "2022-06-30"
+      ]
+    },
+    "B1": {
+      "train_min": "2015-01-01",
+      "train_max": "2022-06-02",
+      "test_min": "2022-07-04",
+      "test_max": "2023-06-19",
+      "n_train": 40650,
+      "n_eval": 51,
+      "gap_days": 5,
+      "embargo_days": 28,
+      "test_window": [
+        "2022-07-01",
+        "2023-06-30"
+      ]
+    },
+    "B2": {
+      "train_min": "2015-01-01",
+      "train_max": "2023-06-02",
+      "test_min": "2023-07-03",
+      "test_max": "2024-06-17",
+      "n_train": 46125,
+      "n_eval": 51,
+      "gap_days": 4,
+      "embargo_days": 28,
+      "test_window": [
+        "2023-07-01",
+        "2024-06-30"
+      ]
+    }
+  },
   "versions": {
     "pandas": "2.2.3",
     "numpy": "2.1.3",
@@ -33,13 +127,9 @@
     "lightgbm": "4.6.0"
   },
   "results": {
-    "09d_chronos_sensitivity": {
+    "11_paper_figures": {
       "exit_code": 0,
-      "elapsed_s": 400.19
-    },
-    "10_tables_figures": {
-      "exit_code": 0,
-      "elapsed_s": 5.01
+      "elapsed_s": 27.65
     }
   },
   "note": "Fixed filename by design: a timestamped name would mint a new Drive file per run, and a new Drive file means a new Colab url."

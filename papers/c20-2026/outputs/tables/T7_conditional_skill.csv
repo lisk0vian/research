@@ -23,6 +23,30 @@ Chronos,W3_4,season,DJF,130,0.23303133109319063
 Chronos,W3_4,season,JJA,90,-0.13429890223412078
 Chronos,W3_4,season,MAM,128,0.1060737794985227
 Chronos,W3_4,season,SON,130,0.07622947933563085
+Chronos@abs,W1,season,DJF,130,0.3861764506806259
+Chronos@abs,W1,season,JJA,120,0.040170317635524144
+Chronos@abs,W1,season,MAM,126,0.24984324111681044
+Chronos@abs,W1,season,SON,130,0.3078126339788877
+Chronos@abs,W2,season,DJF,130,0.40978822199039433
+Chronos@abs,W2,season,JJA,110,-0.019425916862075843
+Chronos@abs,W2,season,MAM,127,0.22625749698177666
+Chronos@abs,W2,season,SON,130,0.2592389580912575
+Chronos@abs,W3_4,season,DJF,130,0.48553906381875844
+Chronos@abs,W3_4,season,JJA,90,0.07529282081818967
+Chronos@abs,W3_4,season,MAM,128,0.2559559178712095
+Chronos@abs,W3_4,season,SON,130,0.3075173324205016
+ChronosBolt,W1,season,DJF,130,0.3325628623096578
+ChronosBolt,W1,season,JJA,120,-0.026810281292169336
+ChronosBolt,W1,season,MAM,126,0.25290184824633966
+ChronosBolt,W1,season,SON,130,0.20232939278652207
+ChronosBolt,W2,season,DJF,130,0.37299161784020085
+ChronosBolt,W2,season,JJA,110,-0.050431233675928944
+ChronosBolt,W2,season,MAM,127,0.2150885994999101
+ChronosBolt,W2,season,SON,130,0.2059179282148289
+ChronosBolt,W3_4,season,DJF,130,0.39329853498591494
+ChronosBolt,W3_4,season,JJA,90,-0.10648717914506589
+ChronosBolt,W3_4,season,MAM,128,0.0037467021381526466
+ChronosBolt,W3_4,season,SON,130,0.2322096367715364
 Clim,W1,season,DJF,130,0.0
 Clim,W1,season,JJA,120,0.0
 Clim,W1,season,MAM,126,0.0
@@ -161,6 +185,24 @@ Chronos,W2,enso,neutral,77,-0.09887843728412515
 Chronos,W3_4,enso,El Niño,240,0.14508486940707654
 Chronos,W3_4,enso,La Niña,175,0.10996870709252893
 Chronos,W3_4,enso,neutral,63,-0.2768229244788474
+Chronos@abs,W1,enso,El Niño,250,0.37969399402958526
+Chronos@abs,W1,enso,La Niña,175,0.18627083687968304
+Chronos@abs,W1,enso,neutral,81,-0.08608500033353739
+Chronos@abs,W2,enso,El Niño,245,0.3653385333669109
+Chronos@abs,W2,enso,La Niña,175,0.17401441799578
+Chronos@abs,W2,enso,neutral,77,-0.17231625959308206
+Chronos@abs,W3_4,enso,El Niño,240,0.42124870969370565
+Chronos@abs,W3_4,enso,La Niña,175,0.21658554727737278
+Chronos@abs,W3_4,enso,neutral,63,-0.17999426868836843
+ChronosBolt,W1,enso,El Niño,250,0.3063827929075307
+ChronosBolt,W1,enso,La Niña,175,0.13563356008197247
+ChronosBolt,W1,enso,neutral,81,-0.08167629793561981
+ChronosBolt,W2,enso,El Niño,245,0.31653981273959875
+ChronosBolt,W2,enso,La Niña,175,0.17968145774495226
+ChronosBolt,W2,enso,neutral,77,-0.23750544252686123
+ChronosBolt,W3_4,enso,El Niño,240,0.31200679999930236
+ChronosBolt,W3_4,enso,La Niña,175,0.0903995154723477
+ChronosBolt,W3_4,enso,neutral,63,-0.5983074178391699
 Clim,W1,enso,El Niño,250,0.0
 Clim,W1,enso,La Niña,175,0.0
 Clim,W1,enso,neutral,81,0.0
@@ -263,6 +305,18 @@ Chronos,W2,mjo,MJO active,242,0.07888384460998077
 Chronos,W2,mjo,MJO inactive,255,0.09467135776984492
 Chronos,W3_4,mjo,MJO active,243,0.12833997003740416
 Chronos,W3_4,mjo,MJO inactive,235,0.08283859636422919
+Chronos@abs,W1,mjo,MJO active,241,0.30146366378079636
+Chronos@abs,W1,mjo,MJO inactive,265,0.24137744262259775
+Chronos@abs,W2,mjo,MJO active,242,0.2894109354960239
+Chronos@abs,W2,mjo,MJO inactive,255,0.22558765221435717
+Chronos@abs,W3_4,mjo,MJO active,243,0.37961574902468986
+Chronos@abs,W3_4,mjo,MJO inactive,235,0.2646636926029473
+ChronosBolt,W1,mjo,MJO active,241,0.2363844509666545
+ChronosBolt,W1,mjo,MJO inactive,265,0.18989335394951679
+ChronosBolt,W2,mjo,MJO active,242,0.2570997049582612
+ChronosBolt,W2,mjo,MJO inactive,255,0.18852086527320533
+ChronosBolt,W3_4,mjo,MJO active,243,0.24256241218243335
+ChronosBolt,W3_4,mjo,MJO inactive,235,0.12926074329475878
 Clim,W1,mjo,MJO active,241,0.0
 Clim,W1,mjo,MJO inactive,265,0.0
 Clim,W2,mjo,MJO active,242,0.0
