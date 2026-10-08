@@ -106,7 +106,7 @@ L = {
                          "K por gap y estabilidad"], "Fig. 5"),
                        ("(iii) Estructura espacial",
                         ["I de Moran global, LISA y Gi* con valores p exactos",
-                         "Dos matrices de vecindad y FDR"], "Tabla 2"),
+                         "Dos matrices de vecindad y FDR"], "Tablas 2 y 3"),
                        ("(iv) Dinámica temporal",
                         ["Transferencia de los estados a 2024 y 2025",
                          "ARI y distancia de Jensen–Shannon"], "Sección 5.4")],
@@ -114,7 +114,7 @@ L = {
                     ["Identidad territorial: NMI frente a permutaciones por año",
                      "Reproducción del análisis inicial",
                      "Multiverso: 108 especificaciones de agrupamiento y 240 espaciales"],
-                    "Fig. 6 y Tabla 3"),
+                    "Fig. 6 y Tablas 4 y 5"),
             "repro": ("Reproducibilidad",
                       "Plan de análisis congelado con huella SHA-256 · archivos de entrada verificados · "
                       "semilla 42 · versiones de librerías fijadas · pruebas automáticas · "
@@ -189,7 +189,7 @@ L = {
                          "K by gap statistic and stability"], "Fig. 5"),
                        ("(iii) Spatial structure",
                         ["Global Moran's I, LISA and Gi* with exact p-values",
-                         "Two weights matrices and FDR"], "Table 2"),
+                         "Two weights matrices and FDR"], "Tables 2 and 3"),
                        ("(iv) Temporal dynamics",
                         ["Transfer of the states to 2024 and 2025",
                          "ARI and Jensen–Shannon distance"], "Section 5.4")],
@@ -197,7 +197,7 @@ L = {
                     ["Territorial identity: NMI against within-year permutations",
                      "Reproduction of the initial analysis",
                      "Multiverse: 108 clustering and 240 spatial specifications"],
-                    "Fig. 6 and Table 3"),
+                    "Fig. 6 and Tables 4 and 5"),
             "repro": ("Reproducibility",
                       "Frozen analysis plan with SHA-256 fingerprint · verified input files · "
                       "seed 42 · pinned library versions · automated tests · "
