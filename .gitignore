@@ -200,6 +200,7 @@ templates/journals/*/tests/specimen/*.out
 templates/journals/*/tests/specimen/*.cls
 templates/journals/*/tests/specimen/*.sty
 templates/journals/*/tests/specimen/*.bst
+templates/journals/*/tests/specimen/*.pdf
 templates/journals/*/tests/specimen/cas-*.jpeg
 
 # ---- Per-paper nested tooling (machine-local) ----

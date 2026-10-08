@@ -1967,8 +1967,11 @@
 \def\lastpage{100}
 
 \AtEndDocument{%
-%   \clearpage
-   \immediate\write\@auxout{\string\csxdef{lastpage}{\thepage}}
+   \clearpage
+   % Flush deferred end-of-document floats before recording the total;
+   % \clearpage opens one more page that never ships, so the
+   % last printed page is \thepage-1 (what the official sample counts).
+   \immediate\write\@auxout{\string\csxdef{lastpage}{\the\numexpr\thepage-1\relax}}
 }
 
 \ExplSyntaxOn
