@@ -52,7 +52,7 @@ TARGET = primary_target()
 # `paths`/`observed`); a stale T10 from an earlier run would not match what
 # report.py and the paper read. Declaring it also re-runs the stage when the
 # schema moves again (COLAB.md §7, rule 12).
-RESULTS_VERSION = 1
+RESULTS_VERSION = 2   # v2: T10 columns renamed value/reference (were paths/observed)
 
 
 # --- metrics (pure, tested without torch) ----------------------------------------
