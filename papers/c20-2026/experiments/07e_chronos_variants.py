@@ -66,7 +66,9 @@ def block_means(daily: pd.Series, length: int, min_valid: int) -> pd.Series:
 def block_series(means: pd.Series, issue: pd.Timestamp, length: int, n_blocks: int) -> np.ndarray:
     """Consecutive `length`-day block means ending on `issue`, oldest first."""
     ends = pd.DatetimeIndex([issue - pd.Timedelta(days=length * k) for k in range(n_blocks)])
-    return means.reindex(ends).to_numpy(float)[::-1]
+    # Materialised: the reversed view has a negative stride, which torch refuses
+    # ("tensors with negative strides are not currently supported").
+    return np.ascontiguousarray(means.reindex(ends).to_numpy(float)[::-1])
 
 
 def expand_levels(q_bolt: np.ndarray, levels: list[float]) -> np.ndarray:

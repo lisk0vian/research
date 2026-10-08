@@ -2,8 +2,9 @@
 
 The parts that decide what Bolt sees and what it is scored on, tested without
 torch: which block and step give each window, that a block follows the
-target's validity rule and never reaches past the issue date, and how Bolt's
-nine levels become the nineteen-level grid.
+target's validity rule and never reaches past the issue date, that the block
+series is contiguous when torch gets it, and how Bolt's nine levels become the
+nineteen-level grid.
 """
 
 from __future__ import annotations
@@ -39,6 +40,21 @@ def test_blocks_end_on_the_issue_date_and_never_after():
     assert out[-1] == pytest.approx(np.mean(np.arange(38, 45)))   # days 38..44
     assert out[-2] == pytest.approx(np.mean(np.arange(31, 38)))
     assert out[0] == pytest.approx(np.mean(np.arange(24, 31)))
+
+
+def test_block_series_hands_torch_a_contiguous_array():
+    """07e passed a reversed view to torch and died in ChronosBolt.
+
+    Reading the array is not enough: a negative-stride view indexes fine but
+    `torch.tensor` raises on it. Contiguity is the whole contract, so assert it
+    directly instead of needing torch in the suite.
+    """
+    days = pd.date_range("2020-01-01", periods=30, freq="D")
+    means = m07e.block_means(pd.Series(np.arange(30.0), index=days), 7, 5)
+    out = m07e.block_series(means, days[-1], 7, 3)
+    assert out.flags["C_CONTIGUOUS"]          # no negative strides for torch
+    assert out.strides[0] > 0
+    assert out.dtype == np.float64 and out.shape == (3,)
 
 
 def test_a_block_with_too_few_valid_days_is_missing():
