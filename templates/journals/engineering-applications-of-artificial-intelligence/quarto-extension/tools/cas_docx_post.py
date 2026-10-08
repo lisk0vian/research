@@ -463,12 +463,19 @@ def unwrap_float(body: ET.Element, tbl: ET.Element) -> list[ET.Element]:
 
 
 def scale_drawing(p: ET.Element, width_twips: int) -> None:
+    """Fallback sizing for a drawing that still has no extent.
+
+    cas-docx.lua mirrors the PDF: it converts the unitless width fraction
+    (width=0.55 -> 0.55\\textwidth, .9 by default) to inches of the text
+    block and pandoc derives the height from the image, so the extent is
+    already right. Only an empty extent gets .9\\textwidth (and a 3:2 box,
+    as no aspect ratio is available)."""
     target = width_twips * EMU_PER_TWIP
     for ext in list(p.iter(q("extent", WP))) + list(p.iter(q("ext", A))):
         cx, cy = int(ext.get("cx")), int(ext.get("cy"))
-        if cx:
+        if not cx:
             ext.set("cx", str(target))
-            ext.set("cy", str(round(cy * target / cx)))
+            ext.set("cy", str(round(target * 2 / 3)))
 
 
 def is_float_wrapper(tbl: ET.Element) -> bool:
@@ -517,6 +524,8 @@ def fix_figures_and_tables(body: ET.Element) -> list[dict]:
             # auto line height: an exact one would clip the inline picture
             spacing(pic, before=FIG_ABOVE if k == 0 else 0, after=0,
                     line=240, lineRule="auto")
+            # cas-docx.lua already wrote the PDF's width fraction as an
+            # absolute size; this only backstops an extent it could not size
             scale_drawing(pic, FLOAT_WIDTH)
         if caption is not None:
             pp = ppr(caption)

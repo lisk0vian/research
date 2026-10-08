@@ -254,12 +254,31 @@ local function rasterize(img)
   end
   handle:close()
   img.src = png
-  -- a fractional unitless width (e.g. width=0.55, meaning 0.55\textwidth in
-  -- the PDF) is read by the docx writer as a pixel count and rounds to 0,
-  -- so the picture would vanish; drop it and let pandoc size the image from
-  -- the rasterized PNG (cas_docx_post.py scales it to .9 text width).
-  img.attributes.width = nil
-  img.attributes.height = nil
+  return img
+end
+
+-- The PDF sizes every figure with \includegraphics[width=<fraction>\textwidth]
+-- (cas-pre-ast.lua's includegraphics_width: a unitless width is a fraction of
+-- the text block, .9 by default). Word needs an absolute size, and a unitless
+-- fractional width is read by the docx writer as a pixel count (0.55 rounds
+-- to 0 and the picture vanishes), so convert the fraction to inches of the
+-- 9331-twip text block (cas_docx_post.py TEXT_WIDTH) and let pandoc derive
+-- the height from the image.
+local TEXT_WIDTH_IN = 9331 / 1440
+
+local function size_image(img)
+  local width = img.attributes and img.attributes['width'] or nil
+  local fraction = nil
+  if width == nil or width == '' then
+    fraction = 0.9
+  else
+    fraction = tonumber(width)
+    if fraction == nil then
+      return img -- an explicit unit (3in, 55%): pandoc knows how to size it
+    end
+  end
+  img.attributes['width'] = string.format('%.4fin', fraction * TEXT_WIDTH_IN)
+  img.attributes['height'] = nil
   return img
 end
 
@@ -530,5 +549,17 @@ return {
     end
     return doc
   end,
-  Image = rasterize,
+  Image = function(img)
+    if not is_docx() then
+      return nil
+    end
+    local src = img.src or ''
+    if src:match('%.[pP][dD][fF]$') or src:match('%.[eE][pP][sS]$') then
+      img = rasterize(img)
+      if img == nil then
+        return nil
+      end
+    end
+    return size_image(img)
+  end,
 }
