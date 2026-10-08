@@ -88,7 +88,10 @@ DEFAULT_RETRIES = 2
 DEFAULT_ACCEPT_THRESHOLD = 0.94
 DEFAULT_CROSSREF_ROWS = 8
 
-DOI_REGEX = re.compile(r"10\.\d{4,9}/[-._;()/:A-Z0-9]+", re.IGNORECASE)
+# SICI-style DOIs (AMS journals before ~2005) contain '<' and '>', e.g.
+# 10.1175/1520-0493(1988)116<2417:SSBOTM>2.0.CO;2; without them the DOI is cut
+# at the first '<' and every such reference is reported as unresolvable.
+DOI_REGEX = re.compile(r"10\.\d{4,9}/[-._;()/:<>A-Z0-9]+", re.IGNORECASE)
 YEAR_REGEX = re.compile(r"^(18|19|20|21)\d{2}$")
 URL_REGEX = re.compile(r"^https?://", re.IGNORECASE)
 
