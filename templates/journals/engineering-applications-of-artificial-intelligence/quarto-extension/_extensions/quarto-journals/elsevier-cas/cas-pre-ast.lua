@@ -71,6 +71,39 @@ end
 -- ": caption {#tbl:x}" into the table attributes; the strip below is a
 -- belt-and-braces fallback if a literal "{#tbl:x}" survives in the text
 -- (same acceptance rules as cas.lua's caption_and_label).
+-- Table notes: a span [text]{.note} inside a table caption is taken out of the
+-- caption and set under the table (small, ragged right), so the caption can
+-- stay short. Captions without such a span are untouched.
+local function split_note(blocks)
+  local note = {}
+  local kept = pandoc.List()
+  local function strip(inlines)
+    local out = pandoc.List()
+    for _, inline in ipairs(inlines) do
+      if inline.t == 'Span' and inline.classes:includes('note') then
+        for _, x in ipairs(inline.content) do
+          note[#note + 1] = x
+        end
+      else
+        out:insert(inline)
+      end
+    end
+    return out
+  end
+  for _, block in ipairs(blocks) do
+    if block.t == 'Plain' or block.t == 'Para' then
+      kept:insert(pandoc[block.t](strip(block.content)))
+    else
+      kept:insert(block)
+    end
+  end
+  local tex = ''
+  if #note > 0 then
+    tex = to_latex({ pandoc.Plain(note) })
+  end
+  return kept, tex
+end
+
 local function caption_and_label(blocks, attr_id)
   local text = to_latex(blocks)
   local id = attr_id or ''
@@ -132,7 +165,8 @@ local function table_filter(tbl)
 
   local attributes = tbl.attributes or {}
   local attr_id = tbl.attr and tbl.attr.identifier or ''
-  local caption, identifier = caption_and_label(caption_blocks(tbl.caption), attr_id)
+  local cap_blocks, note = split_note(caption_blocks(tbl.caption))
+  local caption, identifier = caption_and_label(cap_blocks, attr_id)
 
   local columns = {}
   for _, colspec in ipairs(tbl.colspecs) do
@@ -185,6 +219,9 @@ local function table_filter(tbl)
 
   out[#out + 1] = '\\bottomrule'
   out[#out + 1] = '\\end{tabular*}'
+  if note ~= '' then
+    out[#out + 1] = '\\par\\vspace{2pt}{\\footnotesize\\raggedright ' .. note .. '\\par}'
+  end
   out[#out + 1] = '\\end{table}'
 
   return pandoc.RawBlock('latex', table.concat(out, '\n'))

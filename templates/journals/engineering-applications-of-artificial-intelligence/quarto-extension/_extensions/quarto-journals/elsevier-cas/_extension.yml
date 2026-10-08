@@ -44,6 +44,7 @@ contributes:
         - cas-sc.cls
         - cas-common.sty
         - bib/cas-model2-names.bst
+        - bib/cas-model2-names-etal.bst
         - thumbnails/cas-email.jpeg
         - thumbnails/cas-facebook.jpeg
         - thumbnails/cas-gplus.jpeg

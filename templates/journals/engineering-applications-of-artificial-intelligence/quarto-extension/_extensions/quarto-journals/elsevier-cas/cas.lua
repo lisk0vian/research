@@ -287,12 +287,36 @@ local function metadata_filter(meta)
       options[#options + 1] = formatting
     end
     if to_string(journal['cite-style']) == 'authoryear' then
-      meta['biblio-style'] = pandoc.MetaString('cas-model2-names')
+      -- journal.biblio-style picks a shipped variant, e.g.
+      -- cas-model2-names-etal (six authors, then "et al.").
+      local style = to_string(journal['biblio-style'])
+      meta['biblio-style'] = pandoc.MetaString(style ~= '' and style or 'cas-model2-names')
+    end
+  end
+
+  -- Optional per-paper overrides (absent = the sample's behaviour):
+  --   journal.equations: centered  -> drop fleqn (display equations centred)
+  --   journal.natbib-options: "..." -> replace authoryear,longnamesfirst, e.g.
+  --     "authoryear" when the journal wants "et al." from the first citation.
+  local natbib_options = NATBIB_OPTIONS
+  if journal ~= nil and type(journal) == 'table' then
+    if to_string(journal['equations']) == 'centered' then
+      local kept = {}
+      for _, option in ipairs(options) do
+        if option ~= 'fleqn' then
+          kept[#kept + 1] = option
+        end
+      end
+      options = kept
+    end
+    local custom = to_string(journal['natbib-options'])
+    if custom ~= '' then
+      natbib_options = custom
     end
   end
 
   meta = set_class_options(meta, options)
-  meta['natbiboptions'] = pandoc.MetaString(NATBIB_OPTIONS)
+  meta['natbiboptions'] = pandoc.MetaString(natbib_options)
   meta = normalize_authors(meta)
   meta = set_short_authors(meta)
   return meta
