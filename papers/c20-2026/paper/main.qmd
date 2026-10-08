@@ -141,10 +141,11 @@ an evaluation designed to be hard to over-interpret. Its contributions are:
   ensemble, selected on development years only, which corrects the
   over-confidence of the combined forecast.
 
-Section @sec-related reviews the related work. Section @sec-data describes the stations and
-predictors, Section @sec-methods the forecasting system and its evaluation, and
-Section @sec-results the blind results. Section @sec-discussion discusses them against the
-literature and states the limitations, and Section @sec-conclusions concludes.
+Section @sec-related reviews the related work; Section @sec-data describes the
+stations and predictors and Section @sec-methods the forecasting system and its
+evaluation. Section @sec-results presents the blind results, Section
+@sec-discussion discusses them against the literature and states the
+limitations, and Section @sec-conclusions concludes.
 
 # Related work {#sec-related}
 
@@ -160,8 +161,8 @@ persistent soil-moisture anomalies [@Mariotti2018; @Mariotti2020;
 temperature and rainfall far from its centre of action
 [@WheelerHendon2004; @Kiladis2014], and the reforecasts of the Subseasonal
 Experiment showed how strongly verification depends on these states
-[@Pegion2019]. The practical response has been to report skill
-conditioned on the state at issuance, a practice we follow.
+[@Pegion2019]. In practice, skill is reported conditioned on the state at
+issuance, a practice we follow.
 
 ## Machine learning for subseasonal temperature
 
@@ -244,11 +245,10 @@ whose variables are defined in the provider's data dictionary
 Andean slope and the Altiplano margin from 2,421 to 4,475 m
 (Fig. @fig-study; Table @tbl-stations). Two belong to the global basic observing network
 (GBON) and three to the regional one (RBON). The common record runs from
-1 January 2015 to 30 June 2024 (3,469 days per station). The harmonic
-climatologies in Fig. @fig-study b illustrate the gradient: the mean daily
-temperature drops by about 12 °C from Matucana to Imata, and the amplitude of
-the annual cycle at the highest station is about three times that at the
-lowest.
+1 January 2015 to 30 June 2024 (3,469 days per station). Fig. @fig-study b
+shows the gradient in the harmonic climatologies: the mean daily temperature
+drops by about 12 °C from Matucana to Imata, and the amplitude of the annual
+cycle at the highest station is about three times that at the lowest.
 
 ![Study area: (a) stations coloured by elevation over the Andes (shaded); (b) climatological daily mean temperature at each station.](media/Fig01_study_area.pdf){#fig-study width=1}
 
@@ -287,20 +287,21 @@ consistent with local civil time), the 24-hour coverage and the absence of
 duplicated timestamps, and treated empty fields as missing; 13,268
 station-hours (3.2%) have no variable at all. Temperature values then went
 through range, spike and stuck-sensor checks adapted from
-@Hunziker2017: 428 spikes and 2,114 stuck-sensor hours were flagged. Daily
-means were computed from the remaining hours, and a day was kept only when
-enough hours were valid; targets were never imputed.
+@Hunziker2017: 428 spikes and 2,114 stuck-sensor hours were flagged. We
+computed daily means from the remaining hours, kept a day only when enough
+hours were valid and never imputed targets.
 
 ## Large-scale indices and the dynamical forecast {#sec-largescale}
 
 The large-scale predictors are the weekly Niño 3.4 and Niño 1+2 sea-surface
 temperature anomalies from the NOAA optimum interpolation analysis
-[@Reynolds2002; @NOAACPCWeeklySST], used with a seven-day publication lag,
-and the two components and amplitude of the real-time outgoing-longwave-
-radiation MJO index (ROMI) [@Kiladis2014; @Wang2018; @NOAAPSLROMI], used with
-a one-day lag. The E and C indices [@Takahashi2011; @IGPECIndex] enter only
-as a sensitivity analysis. Indices published with a delay longer than the
-issuance (such as the Oceanic Niño Index) were excluded to avoid look-ahead.
+[@Reynolds2002; @NOAACPCWeeklySST], used with a seven-day publication lag.
+MJO activity enters through the two components and amplitude of the real-time
+outgoing-longwave-radiation MJO index (ROMI) [@Kiladis2014; @Wang2018;
+@NOAAPSLROMI], used with a one-day lag. Only in a sensitivity analysis are the
+E and C indices [@Takahashi2011; @IGPECIndex] used. Indices published with a
+delay longer than the issuance (such as the Oceanic Niño Index) were excluded
+to avoid look-ahead.
 The dynamical forecast is the four-member 00 UTC CFSv2 run issued each Monday
 [@Saha2014; @NOAACFSv2Open], whose 6-hourly 2 m temperature on the 1° grid was
 interpolated bilinearly to each station and averaged over each target window; the open archive starts on
@@ -317,9 +318,8 @@ standard S2S target because day-to-day weather is unpredictable at these
 leads while averages retain signal [@Vitart2017; @Robertson2015;
 @Pegion2019], and the same three windows are used by recent machine-learning
 benchmarks [@Hwang2019; @He2021; @Mouatadid2023usa]. Each horizon has its own
-model (direct strategy), so no forecast is fed back as an input. Models are
-trained on issuances made every day of the training period, which multiplies
-the sample size, and evaluated on Mondays only. The complete system is shown
+model (direct strategy), so no forecast is fed back as an input. We train the models on issuances made every day of the training period, which
+multiplies the sample size, and evaluate them on Mondays only. The complete system is shown
 in Fig. @fig-workflow.
 
 ![Forecasting system, from station data to blind evaluation.](media/Fig02_workflow.pdf){#fig-workflow width=1}
@@ -352,12 +352,12 @@ where $T_s$ is the daily mean temperature. A window counts only when at least
 ## Predictors
 
 The local predictor set (L) contains lagged daily temperature anomalies (lags
-0–6 days) and their 7-, 14- and 30-day means, anomalies of the diurnal
-temperature range, daily maximum and minimum temperature and relative
-humidity, log-transformed 7- and 30-day rainfall totals, and the sine and
-cosine of the target day of the year, all computed from trailing windows that
-end on the issuance date; persistence of recent anomalies is the main source of skill
-at week 1 [@DelSoleTippett2014]. The large-scale set (G) adds the Niño 3.4,
+0–6 days) and their 7-, 14- and 30-day means. It also includes anomalies of
+the diurnal temperature range, daily maximum and minimum temperature and
+relative humidity, log-transformed 7- and 30-day rainfall totals, and the sine
+and cosine of the target day of the year, all computed from trailing windows
+that end on the issuance date. Persistence of recent anomalies is the main
+source of skill at week 1 [@DelSoleTippett2014]. The large-scale set (G) adds the Niño 3.4,
 Niño 1+2 and ROMI predictors described above, because ENSO and the MJO are the
 main sources of subseasonal predictability for the region
 [@LavadoEspinoza2014; @Sulca2018; @Mariotti2020]. Models with the suffix LG
@@ -763,9 +763,9 @@ the highest point estimates of any system at W1 and W2 and the second highest
 at W3–4. Against CFS_BC it is indistinguishable at W1 ($\Delta$CRPS 0.031;
 p = 0.26) and better at W2 and W3–4 (Holm p = 0.012 and 0.002); against M\*
 it is better at all three horizons (Holm p = 0.0003, 0.017 and 0.031). The
-same-rows control shows that the gain comes from the CFSv2 predictor rather
-than from the weekly training sample: the hybrid beats it by 0.462 and 0.262
-at W1 and W2 (Holm p = 0.0003 and 0.012), and by a small margin at W3–4
+same-rows control attributes the gain to the CFSv2 predictor rather than to
+the weekly training sample. Against that control the hybrid gains 0.462 and
+0.262 at W1 and W2 (Holm p = 0.0003 and 0.012), and a small margin at W3–4
 (0.035; Holm p = 0.026, two-sided interval $-0.006$ to 0.070), where the
 CFSv2 signal itself is weak. The correlation between the bias-corrected
 CFSv2 anomaly and the observation falls from 0.70 at W1 to 0.21 at W3–4 on
@@ -795,16 +795,16 @@ covers 0.753, 0.686 and 0.630 of the outcomes, outside the pre-registered
 0.85–0.95, and its PIT histogram at W3–4 is U-shaped, with 17% and 32% of the
 outcomes in the lowest and highest deciles. The cause is the Vincentization
 of members that disagree [@Lichtendahl2013]: averaging quantiles narrows the
-distribution exactly when member uncertainty is largest. The dev-selected
-M\*~2~ combines the same members with Chronos (absolute context) and a
-conformal calibration. Its coverage is 0.903, 0.887 and 0.866, within the
+distribution exactly when member uncertainty is largest. Chosen on the
+development folds, M\*~2~ combines the same members with Chronos (absolute
+context) and a conformal calibration. Its coverage is 0.903, 0.887 and 0.866, within the
 target range, and its CRPS is lower than that of M\* at all horizons (H5;
 Holm p $\le 0.002$), with CRPSS of 0.323, 0.348 and 0.426. The selection is
-visible in Table @tbl-mstar2 (Section @sec-app-tables): the conformal calibration had the lowest
-cross-fitted development CRPS among the in-range configurations, and EMOS,
-although best on the blind CRPS (0.398 °C against 0.415 °C), was not chosen
-because its development coverage at W3–4 (0.872) was in range but its
-development CRPS was higher (0.395 °C against 0.382 °C). Reporting all
+visible in Table @tbl-mstar2 (Section @sec-app-tables): the conformal
+calibration had the lowest cross-fitted development CRPS among the in-range
+configurations. EMOS, although best on the blind CRPS (0.398 °C against 0.415
+°C), was not chosen: its development coverage at W3–4 (0.872) was in range,
+but its development CRPS was higher (0.395 °C against 0.382 °C). Reporting all
 candidates keeps the post hoc selection auditable. The hybrid, which has no
 calibration step, covers 0.81–0.84; CFS_BC covers 0.85 at W1 but only 0.73 at
 W3–4.
@@ -866,11 +866,11 @@ climates.
 
 **Training noise and period.** Re-training GBM L, GBM LG and LSTM LG with
 four additional seeds changes their CRPSS by a standard deviation of at most
-0.005 for the gradient-boosting models and 0.020 for the LSTM, and the
-ranking GBM L < GBM LG < LSTM LG holds in every seed and horizon
-(Table @tbl-seeds; Fig. @fig-seeds in Section @sec-app-figures). All models have higher skill on the blind folds
-than on the development folds (Fig. @fig-devblind), M\* for example 0.29–0.35
-against 0.12–0.16. The order of the models is preserved, which indicates that
+0.005 for the gradient-boosting models and 0.020 for the LSTM. The ranking
+GBM L < GBM LG < LSTM LG holds in every seed and horizon (Table @tbl-seeds;
+Fig. @fig-seeds in Section @sec-app-figures). All models have higher skill on
+the blind folds than on the development folds (Fig. @fig-devblind), M\* for
+example 0.29–0.35 against 0.12–0.16. The order of the models is preserved, which indicates that
 the increase reflects the more predictable blind years, dominated by the
 2023–24 El Niño, rather than a model selection effect.
 
@@ -893,8 +893,8 @@ target would fall in the next fold's test year.
 ## What the system adds
 
 The central result is that the statistical and dynamical forecasts fail in
-different places. CFS_BC is the best single system at W1 and the weakest
-among the weakest at W3–4; the station-based models are the reverse. The
+different places. CFS_BC is the best single system at W1 and among the
+weakest at W3–4; the station-based models are the reverse. The
 hybrid ridge model, which learns how much weight the CFSv2 anomaly deserves
 at each horizon, is at least as good as the better of the two at every
 horizon. This complementarity has been reported for subseasonal forecasts in
@@ -969,8 +969,7 @@ ENSO phases, but the size of the gains is tied to that period.
 
 Subseasonal temperature forecasts at high-Andean stations can be both skilful
 and calibrated, provided that the forecasting system is designed and
-evaluated with the same discipline. That is the thread that connects the
-methodological and technical results of this study.
+evaluated with the same discipline.
 
 On the methodological side, freezing the models and their hyperparameters
 before scoring two blind years, separating training and test targets by an
@@ -1001,10 +1000,10 @@ checked for calibration on the quantity a user needs [@Gneiting2007;
 turned an over-confident ensemble into one whose 90% intervals covered close
 to 90% of the blind outcomes [@Romano2019].
 
-The two sides depend on each other. The technical results are credible
+The two sides depend on each other: the technical results are credible
 because the protocol was fixed in advance, and the protocol is worth its cost
 because the results it validates change what a forecaster can offer for frost
-and agricultural decisions. The evidence comes from five stations and two
+and agricultural decisions. Evidence, however, comes from five stations and two
 blind years, and the hybrid and the calibrated ensemble were defined after the
 first blind scores; confirming them on later years and more stations, adding
 the ECMWF extended-range forecasts and calibrating the hybrid are the next
