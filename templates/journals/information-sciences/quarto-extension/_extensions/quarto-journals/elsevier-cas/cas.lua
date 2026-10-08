@@ -311,6 +311,11 @@ local CROSSREF_PREFIXES = {
 }
 
 local function crossref_cites(cite)
+  if type(FORMAT) ~= 'string' or FORMAT:find('latex', 1, true) == nil then
+    -- docx: leave @fig-x/@tbl-x/@sec-x to Quarto's crossref, which renders
+    -- them as text ("Figure 1"); raw LaTeX would be dropped by the writer.
+    return nil
+  end
   local refs = {}
   for _, citation in ipairs(cite.citations) do
     -- Quarto reserves both spellings: `@fig:x` (pandoc) and `@fig-x`

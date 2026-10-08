@@ -76,6 +76,15 @@ contributes:
       # citations link to their reference, styled like the PDF's hyperref
       # citecolor (Hyperlink style, DarkSlateGrey)
       link-citations: true
+      # @fig-x/@tbl-x/@sec-x/@eq-x render as a bare number in the PDF
+      # (cas-pre-ast.lua emits \protect\ref{..}; the sources spell the label
+      # out). Empty prefixes make Quarto's crossref do the same in the docx
+      # instead of writing "Figure 2", which would double the label.
+      crossref:
+        fig-prefix: ""
+        tbl-prefix: ""
+        sec-prefix: ""
+        eq-prefix: ""
       filters:
         - cas-docx.lua
       number-sections: true

@@ -109,6 +109,57 @@ local function to_latex_row(row)
   return table.concat(cells, ' & ') .. ' \\\\'
 end
 
+-- --------------------------------------------------------------------------
+-- docx table notes: a [..]{.note} span inside a table caption becomes its
+-- own paragraph right after the table. Word has no \par note block, and the
+-- raw LaTeX cas-pre-ast emits for the PDF would simply be dropped by the
+-- docx writer, so the note travels as text with a private-use sentinel that
+-- cas_docx_post.py strips, styles and folds back into the float.
+-- --------------------------------------------------------------------------
+
+local NOTE_MARK = '\u{E010}'
+
+local function docx_table_notes(tbl)
+  if is_latex_output() then
+    return nil
+  end
+  local note = pandoc.List()
+  local kept = pandoc.List()
+  local changed = false
+  for _, block in ipairs(caption_blocks(tbl.caption)) do
+    if block.t == 'Plain' or block.t == 'Para' then
+      local out = pandoc.List()
+      for _, inline in ipairs(block.content) do
+        if inline.t == 'Span' and inline.classes:includes('note') then
+          changed = true
+          for _, x in ipairs(inline.content) do
+            note:insert(x)
+          end
+        else
+          out:insert(inline)
+        end
+      end
+      kept:insert(pandoc[block.t](out))
+    else
+      kept:insert(block)
+    end
+  end
+  if not changed or #note == 0 then
+    return nil
+  end
+  local short = nil
+  local ok, s = pcall(function() return tbl.caption.short end)
+  if ok then
+    short = s
+  end
+  tbl.caption = pandoc.Caption(kept, short)
+  local inlines = pandoc.List({ pandoc.Str(NOTE_MARK) })
+  for _, x in ipairs(note) do
+    inlines:insert(x)
+  end
+  return { tbl, pandoc.Para(inlines) }
+end
+
 local function attr_or(attributes, key, default)
   local value = attributes and attributes[key]
   if value == nil or value == '' then
@@ -127,6 +178,10 @@ end
 --     \begin{tabular*}{\tblwidth}{@{} LRCR@{}} ... \end{tabular*}
 --   \end{table}
 local function table_filter(tbl)
+  local docx = docx_table_notes(tbl)
+  if docx ~= nil then
+    return docx
+  end
   if not is_latex_output() then
     return nil -- HTML/other formats keep pandoc's own table rendering
   end

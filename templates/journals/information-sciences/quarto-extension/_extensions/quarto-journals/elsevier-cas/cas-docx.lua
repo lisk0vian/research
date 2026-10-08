@@ -254,6 +254,12 @@ local function rasterize(img)
   end
   handle:close()
   img.src = png
+  -- a fractional unitless width (e.g. width=0.55, meaning 0.55\textwidth in
+  -- the PDF) is read by the docx writer as a pixel count and rounds to 0,
+  -- so the picture would vanish; drop it and let pandoc size the image from
+  -- the rasterized PNG (cas_docx_post.py scales it to .9 text width).
+  img.attributes.width = nil
+  img.attributes.height = nil
   return img
 end
 

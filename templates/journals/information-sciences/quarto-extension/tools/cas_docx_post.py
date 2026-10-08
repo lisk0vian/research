@@ -611,6 +611,49 @@ O = "urn:schemas-microsoft-com:office:office"
 W10 = "urn:schemas-microsoft-com:office:word"
 
 
+NOTE_SENTINEL = "\ue010"
+
+
+def merge_float_notes(body: ET.Element, floats: list[dict]) -> None:
+    """Fold a sentinel note paragraph (emitted by cas-pre-ast.lua) into its
+    float: the note follows the float's elements in the body, and moving it
+    inside keeps it with the float when place_floats() boxes a top float.
+    The sentinel is stripped and the paragraph styled like the PDF's note
+    (8 pt, aligned with the .9\\textwidth float block)."""
+    for f in floats:
+        last = f["elements"][-1]
+        try:
+            idx = list(body).index(last)
+        except ValueError:
+            continue
+        if idx + 1 >= len(body):
+            continue
+        note = body[idx + 1]
+        if note.tag != q("p") or not text(note).startswith(NOTE_SENTINEL):
+            continue
+        # keep the paragraph in the body: place_floats() removes it only when
+        # it boxes a top float; a "here" float leaves it in place, after the
+        # table.
+        f["elements"].append(note)
+        ts = list(note.iter(q("t")))
+        if ts and ts[0].text:
+            ts[0].text = ts[0].text.replace(NOTE_SENTINEL, "", 1)
+        pp = ppr(note)
+        remove_child(pp, "jc")
+        margin = (TEXT_WIDTH - FLOAT_WIDTH) // 2
+        set_attr_child(pp, "ind", left=margin, right=margin)
+        spacing(note, before=tw(2), after=tw(6))
+        for r in note.findall(q("r")):
+            rpr = r.find(q("rPr"))
+            if rpr is None:
+                rpr = ET.Element(q("rPr"))
+                r.insert(0, rpr)
+            remove_child(rpr, "sz")
+            set_attr_child(rpr, "sz", val="16")  # \footnotesize: 8 pt
+            remove_child(rpr, "szCs")
+            set_attr_child(rpr, "szCs", val="16")
+
+
 def float_box(elements: list[ET.Element], below_pt: float, n: int) -> ET.Element:
     """A run holding an anchored, auto-sized VML text box at the top of the
     text area (LaTeX [t]). Unlike a floating table it is positioned on its
@@ -1299,6 +1342,7 @@ def process(docx: Path, pdf: Path | None = None,
         fix_citations(body, entries, short_citations)
         fix_bibliography(body, entries, {"add": add_rel})
     floats = fix_figures_and_tables(body)
+    merge_float_notes(body, floats)
     place_floats(body, floats, pdf)
     fix_equations(body)
     out: dict[str, bytes] = {}

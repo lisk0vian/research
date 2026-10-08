@@ -520,7 +520,7 @@ bibliography: references.bib
 
 # Introduction
 
-See @tbl-demo, @fig-demo and @Reichstein2019 for the reference style.
+See Table @tbl-demo and Figure @fig-demo and @Reichstein2019 for the style.
 
 ![Fixture figure caption.](cas-grabs.pdf){#fig-demo width=.9}
 
@@ -528,7 +528,7 @@ See @tbl-demo, @fig-demo and @Reichstein2019 for the reference style.
 |---|---|
 | 1 | 2 |
 
-: Fixture table caption. {#tbl-demo}
+: Fixture table caption. [Fixture note with $\Delta$CRPS text.]{.note} {#tbl-demo}
 """
 
 DOCX_FIXTURE_BIB = """@ARTICLE{Reichstein2019,
@@ -583,6 +583,16 @@ def run_docx_suite(rep: Report) -> None:
             rep.add("docx render", False, out[-1500:])
             return
         rep.add("docx render", True)
+
+        # mirror paper_build: run the OOXML post-pass (float notes, captions,
+        # tables, equations) before asserting on the document
+        post = CANONICAL_EXT.parent / "tools" / "cas_docx_post.py"
+        if post.is_file():
+            rc_p, out_p = run([sys.executable, str(post), str(docx)])
+            rep.add("docx layout pass", rc_p == 0,
+                    "cas_docx_post applied" if rc_p == 0 else out_p[-300:])
+        else:
+            rep.add("docx layout pass", False, "cas_docx_post.py not found")
 
         z = zipfile.ZipFile(docx)
         names = set(z.namelist())
@@ -693,10 +703,35 @@ def run_docx_suite(rep: Report) -> None:
             cap.append("no rasterized figure in word/media")
         if not re.search(r"Figure[\s\u00a0]*1\s*:", full):
             cap.append("Figure 1 caption numbering")
-        if not re.search(r"Table[\s\u00a0]*1\s*:", full):
+        # cas_docx_post drops the colon after a table number (label + break)
+        if not re.search(r"Table[\s\u00a0]*1(?![0-9])", full):
             cap.append("Table 1 caption numbering")
         rep.add("docx figure + captions", not cap,
                 "; ".join(cap) or f"media={media}, Figure/Table 1 numbered")
+
+        # --- table notes: split out of the caption, after the table ---------
+        notes: list[str] = []
+        if "Fixture note with" not in full:
+            notes.append("note text missing")
+        if "\ue010" in full:
+            notes.append("sentinel not stripped")
+        cap_i = full.find("Fixture table caption.")
+        col_i = full.find("Col A")
+        note_i = full.find("Fixture note with")
+        if not (cap_i != -1 and col_i != -1 and note_i > col_i):
+            notes.append("note not placed after the table")
+        rep.add("docx table notes", not notes,
+                "; ".join(notes) or "note split from the caption, below the table")
+
+        # --- cross-references: source spells the label, number stays bare ---
+        xref: list[str] = []
+        flat = re.sub(r"[\s\u00a0]+", " ", full)
+        if "See Table 1 and Figure 1" not in flat:
+            xref.append("cross-reference text (See Table 1 and Figure 1)")
+        if re.search(r"Table\s+Table|Figure\s+Figure", flat):
+            xref.append("doubled cross-reference label")
+        rep.add("docx cross-references", not xref,
+                "; ".join(xref) or "labels spelled once, numbers bare")
 
         # --- Elsevier-Harvard citations + bibliography ----------------------
         cite: list[str] = []
