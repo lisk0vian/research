@@ -131,3 +131,29 @@ def test_c15_adapter_runs_stages_in_registry_order():
     stages = next(ast.literal_eval(n.value) for n in tree.body
                   if isinstance(n, ast.Assign) and n.targets[0].id == "STAGES")
     assert stages == registry
+
+def test_pipeline_notebook_loads_the_default_spec():
+    load = _code_cells(pn.build_notebook(SPEC))[0]
+    assert "rt.load_spec(WORK_DIR)" in load
+
+
+def test_a_second_spec_generates_its_own_notebook(paper):
+    import yaml
+
+    fig_spec = {**SPEC, "title": "c99-2026: figures", "gpu": "none",
+                "run": ["run_all.py", "--only", "11_fig"]}
+    (paper / "experiments" / "colab_figures.yaml").write_text(yaml.safe_dump(fig_spec),
+                                                              encoding="utf-8")
+    root = str(paper.parents[1])
+    run = lambda *a: subprocess.run(  # noqa: E731
+        [sys.executable, "scripts/paper_notebook.py", "--slug", "c99-2026", "--root", root, *a],
+        cwd=REPO_ROOT, capture_output=True, text=True)
+    assert run().returncode == 0
+    nb = json.loads((paper / "notebooks" / "figures.ipynb").read_text(encoding="utf-8"))
+    assert 'rt.load_spec(WORK_DIR, "colab_figures.yaml")' in _code_cells(nb)[0]
+    assert pn.run_cell_count(nb) == 1
+    assert "figures.ipynb" in (paper / "notebooks" / "figures.md").read_text(encoding="utf-8")
+    assert run("--check").returncode == 0
+    (paper / "notebooks" / "figures.md").write_text("hand edit\n", encoding="utf-8")
+    proc = run("--check")
+    assert proc.returncode == 1 and "colab_figures.yaml" in proc.stderr

@@ -141,6 +141,20 @@ exist in older runs (state files, stage logs, the run meta) into the record.
   concurrent sessions. Ids live in `papers/<slug>/.drive_ids.json`
   (gitignored), including `code/`, the folder new code files are created in.
 
+### A second notebook for part of the pipeline (for example the paper figures)
+
+A paper may add `experiments/colab_figures.yaml`, a spec with the same keys as
+`colab.yaml`. `paper_notebook.py` then also writes `notebooks/figures.ipynb`
+and `notebooks/figures.md`, with the same six cells; cell 1 loads that spec
+instead of `colab.yaml`. Its `run` is the same pipeline restricted to its
+stages (`[run_all.py, --only, <stage>]`), so the contract above holds: one run
+cell, the same `errors.log` and `status.json`, the same stage logs. The stage
+keys still come from `colab.yaml`, so a second notebook can never mark the
+main pipeline's stages stale. It lives next to `experiments.ipynb` on Drive
+and is synced in place like it. Every rule in section 7 applies to it.
+c20-2026 uses it for the paper figures (`11_paper_figures`, CPU runtime),
+which read `outputs/` only and check themselves (`outputs/figures/paper/qa.md`).
+
 ## 5. Using Colab day to day
 
 - **Open from Drive**, always the same file. Two notebooks with one name, or a

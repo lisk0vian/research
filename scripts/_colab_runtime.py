@@ -74,11 +74,12 @@ class RecordedError(RuntimeError):
 
 # --- the spec ------------------------------------------------------------------
 
-def load_spec(code_dir: str | Path) -> dict:
-    """Read `colab.yaml` next to the pipeline code. Missing keys get defaults."""
+def load_spec(code_dir: str | Path, name: str = SPEC_NAME) -> dict:
+    """Read `colab.yaml` (or a second notebook's spec, `name`) next to the
+    pipeline code. Missing keys get defaults."""
     import yaml  # local: a pipeline dependency, not stdlib
 
-    path = Path(code_dir) / SPEC_NAME
+    path = Path(code_dir) / name
     data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
     if not isinstance(data, dict):
         raise ValueError(f"{path}: expected a mapping")

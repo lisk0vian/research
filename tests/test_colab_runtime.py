@@ -530,3 +530,11 @@ def test_tail_keeps_the_top_of_a_long_traceback(tmp_path):
     out = rt.tail(p, 30)
     assert "07b_deep.py" in out and "OutOfMemoryError" in out and "omitted" in out
     assert len(out.splitlines()) <= 31
+
+def test_load_spec_reads_a_named_spec(tmp_path):
+    (tmp_path / "colab.yaml").write_text("title: main\n", encoding="utf-8")
+    (tmp_path / "colab_figures.yaml").write_text(
+        "title: figures\nrun: [run_all.py, --only, 11]\n", encoding="utf-8")
+    assert rt.load_spec(tmp_path)["title"] == "main"
+    spec = rt.load_spec(tmp_path, "colab_figures.yaml")
+    assert spec["title"] == "figures" and spec["run"][-1] == 11 and spec["gpu"] == "none"

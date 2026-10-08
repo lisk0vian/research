@@ -297,10 +297,19 @@ def collect_files(paper_dir: Path, source_dir: str = "experiments") -> list[Path
             continue  # Zenodo rejects empty files (.gitkeep placeholders)
         files.append(p)
 
-    # Add the Colab notebook if it exists
-    nb = paper_dir / "notebooks" / NOTEBOOK_NAME
-    if nb.is_file() and nb not in files:
-        files.append(nb)
+    # Add the Colab notebooks if they exist (the pipeline one and, when a paper
+    # declares it, the second notebook of paper_notebook.NOTEBOOKS).
+    for name in (NOTEBOOK_NAME, "figures.ipynb"):
+        nb = paper_dir / "notebooks" / name
+        if nb.is_file() and nb not in files:
+            files.append(nb)
+
+    # The shared Colab runtime lives once in scripts/ and is imported by every
+    # pipeline with a colab.yaml (run_all.py fails without it), so a package
+    # of such a pipeline must carry it, as paper_drive_sync.py does for Drive.
+    runtime = paper_dir.parents[1] / "scripts" / "_colab_runtime.py"
+    if (source / "colab.yaml").is_file() and runtime.is_file() and runtime not in files:
+        files.append(runtime)
 
     return files
 
@@ -477,10 +486,12 @@ def _zenodo_filename(file: Path, paper_dir: Path, source_dir: str) -> str:
     Preserves the relative path structure with forward slashes.
     """
     source = paper_dir / source_dir
-    nb = paper_dir / "notebooks" / NOTEBOOK_NAME
-    if file == nb:
-        return NOTEBOOK_NAME
-    return str(file.relative_to(source)).replace("\\", "/")
+    if file.parent == paper_dir / "notebooks":
+        return file.name          # notebooks sit at the deposit root
+    try:
+        return str(file.relative_to(source)).replace("\\", "/")
+    except ValueError:
+        return file.name          # shared files from outside the source (the runtime)
 
 
 def _draft_browser_url(production: bool, draft_id: int) -> str:
@@ -819,11 +830,13 @@ def main() -> int:
         print(f"\nfiles ({len(files)}):")
         for f in files:
             source = paper_dir / args.source
-            nb = paper_dir / "notebooks" / NOTEBOOK_NAME
-            if f == nb:
-                rel = f"notebooks/{NOTEBOOK_NAME}"
+            if f.parent == paper_dir / "notebooks":
+                rel = f"notebooks/{f.name}"
             else:
-                rel = str(f.relative_to(source)).replace("\\", "/")
+                try:
+                    rel = str(f.relative_to(source)).replace("\\", "/")
+                except ValueError:
+                    rel = f"{f.name} (shared, from scripts/)"
             print(f"  {rel} ({_format_size(f.stat().st_size)})")
         print(f"\ntotal: {_format_size(size)}")
 

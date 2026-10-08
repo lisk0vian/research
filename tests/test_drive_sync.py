@@ -323,3 +323,10 @@ def test_missing_folder_id_refuses_instead_of_emitting_an_empty_one(paper):
     assert proc.returncode == 1
     assert "would be created" in proc.stderr
     assert "uploadFile" not in proc.stdout
+
+def test_a_second_notebook_is_a_target_at_the_folder_root(paper):
+    (paper / "notebooks" / "figures.ipynb").write_text('{"cells": []}\n', encoding="utf-8")
+    nbs = {t["remote"]: t for t in sync.target_specs(paper) if t["is_notebook"]}
+    assert set(nbs) == {"experiments.ipynb", "figures.ipynb"}
+    assert nbs["figures.ipynb"]["remote_dir"] == ""
+    assert nbs["figures.ipynb"]["mime_type"] == "application/x-ipynb+json"

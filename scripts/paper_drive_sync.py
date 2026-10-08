@@ -51,7 +51,9 @@ EXCLUDED_PARTS = {"__pycache__", ".ipynb_checkpoints", ".git"}
 SKIP_PREFIXES = (".env", ".gitignore", "opencode.jsonc")
 
 NB_REMOTE_NAME = "experiments.ipynb"
-NB_REMOTE_DIR = ""  # notebook sits at the Drive folder root
+# A second notebook (paper_notebook.NOTEBOOKS), e.g. the paper figures; same rules.
+NB_EXTRA_NAMES = ("figures.ipynb",)
+NB_REMOTE_DIR = ""  # notebooks sit at the Drive folder root
 
 # The shared Colab runtime (COLAB.md). It lives once in scripts/ and is uploaded
 # next to every paper's code that has a colab.yaml, so no copy can drift.
@@ -168,15 +170,16 @@ def collect_code_files(paper: Path) -> list[Path]:
 def target_specs(paper: Path) -> list[dict]:
     """Everything that must live on Drive, in upload order."""
     specs: list[dict] = []
-    nb = paper / "notebooks" / NB_REMOTE_NAME
-    if nb.is_file():
-        specs.append({
-            "remote": NB_REMOTE_NAME,
-            "remote_dir": NB_REMOTE_DIR,
-            "local": nb,
-            "mime_type": NOTEBOOK_MIME,
-            "is_notebook": True,
-        })
+    for name in (NB_REMOTE_NAME, *NB_EXTRA_NAMES):
+        nb = paper / "notebooks" / name
+        if nb.is_file():
+            specs.append({
+                "remote": name,
+                "remote_dir": NB_REMOTE_DIR,
+                "local": nb,
+                "mime_type": NOTEBOOK_MIME,
+                "is_notebook": True,
+            })
     for p in collect_code_files(paper):
         specs.append({
             "remote": f"code/{p.relative_to(paper / 'experiments').as_posix()}",
