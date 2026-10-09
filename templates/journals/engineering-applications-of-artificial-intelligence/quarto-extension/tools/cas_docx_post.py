@@ -84,6 +84,8 @@ def bp(points: float) -> int:
 
 
 TABCOLSEP = tw(6)
+MIN_COLSEP = tw(1.5)   # half-gap floor when a table is tight
+CELL_SLACK = 60        # twips Word needs beyond a cell's estimated text width
 RULE_HEAVY = 6       # eighths of a point: booktabs \heavyrulewidth .08em
 RULE_LIGHT = 4       # \lightrulewidth .05em
 RULE_CAS = 2         # cas-sc \rule{..}{.2pt}
@@ -576,9 +578,11 @@ def key(word: str) -> str:
     return re.sub(r"[^\w]", "", unicodedata.normalize("NFKC", word)).lower()
 
 
-def float_plan(pages) -> dict[tuple[str, int], tuple[int, str]]:
+def float_plan(pages, float_text: str = "") -> dict[tuple[str, int], tuple[int, str]]:
     """(kind, n) -> (page index, 'top' | 'here') from the PDF's captions:
-    a float with no body text above it on its page is a top float."""
+    a float with no body text above it on its page is a top float. With
+    `float_text` (the keyed text of every float), a float with only other
+    floats above it is stacked under them, so it is a top float too."""
     plan: dict[tuple[str, int], tuple[int, str]] = {}
     for pno, words in enumerate(pages):
         body = [w for w in words if 50 < w[4] < 695]
@@ -588,8 +592,12 @@ def float_plan(pages) -> dict[tuple[str, int], tuple[int, str]]:
             if (w[0] in ("Figure", "Table") and re.match(r"^\d+:?$", nxt[0])
                     and abs(nxt[4] - w[4]) < 1 and starts_line):
                 n = int(nxt[0].rstrip(":"))
-                above = [b for b in body if b[4] < w[2] - 1]
-                plan.setdefault((w[0], n), (pno, "here" if above else "top"))
+                above = [k for k in (key(b[0]) for b in body if b[4] < w[2] - 1) if k]
+                stacked = bool(above) and bool(float_text) and all(
+                    k in float_text for k in above) and any(
+                    v == (pno, "top") for v in plan.values())
+                top = not above or stacked
+                plan.setdefault((w[0], n), (pno, "top" if top else "here"))
     return plan
 
 
@@ -626,7 +634,7 @@ NOTE_SENTINEL = "\ue010"
 def merge_float_notes(body: ET.Element, floats: list[dict]) -> None:
     """Fold a sentinel note paragraph (emitted by cas-pre-ast.lua) into its
     float: the note follows the float's elements in the body, and moving it
-    inside keeps it with the float when place_floats() boxes a top float.
+    inside keeps it with the float when place_floats() moves a top float.
     The sentinel is stripped and the paragraph styled like the PDF's note
     (8 pt, aligned with the .9\\textwidth float block)."""
     for f in floats:
@@ -640,9 +648,8 @@ def merge_float_notes(body: ET.Element, floats: list[dict]) -> None:
         note = body[idx + 1]
         if note.tag != q("p") or not text(note).startswith(NOTE_SENTINEL):
             continue
-        # keep the paragraph in the body: place_floats() removes it only when
-        # it boxes a top float; a "here" float leaves it in place, after the
-        # table.
+        # keep the paragraph in the body: place_floats() moves it with a top
+        # float; a "here" float leaves it in place, after the table.
         f["elements"].append(note)
         ts = list(note.iter(q("t")))
         if ts and ts[0].text:
@@ -650,65 +657,39 @@ def merge_float_notes(body: ET.Element, floats: list[dict]) -> None:
         pp = ppr(note)
         remove_child(pp, "jc")
         margin = (TEXT_WIDTH - FLOAT_WIDTH) // 2
-        set_attr_child(pp, "ind", left=margin, right=margin)
+        # no first-line indent: the note is a block under the table
+        remove_child(pp, "ind")
+        set_attr_child(pp, "ind", left=margin, right=margin, firstLine=0)
         spacing(note, before=tw(2), after=tw(6))
         for r in note.findall(q("r")):
             rpr = r.find(q("rPr"))
             if rpr is None:
                 rpr = ET.Element(q("rPr"))
                 r.insert(0, rpr)
+            # \sffamily like the table, not the serif body text
+            remove_child(rpr, "rFonts")
+            set_attr_child(rpr, "rFonts", ascii=TABLE_FONT, hAnsi=TABLE_FONT,
+                           cs=TABLE_FONT, eastAsia=TABLE_FONT)
             remove_child(rpr, "sz")
             set_attr_child(rpr, "sz", val="16")  # \footnotesize: 8 pt
             remove_child(rpr, "szCs")
             set_attr_child(rpr, "szCs", val="16")
 
 
-def float_box(elements: list[ET.Element], below_pt: float, n: int) -> ET.Element:
-    """A run holding an anchored, auto-sized VML text box at the top of the
-    text area (LaTeX [t]). Unlike a floating table it is positioned on its
-    anchor's page regardless of the text before the anchor, and the
-    top-and-bottom wrap pushes the page's text below it (textfloatsep)."""
-    width_pt = TEXT_WIDTH / 20
-    r = ET.Element(q("r"))
-    pict = ET.SubElement(r, q("pict"))
-    shape = ET.SubElement(pict, f"{{{V}}}shape")
-    shape.set("id", f"casFloat{n}")
-    shape.set(f"{{{O}}}spt", "202")
-    shape.set("style", ";".join([
-        "position:absolute", "margin-left:0", "margin-top:0",
-        f"width:{width_pt:.2f}pt", "height:20pt", f"z-index:{n}",
-        "mso-position-horizontal:center",
-        "mso-position-horizontal-relative:margin",
-        "mso-position-vertical:top", "mso-position-vertical-relative:margin",
-        f"mso-wrap-distance-bottom:{below_pt:.2f}pt",
-        "mso-wrap-distance-top:0", "mso-wrap-distance-left:0",
-        "mso-wrap-distance-right:0"]))
-    shape.set("stroked", "f")
-    shape.set("filled", "f")
-    box = ET.SubElement(shape, f"{{{V}}}textbox")
-    box.set("style", "mso-fit-shape-to-text:t")
-    box.set("inset", "0,0,0,0")
-    content = ET.SubElement(box, q("txbxContent"))
-    for el in elements:
-        content.append(el)
-    if elements[-1].tag != q("p"):
-        content.append(ET.Element(q("p")))
-    wrap = ET.SubElement(shape, f"{{{W10}}}wrap")
-    wrap.set("type", "topAndBottom")
-    wrap.set("anchorx", "margin")
-    wrap.set("anchory", "margin")
-    return r
-
-
 def place_floats(body: ET.Element, floats: list[dict], pdf: Path | None) -> None:
     """Move every top float of the PDF in front of the first paragraph that
-    starts on the same PDF page, floated to the top margin."""
+    starts on the same PDF page, in the text flow. An anchored box pinned to
+    the top margin would follow Word's own pagination, which differs from
+    pdfTeX's: two boxes whose anchors land on one Word page overlap."""
     if not floats or pdf is None or not pdf.is_file():
         return
     pages = pdf_words(pdf)
     if not pages:
         return
-    plan = float_plan(pages)
+    # itertext, not text(): table cells hold OMML minus signs and numbers
+    float_text = "".join(key("".join(e.itertext())) for f in floats
+                         for e in f["elements"] if e.tag in (q("p"), q("tbl")))
+    plan = float_plan(pages, float_text)
     float_ids = {id(e) for f in floats for e in f["elements"]}
     starts = paragraph_pages(body, pages, float_ids)
     for f in floats:
@@ -716,21 +697,15 @@ def place_floats(body: ET.Element, floats: list[dict], pdf: Path | None) -> None
         if where is None or where[1] != "top":
             continue
         anchor = next((p for p in body if starts.get(id(p)) == where[0]), None)
-        if anchor is None:
+        if anchor is None or anchor in f["elements"]:
             continue
         for el in f["elements"]:
             body.remove(el)
-        blocks = [e for e in f["elements"] if e.tag in (q("p"), q("tbl"))]
-        if blocks and blocks[0].tag == q("p"):
-            spacing(blocks[0], before=0)
-        caps = [e for e in blocks if e.tag == q("p")
-                and style_of(e) in ("ImageCaption", "TableCaption")]
-        if caps and f["kind"] == "Figure":
-            spacing(caps[-1], after=0)
-        # the box rides on the first run of the anchor paragraph
-        pp = anchor.find(q("pPr"))
-        pos = list(anchor).index(pp) + 1 if pp is not None else 0
-        anchor.insert(pos, float_box(blocks, FLOAT_SEP / 20, f["number"] + (100 if f["kind"] == "Table" else 0)))
+        # floats of one page keep their order: each lands just before the
+        # anchor, after the ones already moved there
+        pos = list(body).index(anchor)
+        for k, el in enumerate(f["elements"]):
+            body.insert(pos + k, el)
 
 
 # ---------------------------------------------------------------------------
@@ -1031,15 +1006,107 @@ def fix_citations(body: ET.Element, entries: list[dict],
             t.text = ""
 
 
+TABLE_FONT = "LM Sans 9"   # TableText; LM Sans 8 is not a Windows font
+
+
+def text_width(s: str) -> int:
+    """Rough natural width (twips) of a TableText string, 9 pt LM Sans."""
+    em = 180
+    w = 0.0
+    for ch in s:
+        if ch.isspace():
+            w += 0.33
+        elif ch in "\u2212+=<>":   # math minus and relations: 0.78 em
+            w += 0.78
+        elif ch in "()":
+            w += 0.39
+        elif ch in ".,:;":
+            w += 0.3
+        elif ch.isdigit():
+            w += 0.5
+        elif ch in "mwMW":
+            w += 0.75
+        elif ch == "_":
+            w += 0.6
+        elif ch in "ijlft":
+            w += 0.3
+        elif ch.isupper():
+            w += 0.66
+        else:
+            w += 0.5
+    return int(w * em)
+
+
+def paragraph_width(p: ET.Element) -> int:
+    """Natural width of a cell paragraph; sub- and superscripts at 70%,
+    bold at 110% (Word falls back to the wider LM Sans 10 Bold)."""
+    w = 0
+    for r in p.iter():
+        if r.tag not in (q("r"), q("r", M)):
+            continue
+        s = "".join(t.text or "" for t in r if t.tag in (q("t"), q("t", M)))
+        if not s:
+            continue
+        small = r.find(q("rPr") + "/" + q("vertAlign")) is not None
+        bold = r.find(q("rPr") + "/" + q("b")) is not None
+        w += text_width(s) * (7 if small else 11 if bold else 10) // 10
+    return w + CELL_SLACK
+
+
+def column_widths(rows: list[ET.Element], ncols: int, total: int) -> tuple[list[int], int]:
+    r"""(widths, sep): column widths that fit each column's widest cell,
+    like LaTeX's l/r columns, with the slack shared out (tabular*
+    \extracolsep{\fill}), and the half-gap `sep` between columns. A tight
+    table first narrows the gaps (the PDF's are ~7 pt, not 2\tabcolsep);
+    only then do its long-text columns shrink, never below their longest
+    word, so only those wrap."""
+    nat = [0] * ncols
+    low = [0] * ncols
+    for tr in rows:
+        tcs = tr.findall(q("tc"))
+        if len(tcs) != ncols:   # merged cells: no per-column information
+            continue
+        for ci, tc in enumerate(tcs):
+            for p in tc.findall(q("p")):
+                nat[ci] = max(nat[ci], paragraph_width(p))
+                # itertext: numbers in cells are often OMML (m:t)
+                words = "".join(p.itertext()).split() or [""]
+                low[ci] = max(low[ci], *(text_width(w) + CELL_SLACK for w in words))
+    low = [min(n, lw) for n, lw in zip(nat, low)]
+    units = 2 * (ncols - 1)
+    sep = TABCOLSEP
+    if units and sum(nat) + units * sep > total:
+        sep = max(MIN_COLSEP, (total - sum(nat)) // units)
+    pads = [sep if i in (0, ncols - 1) else 2 * sep for i in range(ncols)]
+    if ncols == 1:
+        pads = [0]
+    nat = [n + p for n, p in zip(nat, pads)]
+    low = [lw + p for lw, p in zip(low, pads)]
+    if sum(nat) <= total:
+        slack = (total - sum(nat)) // ncols
+        widths = [n + slack for n in nat]
+    elif sum(low) >= total:
+        # even unbreakable words overflow: shrink everything alike
+        widths = [n * total // sum(nat) for n in nat]
+    else:
+        widths = nat[:]
+        for _ in range(20):
+            over = sum(widths) - total
+            flex = [i for i in range(ncols) if widths[i] > low[i]]
+            if over <= 0 or not flex:
+                break
+            room = sum(widths[i] - low[i] for i in flex)
+            for i in flex:
+                cut = min(widths[i] - low[i], -(-over * (widths[i] - low[i]) // room))
+                widths[i] -= cut
+    widths[-1] += total - sum(widths)
+    return widths, sep
+
+
 def fix_data_table(tbl: ET.Element) -> None:
     rows = tbl.findall(q("tr"))
     ncols = max((len(r.findall(q("tc"))) for r in rows), default=1)
-    inner = (FLOAT_WIDTH - 2 * TABCOLSEP * (ncols - 1)) // ncols
-    widths = [inner + (TABCOLSEP if i in (0, ncols - 1) else 2 * TABCOLSEP)
-              for i in range(ncols)]
-    if ncols == 1:
-        widths = [FLOAT_WIDTH]
-    widths[-1] += FLOAT_WIDTH - sum(widths)
+    widths, sep = column_widths(rows, ncols, FLOAT_WIDTH)
     tbl_props(tbl, FLOAT_WIDTH, "center",
               {"top": RULE_HEAVY, "bottom": RULE_HEAVY}, (0, 0, 0, 0))
     set_grid(tbl, widths)
@@ -1051,8 +1118,8 @@ def fix_data_table(tbl: ET.Element) -> None:
                 remove_child(pr, tag)
             ET.SubElement(pr, q("tcW")).attrib.update({q("w"): str(widths[min(ci, ncols - 1)]), q("type"): "dxa"})
             mar = ET.SubElement(pr, q("tcMar"))
-            left = 0 if ci == 0 else TABCOLSEP
-            right = 0 if ci == ncols - 1 else TABCOLSEP
+            left = 0 if ci == 0 else sep
+            right = 0 if ci == ncols - 1 else sep
             for edge, v in (("top", ROW_PAD if ri == 0 or is_head else 0),
                             ("left", left), ("bottom", ROW_PAD if is_head else 0),
                             ("right", right)):
@@ -1063,8 +1130,13 @@ def fix_data_table(tbl: ET.Element) -> None:
             for p in tc.findall(q("p")):
                 set_style(p, "TableText")
                 pp = ppr(p)
+                # pandoc writes the column alignment (LaTeX R/C) as a first
+                # jc, before the reference doc's own "center"; a lone jc
+                # means a default (left) column
+                jcs = pp.findall(q("jc"))
+                align = jcs[0].get(q("val")) if len(jcs) > 1 else "left"
                 remove_child(pp, "jc")
-                set_attr_child(pp, "jc", val="left")
+                set_attr_child(pp, "jc", val=align if align in ("right", "center") else "left")
                 spacing(p, before=0, after=0)
         if ri == len(rows) - 1:
             for tc in tr.findall(q("tc")):

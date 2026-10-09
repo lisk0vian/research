@@ -195,6 +195,30 @@ def test_float_plan_marks_floats_with_no_text_above_as_top():
     assert plan[("Table", 2)] == (1, "here")
 
 
+def test_float_plan_stacks_a_float_under_a_top_float():
+    # Table 7 sits right under Table 6 at the top of the page: only float
+    # text above it, so it is a top float too, not a "here" one.
+    page = [("Table", 40, 60, 70, 70), ("6", 72, 60, 76, 70),
+            ("System", 40, 80, 70, 90), ("0.939", 80, 80, 100, 90),
+            ("Table", 40, 200, 70, 210), ("7", 72, 200, 76, 210)]
+    assert post.float_plan([page])[("Table", 7)] == (0, "here")
+    plan = post.float_plan([page], float_text="table6system0939table7")
+    assert plan[("Table", 6)] == (0, "top")
+    assert plan[("Table", 7)] == (0, "top")
+
+
+def test_column_widths_fit_content_and_fill_the_float_width():
+    rows = _body(
+        '<w:tbl><w:tr><w:tc><w:p><w:r><w:t>Chronos (abs.)</w:t></w:r></w:p></w:tc>'
+        '<w:tc><w:p><w:r><w:t>0.939</w:t></w:r></w:p></w:tc></w:tr></w:tbl>'
+    ).find(post.q("tbl")).findall(post.q("tr"))
+    widths, sep = post.column_widths(rows, 2, post.FLOAT_WIDTH)
+    assert sum(widths) == post.FLOAT_WIDTH
+    assert sep == post.TABCOLSEP
+    # the name column is wider than the number column, neither collapses
+    assert widths[0] > widths[1] > post.text_width("0.939")
+
+
 def test_normalize_orders_paragraph_properties():
     body = _body('<w:p><w:pPr><w:jc w:val="left"/><w:spacing w:before="0"/>'
                  '<w:pStyle w:val="X"/></w:pPr></w:p>')
