@@ -9,8 +9,8 @@ funding:
   note: "Publicación financiada por SENATI; asesor designado por la institución."
 authors:
   - id: moises
-    role: mani-author
+    role: corresponding
     order: 1
   - id: jeremi
-    role: co-author
+    role: author
     order: 2

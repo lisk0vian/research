@@ -1,0 +1,41 @@
+---
+# papers/c15-2026/paper/cover-letter.qmd
+# Cover letter for the submission to Machine Learning with Applications. Rendered by
+#   python scripts/paper_build.py --slug c15-2026 --format all
+# into build/c15-2026-cover-letter.docx/.pdf. Checked by
+#   python scripts/paper_cover_letter.py --slug c15-2026 --check
+# Every number in the letter must also appear in main.qmd.
+format:
+  docx: default
+  pdf:
+    papersize: a4
+    geometry: margin=2.5cm
+    pagestyle: empty
+    fontsize: 11pt
+---
+
+Moisés Evangelista Gamarra\
+Servicio Nacional de Adiestramiento en Trabajo Industrial, Perú
+
+The Editor-in-Chief\
+*Machine Learning with Applications*\
+Elsevier
+
+October 10, 2026
+
+Dear Editor,
+
+We wish to submit an original research paper entitled **"A Reproducible Methodological Framework for Prosecutorial Congestion Risk Prediction Using Explainable Machine Learning and Temporal Validation"** for consideration for publication in *Machine Learning with Applications*.
+
+This paper addresses the problem of identifying, from administrative records, where a public prosecution service is at risk of case congestion. Studies have shown that machine learning can model judicial workload and congestion, but they have focused predominantly on courts and have addressed robust feature selection, data leakage, temporal validation and interpretability in isolation. It therefore remains unclear whether these components can be combined into one reproducible workflow that holds up on future years. Using open records of the Public Prosecutor's Office of Peru (2019--2026), a consensus of six feature selection methods, year-block temporal validation and SHAP, we show that the selected LightGBM model reaches an F1-score of 0.469 and a ROC-AUC of 0.798 on the 2025 hold-out test set and remains consistent on the 2026 data, and that its predictions are driven mainly by territorial and institutional patterns rather than by historical workload. Our findings are significant because they give prosecution services an auditable, leakage-free basis for the preventive prioritization of operational combinations at higher risk, without replacing the judgment of practitioners.
+
+Since our study shows how established machine learning methods can be combined, validated over time and explained to solve a practical problem of public administration, we believe it is a good fit for *Machine Learning with Applications*, which asks application papers to demonstrate how machine learning solves important practical problems. We feel that its findings will be relevant to your readers because the framework, which treats the target as a proxy and its predictions as associations rather than causes, can be transferred to other justice systems through retraining and local validation.
+
+The manuscript "A Reproducible Methodological Framework for Prosecutorial Congestion Risk Prediction Using Explainable Machine Learning and Temporal Validation" has not been published elsewhere, is not under consideration by another journal, and reflects original research conducted by its authors. None of the authors have any conflicts of interest to disclose concerning this study.
+
+Thank you for your valuable time.
+
+Sincerely,
+
+Moisés Evangelista Gamarra\
+mevangelistag@senati.pe
