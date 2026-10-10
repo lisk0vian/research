@@ -1,0 +1,37 @@
+% Based on Quarto's formats/pdf/pandoc/hypersetup.latex, minus the else
+% branch that emits hidelinks: cas-sc.cls already loads
+% \RequirePackage[colorlinks]{hyperref} and sets link/url/citecolor to
+% hscolor (DarkSlateGrey), exactly as in cas-sc-sample.pdf. Emitting
+% hidelinks here would silently disable those colors, and emitting
+% pandoc's linkcolor=blue would override the hue.
+% fallback for those not using the hyperref driver hyperxmp:
+\makeatletter
+\@ifundefined{xmpquote}{\newcommand{\xmpquote}[1]{#1}}{}
+\makeatother
+\hypersetup{
+$if(title-meta)$
+  pdftitle={$title-meta$},
+$endif$
+$if(cas-blind)$
+$else$
+$if(author-meta)$
+  pdfauthor={$author-meta$},
+$endif$
+$endif$
+$if(lang)$
+  pdflang={$lang$},
+$endif$
+$if(subject)$
+  pdfsubject={$subject$},
+$endif$
+$if(keywords)$
+  pdfkeywords={$for(keywords)$\xmpquote{$keywords$}$sep$, $endfor$},
+$endif$
+$if(colorlinks)$
+  colorlinks=true,
+  linkcolor={$if(linkcolor)$$linkcolor$$else$Maroon$endif$},
+  filecolor={$if(filecolor)$$filecolor$$else$Maroon$endif$},
+  citecolor={$if(citecolor)$$citecolor$$else$Blue$endif$},
+  urlcolor={$if(urlcolor)$$urlcolor$$else$Blue$endif$},
+$endif$
+  pdfcreator={LaTeX via pandoc}}

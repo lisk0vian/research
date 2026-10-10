@@ -2,12 +2,37 @@
 # Copyright (c) 2026 Jerremi Aron Chancan Labajos
 journal: "Machine Learning with Applications"
 publisher: Elsevier
-issn: "2666-8270"
+issn: "2666-8270"                 # online (open access)
 format: latex
-quarto_extension: quarto-journals/elsevier
-quarto_format: elsevier-pdf
-model: 1p                 # revisar en el Guide for Authors: 1p (una columna) / 3p / 5p (dos columnas)
-cite_style: authoryear     # confirmado por el estilo EndNote de la revista (APA6 autor-año)
-notes: |
-  Verificar en elsevier.com/journals/machine-learning-with-applications/2666-8270/guide-for-authors
-  si piden elsarticle.cls estándar o el flujo CAS (cas-sc.cls).
+extension: "quarto-journals/elsevier-cas"
+quarto_extension: "quarto-journals/elsevier-cas"
+quarto_format: elsevier-cas-pdf
+quarto_docx_format: elsevier-cas-docx
+# formatting: doubleblind        # the journal is single anonymized; a paper that
+#                                # must ship anonymized sets it in its own main.qmd
+cite_style: authoryear            # the CAS extension only renders author-year (see notes)
+url: "https://www.sciencedirect.com/journal/machine-learning-with-applications/publish/guide-for-authors"
+notes: >
+  Same CAS template as information-sciences (cas-sc.cls), so the PDF looks
+  like the other Elsevier submissions of this repository; the journal
+  encourages its LaTeX template and permits double column only for LaTeX
+  submissions (.tex sources required, a PDF is not a source file). Open
+  access. Single anonymized review, min. 2 referees. Regular papers, technical
+  notes (max. 10 pages), surveys and discussion papers; no page limit stated
+  for regular papers. Title page: title, given + family names in submission
+  order, affiliations marked with lower-case superscript letters with full
+  postal address and country, corresponding author with e-mail. Abstract up
+  to 250 words, no references. Keywords 1-7. Highlights encouraged: 3-5
+  bullets x 85 characters, separate file named "highlights" (kept in
+  journal.highlights). Graphical abstract encouraged (531 x 1328 px). Numbered
+  sections 1, 1.1, 1.1.1, abstract unnumbered; appendices A, B with Eq. (A.1),
+  Table A.1. Tables editable, notes below the body, no vertical rules.
+  Figures also as separate files (Figure_1, ...), photos >= 300 dpi, line art
+  >= 1000 dpi. CRediT encouraged. Competing interests via the declarations
+  tool; funding statement required; generative-AI declaration as a section
+  before the references when AI tools were used. Data: Option A (deposit and
+  cite encouraged), data statement encouraged. References APA 7 (author-year,
+  alphabetical then chronological, DOIs); cas.lua maps cite-style authoryear
+  to cas-model2-names, a consistent author-year style that the journal's
+  production replaces at proof. Source: Guide for Authors 10/10/2026 (saved
+  HTML), https://www.sciencedirect.com/journal/machine-learning-with-applications/publish/guide-for-authors

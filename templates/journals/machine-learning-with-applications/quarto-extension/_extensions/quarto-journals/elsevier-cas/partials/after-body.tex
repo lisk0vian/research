@@ -1,0 +1,10 @@
+$-- Printed after the bibliography, exactly like cas-sc-sample.tex: the author
+$-- biographies go last (the sample puts \bio ... \endbio after \bibliography).
+$for(biography)$
+$if(it.vskip)$\vskip$it.vskip$
+
+$endif$\bio{$it.photo$}
+$it.text$
+\endbio
+
+$endfor$
