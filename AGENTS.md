@@ -93,6 +93,8 @@ that know *when* to call them and interview you for the arguments.
 | Freeze a review round packet | `python scripts/paper_review.py --slug <slug> --round round-N --scope code-only\|full [--only ...]` |
 | Render a consolidated report | `python scripts/render_review.py --slug <slug> --round round-N` (verify: add `--check`) |
 | Generate tool subagents | `python scripts/link_agents.py` (verify: add `--check`) |
+| Scaffold / check a cover letter | `python scripts/paper_cover_letter.py --slug <slug> --init\|--check` |
+| Check the title-page data (anonymized submission) | `python scripts/paper_title_page.py --slug <slug>` |
 | Upload to Zenodo | `python scripts/paper_zenodo.py --slug <slug> [--production] [--draft --yes \| --publish --yes \| --yes]` |
 | Run tests | `pytest -q` |
 
@@ -224,6 +226,8 @@ Registry:
 | `util-search` | Content search (prefer over `grep`/`rg`) |
 | `grilling` | Relentless design interview before committing to a plan |
 | `paper-zenodo` | Upload experiments to Zenodo and get a DOI (reads `manifest.yaml` + `authors/`) |
+| `paper-cover-letter` | Write the submission cover letter (Elsevier tutorial structure) via `scripts/paper_cover_letter.py` |
+| `paper-title-page` | Separate title page + anonymized manuscript with verified author data via `scripts/paper_title_page.py` |
 
 ### Review subagents
 

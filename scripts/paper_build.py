@@ -13,6 +13,11 @@ Two phases, both explicit and re-runnable:
               <slug>.pdf / <slug>.docx, and package the LaTeX submission
               source (tex + class/style/bst + figures + bib/bbl +
               highlights.txt) as <slug>-latex.zip next to the pdf.
+              Submission documents go next to them: <slug>-title-page.docx/.pdf
+              when journal.formatting anonymizes the manuscript (built from
+              main.qmd's own front matter), and <slug>-cover-letter.docx/.pdf
+              when paper/cover-letter.qmd exists.
+              Each figure is also copied to build/figures/Figure_N.<ext>.
 
 Usage:
     python scripts/paper_build.py --slug c15-2026 --format all
@@ -22,6 +27,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import re
 import shutil
 import subprocess
 import sys
@@ -180,11 +186,104 @@ def short_in_text_citations(paper_dir: Path) -> bool:
     return bool(natbib) and "longnamesfirst" not in natbib
 
 
+def is_blind(paper_dir: Path) -> bool:
+    """True when main.qmd sets journal.formatting to singleblind/doubleblind.
+
+    cas-sc.cls then hides authors, affiliations and CRediT in the PDF,
+    cas-docx.lua does the same in the docx, and the identifying data move to
+    a separate title page (render_title_page).
+    """
+    journal = qmd_front_matter(paper_dir).get("journal")
+    if not isinstance(journal, dict):
+        return False
+    return str(journal.get("formatting") or "").endswith("blind")
+
+
+def _letters(n: int) -> str:
+    """0 -> a, 25 -> z, 26 -> aa (Elsevier affiliation marks)."""
+    out = ""
+    n += 1
+    while n:
+        n, rem = divmod(n - 1, 26)
+        out = chr(ord("a") + rem) + out
+    return out
+
+
+def title_page_markdown(front: dict) -> str:
+    """Elsevier title page built from main.qmd's own front matter.
+
+    Title, authors in order with a lower-case superscript letter per
+    affiliation, each affiliation with its full postal address and country,
+    and the corresponding author(s) with e-mail. Built from main.qmd so the
+    title page can never drift from the manuscript.
+    """
+    def esc(text: object) -> str:
+        return re.sub(r"([\\`*_{}\[\]<>#+!|^~])", r"\\\1", str(text or "").strip())
+
+    affs = [a for a in front.get("affiliations") or [] if isinstance(a, dict)]
+    letter = {str(a.get("id")): _letters(i) for i, a in enumerate(affs)}
+    names, corresponding = [], []
+    for author in front.get("author") or []:
+        if not isinstance(author, dict):
+            continue
+        name = author.get("name")
+        name = name.get("literal") if isinstance(name, dict) else name
+        refs = [r.get("ref") if isinstance(r, dict) else r
+                for r in author.get("affiliation") or author.get("affiliations") or []]
+        marks = [letter[str(r)] for r in refs if str(r) in letter]
+        cas = author.get("cas") if isinstance(author.get("cas"), dict) else {}
+        if cas.get("cormark") or author.get("corresponding"):
+            marks.append("\\*")
+            corresponding.append((name, author.get("email"), author.get("phone")))
+        sup = f"^{','.join(marks)}^" if marks else ""
+        names.append(f"{esc(name)}{sup}")
+
+    def address(aff: dict) -> str:
+        parts = [aff.get("name"), aff.get("department"), aff.get("address"),
+                 " ".join(str(p) for p in (aff.get("postal-code"), aff.get("city")) if p),
+                 aff.get("region"), aff.get("country")]
+        return ", ".join(esc(p) for p in parts if p)
+
+    lines = [
+        "---",
+        "format:",
+        "  docx: default",
+        "  pdf:",
+        "    papersize: a4",
+        "    geometry: margin=2.5cm",
+        "    pagestyle: empty",
+        "---",
+        "",
+        "**Title page**",
+        "",
+        f"## {esc(front.get('title'))}",
+        "",
+        ", ".join(names),
+        "",
+    ]
+    for aff in affs:
+        lines += [f"^{letter[str(aff.get('id'))]}^ {address(aff)}", ""]
+    for name, email, phone in corresponding:
+        tel = f" Telephone: {esc(phone)}." if phone else ""
+        lines += [f"^\\*^ Corresponding author: {esc(name)}. E-mail: {esc(email)}.{tel}", ""]
+    # What the anonymized manuscript must leave out moves here (Elsevier's
+    # double-anonymized guidelines): main.qmd's top-level `title-page:` block.
+    extra = front.get("title-page") if isinstance(front.get("title-page"), dict) else {}
+    for key, heading in (("acknowledgements", "Acknowledgements"),
+                         ("funding", "Funding"),
+                         ("competing-interests", "Declaration of competing interest")):
+        text = str(extra.get(key) or "").strip()
+        if text:
+            lines += [f"**{heading}**", "", text, ""]
+    return "\n".join(lines)
+
+
 def running_heads(repo: Path, paper_dir: Path) -> tuple[str, str]:
     """(short title, first author full name) for the docx header/footer.
 
     short-title: main.qmd top-level journal.short-title (fallback: title,
-    truncated). first author: manifest authors[0] -> authors/<id>.yaml name.
+    truncated). first author: manifest authors[0] -> authors/<id>.yaml name,
+    or "" when journal.formatting is singleblind/doubleblind (anonymized).
     """
     data = qmd_front_matter(paper_dir)
     journal = data.get("journal")
@@ -192,6 +291,8 @@ def running_heads(repo: Path, paper_dir: Path) -> tuple[str, str]:
     title = str(data.get("title") or "")
     if not short:
         short = (title[:60] + "…") if len(title) > 60 else title
+    if is_blind(paper_dir):
+        return short or "Short title", ""
     first = "Author"
     manifest = paper_dir.parent / "manifest.yaml"
     if manifest.is_file():
@@ -283,9 +384,10 @@ def patch_docx_heads(repo: Path, paper_dir: Path, docx: Path) -> None:
         "--short-title", short, "--first-author", first,
     ])
     if rc == 0:
-        print(f"  running heads: header '{short[:40]}…' / footer '{first} et al.'"
+        footer = f"'{first} et al.'" if first else "anonymized"
+        print(f"  running heads: header '{short[:40]}…' / footer {footer}"
               if len(short) > 40 else
-              f"  running heads: header '{short}' / footer '{first} et al.'")
+              f"  running heads: header '{short}' / footer {footer}")
     else:
         print("  running heads: [warn] patch failed")
         print("  " + "\n  ".join(out.splitlines()[-8:]))
@@ -373,6 +475,66 @@ def check(repo: Path, slug: str, fmt: str, paper_dir: Path) -> tuple[list[str], 
     return ok, warnings, problems, quarto_format, extension
 
 
+FIGURE_REF = re.compile(r"!\[[^\]]*\]\(([^)\s]+)[^)]*\)\{#fig-")
+
+
+def export_figures(paper_dir: Path, build_dir: Path) -> str:
+    """Copy every figure, in order of appearance, to build/figures/Figure_N.<ext>.
+
+    Elsevier asks for each figure as a separate file with a logical name
+    (Figure_1, Figure_2, ...) besides the editable manuscript. The files are
+    the manuscript's own sources, so they cannot differ from what it shows.
+    """
+    qmd = paper_dir / "main.qmd"
+    sources = FIGURE_REF.findall(qmd.read_text(encoding="utf-8")) if qmd.is_file() else []
+    out = build_dir / "figures"
+    if out.exists():
+        shutil.rmtree(out, ignore_errors=True)
+    if not sources:
+        return "figures: none in main.qmd"
+    out.mkdir(parents=True)
+    missing = []
+    for n, rel in enumerate(sources, start=1):
+        src = paper_dir / rel
+        if src.is_file():
+            shutil.copy2(src, out / f"Figure_{n}{src.suffix.lower()}")
+        else:
+            missing.append(rel)
+    msg = f"figures: {len(sources) - len(missing)} file(s) -> {out}"
+    return msg + (f" [warn] missing: {', '.join(missing)}" if missing else "")
+
+
+def render_submission_docs(paper_dir: Path, render_dir: Path, build_dir: Path,
+                           slug: str, wants: list[str]) -> int:
+    """Render the title page (anonymized papers) and the cover letter.
+
+    Both are plain pandoc docx/pdf, not the journal format: they are
+    separate submission files that the editor reads, never typeset.
+    """
+    docs: list[tuple[str, str]] = []
+    if is_blind(paper_dir):
+        page = render_dir / "title-page.qmd"
+        page.write_text(title_page_markdown(qmd_front_matter(paper_dir)), encoding="utf-8")
+        docs.append(("title-page", page.name))
+    if (render_dir / "cover-letter.qmd").is_file():
+        docs.append(("cover-letter", "cover-letter.qmd"))
+    rc_total = 0
+    for name, source in docs:
+        for kind in wants:
+            rc, out = run(["quarto", "render", source, "--to", kind, "--output-dir", ".."],
+                          cwd=render_dir)
+            produced = build_dir / f"{Path(source).stem}.{kind}"
+            final = build_dir / f"{slug}-{name}.{kind}"
+            if rc == 0 and produced.is_file():
+                produced.replace(final)
+                print(f"  rendered {final}")
+            else:
+                rc_total = 1
+                print(f"  FAILED {name} {kind} (quarto render {source} --to {kind})")
+                print("  " + "\n  ".join(out.splitlines()[-15:]))
+    return rc_total
+
+
 def render(repo: Path, slug: str, fmt: str, quarto_format: str, extension: str) -> int:
     paper_dir = repo / "papers" / slug / "paper"
     build_dir = repo / "papers" / slug / "build"
@@ -423,6 +585,8 @@ def render(repo: Path, slug: str, fmt: str, quarto_format: str, extension: str) 
             rc_total = 1
             print(f"  FAILED {kind} (quarto render --to {target})")
             print("  " + "\n  ".join(out.splitlines()[-15:]))
+    rc_total |= render_submission_docs(paper_dir, render_dir, build_dir, slug, wants)
+    print(f"  {export_figures(paper_dir, build_dir)}")
     return rc_total
 
 
