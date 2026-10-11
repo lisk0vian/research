@@ -30,7 +30,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from _repo import find_repo_root, load_yaml  # noqa: E402
-from _structure import format_block_from_type  # noqa: E402
+from _structure import format_block_from_type, set_type_field  # noqa: E402
 
 # publisher (lowercased) -> (extension, quarto_format, default_cite_style, format)
 PUBLISHER_MAP = {
@@ -96,6 +96,16 @@ def add_journal(repo: Path, slug: str, meta_path: Path, force: bool) -> int:
 
     cite = meta.get("cite_style") or default_cite
     jdir.mkdir(parents=True, exist_ok=True)
+    # A `--force` re-add must not silently drop the guide pointers: they are
+    # written by hand and by `journal_guide.py scaffold`, and a rewrite that
+    # forgets them would leave a journal pointing at nothing (or, worse, at a
+    # guide whose content is no longer described by type.yaml).
+    previous = load_yaml(out) if out.is_file() else {}
+    carried = {
+        key: str(previous.get(key))
+        for key in ("guide", "guide_retrieved")
+        if previous.get(key) not in (None, "")
+    }
     out.write_text(
         f'journal: "{esc(meta.get("journal", ""))}"\n'
         f"publisher: {pub_key or 'unknown'}\n"
@@ -109,7 +119,11 @@ def add_journal(repo: Path, slug: str, meta_path: Path, force: bool) -> int:
         f"  {esc(meta.get('notes', '')) or 'TODO'}\n",
         encoding="utf-8",
     )
+    for key, value in carried.items():
+        set_type_field(out, key, value)
     print(f"  {'updated' if force else 'created'} {out}")
+    if carried:
+        print(f"  kept from the previous type.yaml: {', '.join(sorted(carried))}")
     if ext:
         print(f"  extension: {ext}  (install: quarto add {ext})")
     else:

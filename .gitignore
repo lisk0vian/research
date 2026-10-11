@@ -172,6 +172,15 @@ papers/*/outputs/requirements.txt
 MANIFEST.sha256
 *.zip
 
+# ---- Guide-for-Authors bank (templates/journals/<slug>/guide/) ----
+# The downloaded page and the conversion proposal are working material, not
+# source. The raw HTML may well be the only copy that exists (the publisher's
+# site sits behind a captcha), which is exactly why guide/SOURCES.md records its
+# URL, retrieval date and sha256: the provenance is versioned even though the
+# bytes are not, so a re-conversion can still be verified later.
+templates/journals/*/guide/_raw/
+templates/journals/*/guide/_work/
+
 # ---- Build-time copies of the journal extension ----
 # papers/<slug>/paper: Quarto's format-resources for the CAS extension are
 # copied (flattened) next to main.qmd, and scripts/paper_build.py syncs the
