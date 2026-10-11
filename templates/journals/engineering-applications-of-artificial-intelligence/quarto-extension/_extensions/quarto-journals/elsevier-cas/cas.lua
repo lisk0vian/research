@@ -286,6 +286,11 @@ local function metadata_filter(meta)
     if formatting ~= '' and formatting ~= 'none' then
       options[#options + 1] = formatting
     end
+    -- singleblind/doubleblind: the class hides the authors on the page; the
+    -- templates read cas-blind to keep them out of the PDF metadata as well.
+    if formatting:match('blind$') then
+      meta['cas-blind'] = true
+    end
     if to_string(journal['cite-style']) == 'authoryear' then
       -- journal.biblio-style picks a shipped variant, e.g.
       -- cas-model2-names-etal (six authors, then "et al.").

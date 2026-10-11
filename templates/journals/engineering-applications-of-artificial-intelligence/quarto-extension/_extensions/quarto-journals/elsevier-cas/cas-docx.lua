@@ -519,6 +519,12 @@ end
 local function front_matter(meta)
   local journal = type(meta.journal) == 'table' and meta.journal or {}
   local by_author = meta['by-author']
+  -- journal.formatting: singleblind/doubleblind -> no names, affiliations or
+  -- contact notes anywhere, as cas-sc.cls does in the PDF.
+  local blind = (text_of(journal.formatting) or ''):match('blind$') ~= nil
+  if blind then
+    by_author = nil
+  end
   local blocks = highlights_page(meta, journal, by_author)
   if meta.title ~= nil then
     blocks[#blocks + 1] = styled_paragraph('Title', pandoc.Inlines(meta.title))
@@ -526,7 +532,7 @@ local function front_matter(meta)
   if type(by_author) == 'table' and #by_author > 0 then
     blocks[#blocks + 1] = authors_paragraph(journal, by_author)
   end
-  local aff = affiliation_paragraph(meta, journal, by_author)
+  local aff = not blind and affiliation_paragraph(meta, journal, by_author) or nil
   if aff ~= nil then
     blocks[#blocks + 1] = aff
   end
@@ -544,6 +550,16 @@ return {
     doc.meta.title = nil
     doc.meta.author = nil
     doc.meta.abstract = nil
+    -- pandoc copies every metadata field into docProps/custom.xml: in the
+    -- blind modes drop the ones that still carry names, e-mails or ORCIDs.
+    local journal = type(doc.meta.journal) == 'table' and doc.meta.journal or {}
+    if (text_of(journal.formatting) or ''):match('blind$') then
+      for _, key in ipairs({ 'short-authors', 'authors', 'by-author',
+                             'affiliations', 'by-affiliation', 'institute',
+                             'title-page' }) do
+        doc.meta[key] = nil
+      end
+    end
     for i = #fm, 1, -1 do
       table.insert(doc.blocks, 1, fm[i])
     end
