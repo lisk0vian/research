@@ -1,0 +1,43 @@
+---
+# papers/c26-2026/paper/cover-letter.qmd
+# Cover letter for the submission to Information Sciences. Rendered by
+#   python scripts/paper_build.py --slug c26-2026 --format all
+# into build/c26-2026-cover-letter.docx/.pdf. Checked by
+#   python scripts/paper_cover_letter.py --slug c26-2026 --check
+# Every number in the letter must also appear in main.qmd.
+format:
+  docx: default
+  pdf:
+    papersize: a4
+    geometry: margin=2.5cm
+    pagestyle: empty
+    fontsize: 11pt
+---
+
+Moisés Evangelista Gamarra\
+Servicio Nacional de Adiestramiento en Trabajo Industrial, Perú
+
+Professor Sabrina S. Senatore and Professor Zheng Z. Yan, Editors-in-Chief\
+*Information Sciences*\
+Elsevier
+
+October 10, 2026
+
+Dear Professor Senatore and Professor Yan,
+
+We wish to submit an original research paper entitled **"A reproducible GeoAI framework for explainable spatiotemporal analysis of national missing-person registers: multi-algorithm clustering and multilevel validation (Peru, 2019-2025)"** for consideration for publication in *Information Sciences*.
+
+Missing-person registers are one of the few systematic sources on disappearances, yet rankings and maps of counts confuse how many reports a territory records with how often they occur relative to its population. Geospatial artificial intelligence offers suitable tools, but its application to these registers is still incipient, and each analytical decision (unit, features, number of clusters, spatial weights) can change the conclusion. We develop a reproducible GeoAI framework and apply it to the 142,374 reports of Peru's National Registry of Information on Missing Persons (2019--2025), a panel of 26 territories by 84 months.
+
+The framework's contribution is to pair each analytical component with a check that bounds how far its result can be read. Rates with official denominators range from 2.84 to 9.96 reports per 10,000 person-years, and ten territories lie above the rest of the country after false discovery rate control, a classification that held in two sensitivity analyses; Metropolitan Lima, with a third of all reports, does not have the highest rate. Spatial autocorrelation is significant with the four nearest neighbors (Moran's I = 0.288) but not with contiguity. A specification multiverse shows that the clusters and the initial hot-spot corridor depend on specific analytical decisions, and the gap statistic favors a single cluster: the framework reports these limits instead of presenting fragile patterns as findings. The analysis plan is versioned and fingerprinted, and every number is reproducible from the published code.
+
+The study fits *Information Sciences*, which promotes a balanced coverage of theory and practice in information, knowledge engineering and intelligent systems and lists data fusion and decision support among its topics: it fuses an administrative register with population denominators and spatial structure, and turns unsupervised learning and spatial statistics into evidence institutions can use for search and prevention. Its validation design, which makes the sensitivity of each conclusion to analytical choices explicit, will interest readers who apply intelligent data analysis to administrative panels in other domains.
+
+The manuscript "A reproducible GeoAI framework for explainable spatiotemporal analysis of national missing-person registers: multi-algorithm clustering and multilevel validation (Peru, 2019-2025)" has not been published elsewhere, is not under consideration by another journal, and reflects original research conducted by its authors. None of the authors have any conflicts of interest to disclose concerning this study.
+
+Thank you for your valuable time.
+
+Sincerely,
+
+Moisés Evangelista Gamarra\
+mevangelistag@senati.pe
