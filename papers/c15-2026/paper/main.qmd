@@ -46,7 +46,8 @@ author:
 affiliations:
   - id: aff-1
     name: Servicio Nacional de Adiestramiento en Trabajo Industrial (SENATI)
-    # TODO: confirm the postal address of the authors' SENATI campus.
+    # Postal address confirmed by the authors on 2026-10-10 (SENATI head
+    # office, Independencia, as published on senati.edu.pe).
     address: Av. Alfredo Mendiola 3520, Independencia
     postal-code: "15311"
     city: Lima
