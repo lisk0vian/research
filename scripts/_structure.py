@@ -115,6 +115,7 @@ SKILL_REGISTRY = [
     "paper-zenodo",
     "paper-cover-letter",
     "paper-title-page",
+    "paper-compliance",
 ]
 
 # Files matching these are never committed (scanned via `git ls-files`).

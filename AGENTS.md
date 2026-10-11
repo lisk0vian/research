@@ -230,6 +230,7 @@ Registry:
 | `paper-zenodo` | Upload experiments to Zenodo and get a DOI (reads `manifest.yaml` + `authors/`) |
 | `paper-cover-letter` | Write the submission cover letter (Elsevier tutorial structure) via `scripts/paper_cover_letter.py` |
 | `paper-title-page` | Separate title page + anonymized manuscript with verified author data via `scripts/paper_title_page.py` |
+| `paper-compliance` | Check `paper/main.qmd` against the journal's banked guide, report in chat (`paper-guide` owns the bank) |
 
 ### The Guide-for-Authors bank
 
