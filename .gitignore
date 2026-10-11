@@ -21,6 +21,11 @@ papers/*/build/*
 !papers/*/build/*.pdf
 !papers/*/build/.gitkeep
 
+# Submission-only PDFs, kept out of git: the title page carries author data
+# for the editor only, and the cover letter goes through Editorial Manager.
+papers/*/build/*-title-page.pdf
+papers/*/build/*-cover-letter.pdf
+
 # ---- LaTeX intermediates (from PDF rendering) ----
 papers/*/paper/*.tex
 papers/*/paper/*.aux
