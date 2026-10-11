@@ -27,10 +27,11 @@ journal:
   # Journal guideline: 3-5 highlights of at most 85 characters.
   # TODO: review the wording with the authors before submission.
   highlights:
-    - "Consensus of six feature selectors keeps 69 of 433 encoded features"
-    - "Year-block temporal validation keeps 2025 and 2026 out of model selection"
-    - "LightGBM reaches F1 0.469 and ROC-AUC 0.798 on the 2025 hold-out test set"
-    - "Ablation and SHAP agree that territorial-institutional patterns drive risk"
+    - "Congestion risk at the prosecutorial stage predicted from open national records"
+    - "Target-defining variables excluded; all thresholds learned on training years only"
+    - "LightGBM reaches F1 0.469 and ROC-AUC 0.798 on the 2025 hold-out year"
+    - "Ablation and SHAP agree that the risk signal is mainly territorial-institutional"
+    - "Scores rank combinations for review but are overconfident at mid-to-high risk"
 author:
   - name: Moisés Evangelista Gamarra
     email: mevangelistag@senati.pe
@@ -57,7 +58,7 @@ title-page:
   funding: "This work was supported by the Servicio Nacional de Adiestramiento en Trabajo Industrial (SENATI)."
   competing-interests: "The authors declare that they have no known competing financial interests or personal relationships that could have appeared to influence the work reported in this paper."
 abstract: |
-  Congestion in justice systems poses a significant challenge for institutional planning due to its impact on operational workload and resource allocation. This study proposes a reproducible machine learning framework to estimate the proxy risk of prosecutorial congestion using administrative records from the Public Prosecutor's Office of Peru covering the 2019--2026 period. The methodology integrates consensus-based robust feature selection, temporal validation to prevent data leakage, robustness assessment, ablation analysis, and SHAP-based interpretability within a single reproducible workflow. The selected model achieved an F1-score of 0.469 and a ROC-AUC of 0.798 on the 2025 test set while maintaining consistent performance during external temporal validation on the 2026 dataset. The ablation study and SHAP analysis indicate that the model's predictive capability is driven primarily by territorial and institutional patterns, whereas historical features provide complementary information. Furthermore, the operational impact analysis highlights the model's potential to support the preventive prioritization of operational combinations with higher estimated proxy risk. The main contribution of this work is a reproducible methodological framework that integrates robust feature selection, temporal validation, robustness assessment, and model interpretability into a unified framework for supporting decision-making in the prosecutorial domain.
+  Case congestion in public prosecution services delays responses to citizens and complicates the allocation of staff and resources, yet predictive studies of justice systems have concentrated on courts. This study estimates a proxy risk of prosecutorial congestion from the open administrative records of the Public Prosecutor's Office of Peru (2019--2026; 9,593 records). The target is defined by percentile rules on case backlog and case processing rate, with thresholds learned on the training years only and examined in a sensitivity analysis. The variables that define the target were excluded from the predictors, features were selected by the consensus of six methods, and nine model configurations were compared under year-block walk-forward validation, with model and threshold selection on 2024, a hold-out test on 2025, and a prospective evaluation on the partial 2026 data. The selected LightGBM model reached an F1-score of 0.469 (95% bootstrap confidence interval 0.390--0.546) and a ROC-AUC of 0.798 on the 2025 test set, and an F1-score of 0.559 and a ROC-AUC of 0.866 on the 2026 data. An ablation study and SHAP attributions agree that the signal is mainly structural: territorial and institutional features carry most of the predictive information, whereas lagged historical features add little. Because the scores are overconfident in the medium-to-high range, they are better suited to ranking operational combinations for preventive review than to serving as calibrated probabilities. The study provides a leakage-controlled, temporally validated reference for prosecutorial congestion analytics and delimits where its use is warranted.
 keywords:
   - Machine learning
   - Prosecutorial analytics
@@ -69,51 +70,39 @@ bibliography: references.bib
 
 # Introduction {#sec-intro}
 
-Congestion in justice systems represents a challenge for institutional management, as it increases response times, hinders the efficient allocation of resources, and limits the operational capacity of the organizations responsible for the administration of justice. In this context, machine learning has emerged as a promising tool for the early identification of scenarios with high operational risk and for supporting evidence-based planning through the analysis of administrative records.
+Congestion in justice systems increases response times, hinders the allocation of resources, and limits the operational capacity of the institutions that administer justice. Public prosecution services are exposed to it at the very start of the criminal process: every complaint they receive must be registered, assessed and processed, and a backlog at this stage propagates to the rest of the system. Anticipating where congestion is likely to arise would allow institutions to reinforce staff or redistribute workload before delays accumulate.
 
-Several studies have applied machine learning techniques to predict judicial congestion, workload, and institutional performance. However, most studies evaluate predictive algorithms, feature selection techniques, or interpretability methods in isolation, whereas aspects such as temporal validation, explicit data leakage control, the integration of robust feature selection and interpretability, and the joint evaluation of model robustness remain uncommon within a single reproducible methodological workflow.
+Machine learning has been applied to the prediction of judicial outcomes and workload, from court decisions [@aletras_predicting_2016; @katz_general_2017; @medvedeva_using_2019] to case duration and congestion [@azaria_alleviating_2024; @vasconcelos_analysis_2023; @pernici_improving_2024], and to decisions taken within the criminal process [@kleinberg_human_2017]. These studies, however, address the court stage. Prosecutorial workload has received far less attention, and the studies on congestion rarely report a temporal evaluation in which models are selected on one period and tested on later ones, an omission that tends to produce optimistic estimates when the data drift over time [@tashman_out-of-sample_2000; @kapoor_leakage_2023].
 
-In response to these limitations, this study proposes a reproducible Consensus, Temporal Validation, and Explainability Methodological Framework (CTVEMF) based on machine learning to estimate the proxy risk of prosecutorial congestion in the Public Prosecutor\'s Office of Peru, using administrative records from the 2019--2026 period. The main contributions of this work are as follows: (i) a consensus-based robust feature selection strategy combining six methods, preceded by an explicit multicollinearity audit; (ii) a year-block temporal validation scheme that prevents data leakage; (iii) a joint robustness assessment through an ablation study and unsupervised validation of the feature space; and (iv) a SHAP-based interpretability analysis integrated with an operational impact analysis aimed at the preventive prioritization of operational combinations with higher estimated risk. Collectively, these elements integrate, within a single methodological workflow, components that the previous literature has typically addressed in isolation.
+This study estimates a proxy risk of prosecutorial congestion from the open administrative records of the Public Prosecutor\'s Office of Peru (2019--2026). Its contributions are as follows. (i) It addresses congestion at the prosecutorial stage, which previous predictive studies have rarely examined, using national open records and an evaluation on a hold-out year and on a prospective partial year. (ii) It specifies a leakage-controlled protocol for a target that is derived from the same records as the predictors: the variables that define the target are excluded, and every threshold and preprocessing parameter is learned on the training years only. (iii) It shows, through the agreement between an ablation study and SHAP attributions, that the risk signal is mainly structural---carried by territorial and institutional features rather than by lagged workload---and draws the operational consequences of that finding. (iv) It reports the limits of the model explicitly, including its calibration and the sensitivity of the proxy target to its thresholds, so that its use can be delimited before any deployment.
 
-The remainder of this paper is organized as follows. Section @sec-related presents the related work. Section @sec-methods describes the methodology. Section @sec-results presents the results. Sections @sec-interpretability, @sec-limitations, and @sec-conclusions present the discussion, limitations, and conclusions, respectively.
+The remainder of this paper is organized as follows. Section @sec-related reviews the related work. Section @sec-methods describes the data and the methodology. Section @sec-results presents the results, Section @sec-discussion discusses them, Section @sec-limitations states the limitations, and Section @sec-conclusions concludes.
 
 # Related work {#sec-related}
 
-## Machine learning for predicting judicial and prosecutorial workload
+## Machine learning for judicial and prosecutorial workload
 
-Previous research on predicting case duration and procedural delays has predominantly focused on the judicial domain, overlooking prosecutorial dynamics. Recent studies have shown that machine learning can contribute to modeling operational workload and optimizing institutional performance through the analysis of administrative records, including applications aimed at reducing judicial congestion, evaluating productivity, and conducting temporal analyses of judicial processes [@azaria_alleviating_2024; @vasconcelos_analysis_2023; @pernici_improving_2024]. While some studies combine tree-based models with explainability techniques to improve the interpretation of predictions, others incorporate process mining and temporal analysis to identify bottlenecks, measure procedural duration, and evaluate institutional performance using administrative data [@azaria_alleviating_2024; @pernici_improving_2024]. Although both approaches have demonstrated promising results, each addresses only part of the problem, and neither simultaneously integrates temporal validation strategies, data leakage prevention, and robust feature selection within a single methodological framework.
+Prediction in the justice domain has focused mainly on the outcome of court cases, using the text of decisions or structured case features [@aletras_predicting_2016; @katz_general_2017; @medvedeva_using_2019]. A second line of work models the functioning of the system itself: case duration, productivity and congestion. Recent studies have used administrative records to reduce judicial congestion, evaluate productivity and analyze the temporal course of proceedings, combining tree-based models with explainability techniques or with process mining to locate bottlenecks [@azaria_alleviating_2024; @vasconcelos_analysis_2023; @pernici_improving_2024]. Reviews of artificial intelligence in judicial management describe a shift from isolated predictive models toward tools that support the planning of the whole system [@hannoon_artificial_2025].
 
-Although these studies demonstrate that administrative records can be used to model operational congestion with promising results, their methodological scope remains limited. In particular, they focus on judicial scenarios following the prosecutorial investigation stage, employ context-specific modeling strategies, and do not integrate mechanisms to simultaneously address issues such as robust feature selection, data leakage, and temporal validation. These limitations restrict the reproducibility and generalizability of the models to real-world operational scenarios. This evolution is also reflected in recent review studies, which highlight a transition from isolated predictive models toward comprehensive frameworks for the intelligent management of judicial systems [@hannoon_artificial_2025].
-
-Overall, the literature indicates that the primary challenge no longer lies solely in applying predictive algorithms to the judicial domain, but rather in integrating robust feature selection, explicit data leakage prevention, temporal validation, and explainability within a single methodological framework to ensure reproducible and transferable models for real-world operational scenarios. In this context, the present study proposes a framework that integrates these components in a unified manner within the prosecutorial domain.
+Two gaps remain. These studies address courts, after the prosecutorial investigation stage, and their evaluation designs seldom separate the period used to build the model from the period used to test it. The present study addresses the prosecutorial stage and adopts such a separation.
 
 ## Feature selection: filter, wrapper, embedded, and ensemble approaches
 
-Among the most relevant methodological components for building robust predictive models, feature selection has assumed a central role due to its impact on the stability, interpretability, and generalization capability of classifiers. In contrast, wrapper methods explore these interactions using the predictive performance of the classifier, but they require greater computational cost [@zhou_efficient_2024]. Embedded methods balance both aspects by incorporating feature selection during model training; however, their performance continues to depend on the algorithm employed. These differences have motivated the development of consensus-based feature selection strategies that seek to combine the strengths of multiple approaches and reduce the variability of the final feature subset [@moslemi_tutorial-based_2023]. In turn, all-relevant embedded feature selectors, such as the Boruta algorithm, compare the importance of each feature against randomized copies (shadow features) using a Random Forest, providing a statistically supported relevance test rather than a minimum-optimal feature subset [@kursa_feature_2010].
+Feature selection affects the stability, interpretability and generalization of classifiers [@saeys_robust_2008]. Filter methods rank features by statistical association with the target; wrapper methods search subsets using the performance of a classifier, at a higher computational cost [@zhou_efficient_2024]; and embedded methods select features while the model is trained, so their result depends on the algorithm. All-relevant selectors such as Boruta compare the importance of each feature with randomized shadow copies, which yields a relevance test rather than a minimal subset [@kursa_feature_2010].
 
-Because individual feature selectors often produce different results in the presence of highly correlated variables, their isolated use may generate unstable feature subsets that depend on the selected algorithm. Consequently, ensemble feature selection has emerged as an alternative for increasing the robustness and stability of the process through the aggregation of multiple selection criteria [@zhou_efficient_2024].
-
-From this perspective, the proposed framework implements a consensus based on six complementary methods---two filter methods (MI and ANOVA), one filter method for categorical variables ($\chi^2$), one embedded method (Random Forest), and two wrapper methods (Boruta and RFECV)---with the aim of combining methodological strengths and reducing dependence on a single feature selection algorithm. This process is preceded by an explicit multicollinearity audit using the Pearson correlation coefficient and Cramér\'s V coefficient.
-
-Although several studies have proposed individual feature selection strategies, the literature still reports limited integration between feature space quality auditing, consensus-based feature selection, and evaluation using explainable models within a reproducible methodological workflow. The strategy adopted in this work responds precisely to this need by integrating complementary approaches into a single robust feature selection stage.
+Individual selectors often disagree when features are correlated, which makes the selected subset depend on the algorithm. Ensemble or consensus selection aggregates several criteria to make the subset more stable [@saeys_robust_2008; @bolon-canedo_ensembles_2019; @moslemi_tutorial-based_2023; @drotar_ensemble_2018]. Following this approach, the present study combines six methods---two filters for continuous variables (mutual information and ANOVA), one filter for categorical variables ($\chi^2$), one embedded method (random forest importance [@breiman_random_2001]), and two wrappers (Boruta and RFECV, the cross-validated form of recursive feature elimination [@guyon_gene_2002])---after an explicit multicollinearity audit with Pearson\'s correlation and Cramér\'s V.
 
 ## Class imbalance, data leakage, and temporal validation
 
-Risk classification tasks based on administrative datasets often exhibit substantial class imbalance, which motivates the use of resampling techniques such as SMOTE, which generates synthetic instances of the minority class through linear interpolation in the feature space [@chawla_smote_2002]. The proposed framework avoids synthetic resampling, instead adopting class weighting for compatible models (Section @sec-models), since the observed class imbalance (86%/14%) did not require an artificial expansion of the sample space. Nevertheless, a critical and frequently overlooked concern in this domain is data leakage; indeed, systematic reviews have confirmed that this methodological flaw compromises the validity of hundreds of machine learning studies across multiple disciplines, commonly induced by computing preprocessing statistics on the entire dataset before data partitioning [@kapoor_leakage_2023].
+Risk classification on administrative data is usually imbalanced. Synthetic oversampling such as SMOTE [@chawla_smote_2002] is a common response; class weighting is a simpler alternative that leaves the data unchanged, and it is the one adopted here (Section @sec-models), since the observed imbalance (86%/14%) leaves enough positive cases for training.
 
-Temporal validation and restricting preprocessing exclusively to the training set are widely recommended to prevent information leakage and ensure reproducible evaluation [@kapoor_leakage_2023; @sasse_leakage_2023]; omitting these practices may lead to overly optimistic performance estimates and limit the reproducibility of the results [@hamdan_julearn_2023]. In response, recent studies have proposed leakage-free evaluation protocols as a standard practice [@hamdan_julearn_2023], an approach that this framework adopts rigorously by computing all preprocessing parameters exclusively on the training partition (Section @sec-data-quality).
+Data leakage---the use, during model development, of information that would not be available when the model is applied---is a frequent source of optimistic results [@kaufman_leakage_2012]. A review across disciplines found that it affects hundreds of published machine learning studies, often because preprocessing statistics are computed before the data are split [@kapoor_leakage_2023]. Restricting preprocessing to the training data and validating on later periods are the recommended remedies [@sasse_leakage_2023; @hamdan_julearn_2023]. When observations are ordered in time, random cross-validation mixes past and future; forecasting research therefore recommends evaluating on blocks of data that follow the training period [@tashman_out-of-sample_2000; @bergmeir_use_2012; @roberts_cross-validation_2017], and the literature on concept drift and dataset shift explains why performance can change from one period to the next [@gama_survey_2014; @moreno-torres_unifying_2012].
 
 ## Explainability and responsible AI for risk prediction in judicial contexts
 
-Recent literature agrees that interpretability is an indispensable requirement for the adoption of predictive models in judicial contexts [@richmond_explainable_2024]; however, existing approaches differ in their objectives, particularly in legal applications where explanations must be understandable to different institutional stakeholders [@richmond_explainable_2024].
+Interpretability is widely regarded as a requirement for the adoption of predictive models in judicial contexts, where explanations must be understood by different institutional stakeholders [@richmond_explainable_2024]. For high-stakes decisions, some authors argue for inherently interpretable models instead of post hoc explanations of black boxes [@rudin_stop_2019]; others use additive attributions such as SHAP, which decompose each prediction into feature contributions and have exact, efficient forms for tree ensembles [@lundberg_unified_2017; @lundberg_local_2020; @saarela_recent_2024; @bhatnagar_hybrid_2025]. Risk assessment tools in criminal justice have also been scrutinized for their accuracy and fairness: a widely used commercial tool was no more accurate than predictions made by people without legal training [@dressel_accuracy_2018], and fairness criteria for such tools can be mutually incompatible [@berk_fairness_2018]. High accuracy alone is therefore insufficient; institutional trust also requires transparent and auditable models [@taylor_is_2025].
 
-While tools such as SHAP aim to explain the internal behavior of complex models through local and global feature attributions, consistent with recent systematic reviews on Explainable AI [@saarela_recent_2024], these perspectives should be understood as complementary rather than mutually exclusive alternatives [@lundberg_unified_2017; @bhatnagar_hybrid_2025]. In parallel, risk assessment tools in the criminal justice sector have been subject to intense scrutiny; the literature reports that commercial algorithms based on more than 100 variables did not outperform either in accuracy or fairness the predictions made by individuals without legal expertise [@dressel_accuracy_2018]. This evidence demonstrates that high predictive accuracy alone is insufficient to support decision-making in judicial contexts. Institutional trust also requires transparent, interpretable, and auditable models capable of justifying their predictions and facilitating their review by domain experts, in accordance with the recent Responsible AI literature [@taylor_is_2025].
-
-From this perspective, the proposed framework incorporates local explanations through SHAP values and probabilistic calibration diagnostics to promote the responsible use of predictions prior to any potential institutional deployment. Consequently, the current challenge extends beyond the isolated use of explainability techniques and consists of incorporating them into comprehensive frameworks that integrate rigorous validation, transparency, and reproducibility from the methodological design stage.
-
-Overall, the literature demonstrates significant advances in the application of machine learning to the judicial domain, feature selection, data leakage prevention, and model interpretability. However, these components are typically addressed in isolation, with limited integration into reproducible methodological frameworks that simultaneously incorporate temporal validation, robust feature selection, explainability, and evaluation tailored to the operational context.
-
-This methodological need motivates the proposal presented in the following section, whose primary contribution is to integrate, within a single reproducible framework, robust feature selection, data leakage prevention, temporal validation, supervised learning, and interpretability for the early identification of proxy signals of prosecutorial congestion.
+The present study uses SHAP attributions together with an ablation study, so that conclusions about which features matter rest on two independent sources, and it reports the calibration of the scores before discussing their operational use.
 
 # Materials and methods {#sec-methods}
 
@@ -149,9 +138,9 @@ Based on these fields, 14 variables were constructed through feature engineering
 
 ### Study period
 
-The unified dataset covers the period from January 2019 to May 2026 (partial), consolidating a matrix of 9,593 records after the integration process. To simulate a real-world environment and eliminate any risk of data leakage, the data partitioning was structured using a year-block walk-forward cross-validation scheme (4 folds).
+The unified dataset covers the period from January 2019 to May 2026 (partial), consolidating a matrix of 9,593 records after the integration process. Because the records are ordered in time, the data were partitioned by calendar year rather than at random, following the recommendations for out-of-sample evaluation of time-ordered data [@tashman_out-of-sample_2000; @bergmeir_use_2012].
 
-The chronological distribution was configured as follows: the 2019--2023 period was reserved for the primary training stage (subdivided into an internal training block spanning 2019--2022 and an internal validation block corresponding to 2023, used exclusively for consensus-based feature selection); the 2024 block was allocated to the external validation and probabilistic calibration stage; the 2025 observations were isolated as the hold-out test set; finally, the available records from 2026 were used as an independent prospective evaluation set. A summary of these characteristics is presented in Table @tbl-dataset.
+The chronological distribution was configured as follows: the 2019--2023 period was reserved for the primary training stage (subdivided into an internal training block spanning 2019--2022 and an internal validation block corresponding to 2023, used for consensus-based feature selection); the 2024 block was allocated to model selection, threshold selection and probabilistic calibration; the 2025 observations were isolated as the hold-out test set; finally, the available records from 2026 were used as an independent prospective evaluation set. A summary of these characteristics is presented in Table @tbl-dataset.
 
 : General characteristics of the dataset. [The partition is reported as train/validation/test/external. Class balance is expressed as Class 0 / Class 1.]{.note} {#tbl-dataset}
 
@@ -172,15 +161,15 @@ The chronological distribution was configured as follows: the 2019--2023 period 
 
 ## Methodological framework {#sec-framework}
 
-The proposed framework consists of six sequential phases designed to ensure the reproducibility, auditability, and temporal validity of the system (Fig. @fig-framework).
+The methodology consists of six sequential phases, from data quality to feature selection, designed so that every step can be audited and repeated (Fig. @fig-framework).
 
-![Methodological Framework of Consensus, Temporal Validation, and Explainability for Fiscal Congestion.](media/image1.png){#fig-framework}
+![Methodological workflow: from data quality assessment to consensus feature selection.](media/image1.png){#fig-framework}
 
 ### Data quality {#sec-data-quality}
 
 This phase included the normalization of categorical variables through the removal of leading and trailing whitespace, standardization to uppercase, and harmonization of missing values, as well as the detection of redundant columns resulting from the annual data integration process and the removal of duplicate records.
 
-For the missing values identified in the *ingresado* and *atendido* fields, imputation was performed using the median computed exclusively from the temporal training blocks to mitigate data leakage. In parallel, binary indicator variables (*flag_nulo\_*) were generated to preserve the missingness signal as a potentially predictive attribute.
+For the missing values identified in the *ingresado* and *atendido* fields, imputation was performed using the median computed exclusively from the temporal training blocks to avoid data leakage [@kapoor_leakage_2023]. In parallel, binary indicator variables (*flag_nulo\_*) were generated to preserve the missingness signal as a potentially predictive attribute.
 
 For categorical variables, missing values were imputed using an explicit category (*NO_ESPECIFICADO*) instead of the mode, thereby avoiding the introduction of an artificially dominant class. Finally, the interquartile range (IQR) criterion was applied for the preliminary profiling and identification of numerical outliers.
 
@@ -190,13 +179,11 @@ Let $s_i = \mathit{ingresado}_i - \mathit{atendido}_i$ denote the case backlog a
 
 $$y_i = \mathbb{1}\left[s_i \geq q_{.75}(s_{\text{train}}) \wedge t_i \leq q_{.25}(t_{\text{train}})\right]$$ {#eq-target}
 
-where the percentile thresholds $q_{.75}$ and $q_{.25}$ are computed exclusively from the training block. The framework formally defines this label as an operational proxy signal rather than as an official certification of prosecutorial congestion or a causal inference. This design follows a conservative criterion aimed at isolating situations of severe operational overload in an auditable manner.
+where the percentile thresholds $q_{.75}$ and $q_{.25}$ are computed exclusively from the training block. The label is an operational proxy signal, not an official certification of prosecutorial congestion nor a causal quantity. It follows a conservative criterion: a record is flagged only when a high backlog and a low processing rate occur together.
 
 ### Target sensitivity analysis
 
-Since *riesgo_congestion* is a proxy label, its robustness to the arbitrary selection of percentile thresholds must be verified before it is adopted as the basis for modeling.
-
-To this end, three alternative scenarios were established as a parallel sensitivity analysis (Table @tbl-sensitivity).
+Since *riesgo_congestion* is a proxy label, its robustness to the choice of percentile thresholds was examined before it was adopted as the basis for modeling. To this end, three alternative scenarios were established as a parallel sensitivity analysis (Table @tbl-sensitivity).
 
 : Sensitivity analysis of the proxy target across scenarios. [Train % = prevalence in the training set; Test % = prevalence in the 2025 test set; Ext % = prevalence in the 2026 external dataset; CV = interannual coefficient of variation (2019--2026); Role = operational interpretation of the scenario.]{.note} {#tbl-sensitivity}
 
@@ -207,25 +194,21 @@ To this end, three alternative scenarios were established as a parallel sensitiv
 | **P80/P20** | 9.3 | 9.0 | 14.3 | 0.278 | Strict |
 | **P85/P15** | 5.3 | 5.0 | 9.3 | 0.379 (max.) | Very strict |
 
-The prevalence of Class 1 in the training set ranges from 5.3% (P85/P15) to 19.4% (P70/P30), while the temporal stability of the event rate---measured as the coefficient of variation (CV) between 2019 and 2026---increases monotonically with threshold severity (CV = 0.165 for P70/P30 up to 0.379 for P85/P15). The baseline scenario (P75/P25, CV = 0.219, training prevalence = 14.0%) is not the most stable among the four scenarios---P70/P30 is---but it was retained because it provides the best balance between institutional severity and sufficient class balance for model training without resorting to synthetic resampling, compared with the greater rarity and interannual variability of the P80/P20 and P85/P15 scenarios.
+The prevalence of Class 1 in the training set ranges from 5.3% (P85/P15) to 19.4% (P70/P30), while the temporal instability of the event rate---measured as the coefficient of variation (CV) between 2019 and 2026---increases monotonically with threshold severity (CV = 0.165 for P70/P30 up to 0.379 for P85/P15). The baseline scenario (P75/P25, CV = 0.219, training prevalence = 14.0%) is not the most stable of the four---P70/P30 is---but it was retained as a compromise between institutional severity and a class balance sufficient for training without synthetic resampling, avoiding the greater rarity and interannual variability of the P80/P20 and P85/P15 scenarios. The prevalence also rises in the 2026 data under every scenario (Table @tbl-sensitivity), a shift that the evaluation on that year must take into account.
 
 ### Feature engineering
 
-The 14 derived variables were designed according to four criteria: operational pressure indicators (imbalance between case inflows and processed cases), pandemic-related temporal descriptors (*post_pandemia*, *periodo_pandemia_2020*), second-order categorical interactions that capture nonlinear institutional synergies, and lagged historical variables by prosecutorial district that incorporate previous moving averages and growth rates without introducing predictive anachronisms.
+The 14 derived variables were designed according to four criteria: operational pressure indicators (imbalance between case inflows and processed cases), pandemic-related temporal descriptors (*post_pandemia*, *periodo_pandemia_2020*), second-order categorical interactions that capture nonlinear institutional synergies, and lagged historical variables by prosecutorial district that use only previous periods, so that no information from the year being predicted enters the features.
 
 ### Data leakage control {#sec-leakage}
 
-Because the target variable (*riesgo_congestion*) is constructed directly from *ingresado* and *atendido*, these attributes---*ingresado*, *atendido*, and their derived variables *saldo_casos*, *tasa_atencion*, and *ratio_saldo* (*LEAKAGE_COLS*)---were isolated through a strict exclusion list, together with non-predictive metadata and the columns corresponding to the four alternative proxy scenarios. Additionally, *anio_centrado* was excluded from the candidate feature matrix because of its direct collinearity with the calendar year (*COLLINEAR_EXCLUDE*).
+Because the target variable (*riesgo_congestion*) is constructed directly from *ingresado* and *atendido*, these attributes---*ingresado*, *atendido*, and their derived variables *saldo_casos*, *tasa_atencion*, and *ratio_saldo* (*LEAKAGE_COLS*)---were removed through a strict exclusion list, together with non-predictive metadata and the columns corresponding to the four alternative proxy scenarios. Without this exclusion the target could be reconstructed from the predictors, a typical form of leakage [@kaufman_leakage_2012]. Additionally, *anio_centrado* was excluded from the candidate feature matrix because of its direct collinearity with the calendar year (*COLLINEAR_EXCLUDE*).
 
 ### Feature selection {#sec-selection}
 
-A potential multicollinearity analysis was performed using the Pearson correlation coefficient (r \> 0.90) for numerical variables and Cramér\'s V (\> 0.80) for categorical variables (Figs. @fig-pearson and @fig-cramer).
+A multicollinearity audit was first performed using the Pearson correlation coefficient (r \> 0.90) for numerical variables and Cramér\'s V (\> 0.80) for categorical variables; the number of candidate features retained after each filter is given in Table @tbl-dataset.
 
-![Pearson correlation among numerical variables.](media/image2.png){#fig-pearson width=.6}
-
-![Cramér\'s V correlation among categorical variables.](media/image3.png){#fig-cramer width=.6}
-
-Subsequently, six complementary feature selection methods---two continuous filter methods, one categorical filter method, one embedded method, and two wrapper methods (Table @tbl-selectors)---were implemented, each operating under the same year-block temporal cross-validation scheme.
+Subsequently, six complementary feature selection methods---two continuous filter methods, one categorical filter method, one embedded method, and two wrapper methods (Table @tbl-selectors)---were applied, each operating under the same year-block temporal cross-validation scheme.
 
 : Feature selection methods evaluated. {#tbl-selectors}
 
@@ -242,7 +225,7 @@ The consensus among methods is formalized by Eq. @eq-consensus, where each term 
 
 $$FeatureScore_i = \frac{MI_i + ANOVA_i + \chi^2_i + RF_i + Boruta_i + RFECV_i}{6}$$ {#eq-consensus}
 
-The final features were determined using a consensus voting mechanism with a minimum threshold of 2 out of 6 methods, resulting in a subset of 69 final features (Table @tbl-consensus).
+The final features were determined using a consensus voting mechanism with a minimum threshold of 2 out of 6 methods, resulting in a subset of 69 final features (Table @tbl-consensus). A low threshold was chosen deliberately: it keeps any feature that two methods of different families consider relevant, and leaves the final weighting to the classifiers.
 
 : Consensus voting distribution and retained features. [Consensus threshold = votes $\geq$ 2/6. The three features with unanimous agreement (6/6) are freq_distrito_fiscal, freq_tipo_caso, and tipo_caso_DENUNCIA.]{.note} {#tbl-consensus}
 
@@ -259,22 +242,16 @@ The final features were determined using a consensus voting mechanism with a min
 
 ## Feature space validation {#sec-feature-space}
 
-The purpose was to examine the internal topology of the feature space and evaluate the consistency of the proxy risk signal with the multivariate structure of the data. The exploratory analyses (PCA, t-SNE, and UMAP; Figs. @fig-pca, @fig-tsne, and @fig-umap) confirmed the existence of nonlinear structures with local clusters and partial overlap between classes, thereby justifying the use of robust classifiers.
-
-![Two-dimensional PCA projection of the training set colored according to the proxy target class.](media/image4.png){#fig-pca width=.55}
-
-![Two-dimensional t-SNE representation of the feature space of the training set.](media/image5.png){#fig-tsne width=.55}
+Before training, the structure of the training feature space was examined to check whether the proxy risk is consistent with its multivariate organization. Two-dimensional projections (PCA, t-SNE and UMAP) showed nonlinear structure with local clusters and partial overlap between classes (Fig. @fig-umap shows the UMAP projection), which motivated the use of nonlinear classifiers. The unsupervised validation (Table @tbl-unsupervised) found that K-Means ($k$ = 7) gave the partition with the highest quality and stability among the clustering methods compared, and that anomaly detectors flagged only a small share of the records.
 
 ![Two-dimensional UMAP representation of the feature space of the training set.](media/image6.png){#fig-umap width=.55}
-
-The unsupervised validation (Table @tbl-unsupervised) corroborated this structure, with K-Means (*k* = 7) providing the partition with the highest quality and stability compared with DBSCAN and Agglomerative clustering.
 
 : Summary of the unsupervised validation of the feature space. {#tbl-unsupervised}
 
 | Analysis | Evidence | Result + Interpretation |
 |-------|--------------|--------------|
-| PCA (2 Components) | Fig. @fig-pca | Global organization; partial nonlinear separation |
-| t-SNE | Fig. @fig-tsne | Compact local clusters; nonlinear relationships |
+| PCA (2 Components) | 2D projection | Global organization; partial nonlinear separation |
+| t-SNE | 2D projection | Compact local clusters; nonlinear relationships |
 | UMAP | Fig. @fig-umap | Stable structure; consistent multivariate patterns |
 | K-Means | Silh = 0.262; DB = 1.507; CH = 1173.6; ARI = 0.77 $\pm$ 0.13 | Optimal (K = 7); robustness confirmed by bootstrap |
 | DBSCAN | 46 clusters; Silh = 0.161; DB = 1.310; CH = 245.9 | Exploratory; fragmented partition with lower quality |
@@ -285,23 +262,21 @@ The unsupervised validation (Table @tbl-unsupervised) corroborated this structur
 
 ## Experimental design {#sec-design}
 
-The methodological workflow of the experimental design is illustrated in Fig. @fig-design and described throughout this section.
+The experimental design is summarized in Fig. @fig-design and described in the rest of this section.
 
 ![Experimental design for model training and temporal validation.](media/image7.png){#fig-design}
 
 ### Temporal data partitioning {#sec-partitioning}
 
-The experimental design replaces conventional random cross-validation with a cumulative chronological strategy based on annual blocks (year-block walk-forward validation).
+The experimental design replaces random cross-validation with a cumulative chronological strategy based on annual blocks (year-block walk-forward validation), so that every model is evaluated on years that follow its training data [@bergmeir_use_2012; @roberts_cross-validation_2017]. Within the primary training block (2019--2023), sequential folds are organized chronologically; at each iteration, the model is trained exclusively on periods preceding the year under internal evaluation.
 
-Within the primary training block (2019--2023), sequential folds are organized chronologically. At each iteration, the model is trained exclusively using data from periods preceding the year under internal evaluation.
-
-Externally, the 2024 period was isolated as the validation and calibration set (for classifier selection and optimal threshold determination); the 2025 observations were reserved as the final hold-out test set; and the partial 2026 segment was used as an independent prospective evaluation set. None of these three temporal horizons participated in the hyperparameter optimization process.
+Externally, the 2024 period was isolated as the validation and calibration set (for classifier selection and threshold determination); the 2025 observations were reserved as the final hold-out test set; and the partial 2026 segment was used as an independent prospective evaluation set. None of these three temporal horizons participated in the hyperparameter optimization process.
 
 ### Model configurations {#sec-models}
 
-Nine algorithmic configurations were evaluated (Table @tbl-configs), including one baseline classifier, two linear/margin-based models (SVM calibrated using *CalibratedClassifierCV*), three gradient boosting architectures, one Bayesian-optimized LightGBM variant, and two ensemble meta-models (Section @sec-models).
+Nine algorithmic configurations were evaluated (Table @tbl-configs): one baseline classifier, two linear models (logistic regression and a linear support vector machine whose scores were calibrated with Platt scaling through *CalibratedClassifierCV* [@niculescu-mizil_predicting_2005]), three gradient boosting implementations---XGBoost [@chen_xgboost_2016], LightGBM [@ke_lightgbm_2017] and CatBoost [@prokhorenkova_catboost_2018]---one Bayesian-optimized LightGBM variant, and two ensemble meta-models. Gradient boosting was included because it handles mixed, nonlinear and interacting features without manual specification, which the feature space analysis suggested (Section @sec-feature-space).
 
-: Model configurations evaluated (hyperparameter search). [The complete hyperparameter search spaces for all models are provided in the associated code repository.]{.note} {#tbl-configs}
+: Model configurations evaluated (hyperparameter search). [F1 = mean F1-score over the internal temporal folds. The complete hyperparameter search spaces will be released with the code repository upon publication.]{.note} {#tbl-configs}
 
 | Model | Optimizer | No. of Iterations | F1 |
 |------|-----------|------|---|
@@ -315,54 +290,39 @@ Nine algorithmic configurations were evaluated (Table @tbl-configs), including o
 | VotingClassifier | --- (Ensemble, No Hyperparameter Tuning) | --- | --- |
 | Temporal Stacking | --- (Meta-Model Based on OOF Predictions) | --- | --- |
 
-To mitigate the native class imbalance of the dataset (86% versus 14%), compatible models incorporated internal penalization techniques through class weighting in their loss functions (*class_weight = \"balanced\"* or *scale_pos_weight*), while synthetic resampling was omitted because the observed imbalance did not require an artificial expansion of the sample space.
+To account for the class imbalance of the dataset (86% versus 14%), compatible models used class weighting in their loss functions (*class_weight = \"balanced\"* or *scale_pos_weight*); synthetic resampling was not used, so the training data remained the observed records.
 
-Based on this configuration, two meta-models were constructed by combining the five base estimators with the highest internal cross-validation F1 scores---Logistic Regression, LightGBM, Optuna-optimized LightGBM, XGBoost, and CatBoost, excluding SVM because of its lower performance (CV F1 = 0.268): a soft voting ensemble (*VotingClassifier*), which computes the unweighted average of the predicted probabilities from the five models (Eq. @eq-voting), and a temporal stacking classifier (*Stacking*), which trains a Logistic Regression model using the five out-of-fold probabilities as meta-features (Eq. @eq-stacking, Section @sec-optimization).
+Two meta-models were then built from the five base estimators with the highest internal cross-validation F1 scores---logistic regression, LightGBM, Optuna-optimized LightGBM, XGBoost and CatBoost, excluding the SVM because of its lower performance (CV F1 = 0.268): a soft voting ensemble (*VotingClassifier*), which averages the predicted probabilities of the five models (Eq. @eq-voting), and a temporal stacking classifier [@wolpert_stacked_1992], which trains a logistic regression on the five out-of-fold probabilities (Eq. @eq-stacking).
 
 $$\hat{p}(y=1 \mid x) = \frac{1}{5}\sum_{k=1}^{5}\hat{p}_k(y=1 \mid x)$$ {#eq-voting}
 
 ### Optimization strategy {#sec-optimization}
 
-The hyperparameters of the base estimators were tuned using *RandomizedSearchCV* (N = 100 iterations), maximizing the F1-score metric over the temporal folds defined previously.
+The hyperparameters of the base estimators were tuned using *RandomizedSearchCV* (N = 100 iterations), which explores large search spaces more efficiently than grid search [@bergstra_random_2012], maximizing the F1-score over the temporal folds defined previously.
 
-The LightGBM architecture was explored using Bayesian optimization (TPE in *Optuna*, 100 trials), maximizing the interannual F1-score as a comparative configuration (Table @tbl-configs); however, the final selected model was LightGBM optimized with *RandomizedSearchCV*, as it achieved a higher F1-score on the 2024 validation set (Table @tbl-comparison).
+The LightGBM architecture was also explored using Bayesian optimization (TPE in *Optuna* [@akiba_optuna_2019], 100 trials) as a comparative configuration (Table @tbl-configs); the final selected model was LightGBM optimized with *RandomizedSearchCV*, as it achieved a higher F1-score on the 2024 validation set (Table @tbl-comparison).
 
-The stacking meta-model (Logistic Regression) is trained on the out-of-fold probabilities generated by the five base models as meta-features (Eq. @eq-stacking).
+The stacking meta-model (logistic regression) is trained on the out-of-fold probabilities generated by the five base models (Eq. @eq-stacking).
 
 $$\hat{p}_{\text{stack}}(y=1 \mid x_i) = \sigma\left(w^{\top} z_i + b\right), \quad z_i = \left[\hat{p}_1(x_i), \ldots, \hat{p}_5(x_i)\right]$$ {#eq-stacking}
 
-where $\sigma$ denotes the logistic function, and $w$ and $b$ are the parameters estimated by Logistic Regression.
-
-This training was performed exclusively on the out-of-fold predictions of the five base models across four temporal folds, thereby avoiding overfitting bias. For inference, the base models were retrained using the entire training set while keeping the meta-model fixed.
+where $\sigma$ denotes the logistic function, and $w$ and $b$ are the parameters estimated by logistic regression. The meta-model was trained exclusively on the out-of-fold predictions of the five base models across the four temporal folds, so that it never sees a prediction made on a model\'s own training data. For inference, the base models were retrained on the entire training set while keeping the meta-model fixed.
 
 ### Evaluation protocol {#sec-evaluation}
 
-The proposed classifier was selected after comparing the F1-score and ROC-AUC metrics on the 2024 validation block, with LightGBM identified as the primary model.
+The primary classifier was selected by comparing the F1-score and ROC-AUC on the 2024 validation block, a criterion fixed before the 2025 test set was evaluated; LightGBM was selected.
 
-The decision threshold was calibrated through a fine-grained grid search (91 values within the range \[0.05, 0.95\]), maximizing the F1-score on the validation set, which yielded an optimal cutoff of $\tau = 0.66$. In parallel, alternative thresholds (Youden\'s J index, target precision, and target recall) were estimated for operational sensitivity analysis.
+The decision threshold was chosen through a grid search (91 values within \[0.05, 0.95\]) that maximizes the F1-score on the validation set, yielding $\tau = 0.66$. Alternative thresholds (Youden\'s J index, target precision and target recall) were also computed for operational sensitivity analysis.
 
-The final predictive performance was formally reported on the 2025 test set and the 2026 exploratory block using an extended set of evaluation metrics: accuracy, precision, recall, F1-score, ROC-AUC, PR-AUC, balanced accuracy, specificity, Matthews correlation coefficient (MCC), Cohen\'s kappa, negative predictive value (NPV), false positive rate (FPR), false negative rate (FNR), and likelihood ratios (LR+ and LR$-$).
+The final performance was reported on the 2025 test set and on the 2026 prospective block using accuracy, precision, recall, F1-score, ROC-AUC, PR-AUC, balanced accuracy, specificity, the Matthews correlation coefficient (MCC), Cohen\'s kappa, negative predictive value (NPV), false positive rate (FPR), false negative rate (FNR), and likelihood ratios (LR+ and LR$-$). PR-AUC and MCC were included because, under class imbalance, they are more informative than accuracy or ROC-AUC alone [@saito_precision-recall_2015; @chicco_advantages_2020]. Differences in ROC-AUC between models were tested with DeLong\'s test [@delong_comparing_1988], and differences across the temporal folds with the Friedman test [@demsar_statistical_2006].
 
-All estimators were complemented with 95% confidence intervals obtained through bootstrap resampling, probabilistic calibration curves, and temporal feature drift analysis using the Population Stability Index (PSI) with respect to the baseline training block.
-
-: Performance of the final model (LightGBM, threshold = 0.66) across temporal partitions. {#tbl-final}
-
-| Metric | Validation 2024 | Test 2025 | External 2026 |
-|----------|-----|----|-----|
-| Accuracy | 0.890 | 0.862 | 0.842 |
-| Precision | 0.576 | 0.525 | 0.644 |
-| Recall | 0.667 | 0.424 | 0.493 |
-| F1-score | 0.618 | 0.469 | 0.559 |
-| ROC-AUC | 0.897 | 0.798 | 0.866 |
-| PR-AUC | 0.625 | 0.499 | 0.652 |
-| Matthews Correlation Coefficient (MCC) | 0.556 | 0.394 | 0.471 |
-| Specificity | 0.925 | 0.936 | 0.931 |
+The estimates were complemented with 95% confidence intervals obtained through bootstrap resampling, calibration curves, and temporal drift analysis of the features using the Population Stability Index (PSI) with respect to the training block.
 
 # Results {#sec-results}
 
 ## Comparison of base models and ensembles
 
-Table @tbl-comparison summarizes the performance of the six base models and the two ensemble methods (*VotingClassifier* and temporal *Stacking*) on the 2024 validation set and the 2025 test set, using a fixed decision threshold of 0.5.
+Table @tbl-comparison summarizes the performance of the base models and the two ensemble methods (*VotingClassifier* and temporal *Stacking*) on the 2024 validation set and the 2025 test set, using a fixed decision threshold of 0.5.
 
 : Model comparison (threshold = 0.5). {#tbl-comparison}
 
@@ -377,21 +337,36 @@ Table @tbl-comparison summarizes the performance of the six base models and the 
 | Temporal Stacking | 0.518 | 0.445 | 0.822 |
 | Dummy (Baseline) | 0.000 | 0.000 | 0.500 |
 
-The gradient boosting models consistently outperformed both the linear models and the baseline classifier (F1 = 0 across all partitions), confirming the presence of a nonlinear predictive signal. LightGBM achieved the highest F1-score on the validation set---the criterion used to select the primary model---whereas CatBoost outperformed LightGBM on the 2025 test set in terms of both F1-score and ROC-AUC. This difference was confirmed to be statistically significant by DeLong\'s test ($z = 2.70$, $p = 0.007$). The Friedman test across the temporal folds also confirmed significant overall differences among the evaluated models ($\chi^2 = 12.6$, $p = 0.013$).
+The gradient boosting models obtained higher validation F1-scores than the linear models and the baseline classifier (F1 = 0 across all partitions), which is consistent with a nonlinear predictive signal. LightGBM achieved the highest F1-score on the validation set---the criterion used to select the primary model---whereas CatBoost obtained a higher F1-score (0.485 versus 0.475) and a higher ROC-AUC (0.817 versus 0.798) on the 2025 test set. DeLong\'s test indicated that the difference in ROC-AUC was statistically significant ($z = 2.70$, $p = 0.007$); the test does not apply to the threshold-dependent F1-score. The Friedman test across the temporal folds indicated overall differences among the evaluated models ($\chi^2 = 12.6$, $p = 0.013$), although with four folds its power to rank individual models is limited [@demsar_statistical_2006].
 
-Although CatBoost achieved a significantly higher F1-score on the test set (DeLong\'s test, $z = 2.70$, $p = 0.007$), selecting the final model based on this result would have compromised the temporal isolation established in Section @sec-partitioning by turning the 2025 hold-out set into a model selection criterion rather than an independent evaluation. Therefore, LightGBM was retained as the primary model because it achieved the best performance under the pre-specified 2024 validation criterion (Section @sec-evaluation). This decision is further supported by its greater relative stability across the evaluated temporal partitions (mean F1 = 0.541 $\pm$ 0.045 versus 0.528 $\pm$ 0.040 for CatBoost; Section @sec-threshold).
+Selecting CatBoost on the basis of its 2025 results would have turned the hold-out year into a model selection criterion, breaking the temporal isolation established in Section @sec-partitioning. LightGBM was therefore retained as the primary model, as fixed by the pre-specified 2024 criterion (Section @sec-evaluation). It also showed slightly greater stability across the walk-forward evaluation (mean F1 = 0.541 $\pm$ 0.045 versus 0.528 $\pm$ 0.040 for CatBoost; Section @sec-threshold).
 
 ## Decision threshold optimization and final model performance {#sec-threshold}
 
-After selecting LightGBM as the primary model and optimizing the decision threshold on the validation set (F1-optimal = 0.66; Section @sec-evaluation), the final performance is presented in Table @tbl-final (Section @sec-design): F1 = 0.618 on the validation set, 0.469 on the test set, and 0.559 on the 2026 external dataset, with 95% confidence intervals obtained through bootstrap resampling (300 resamples) of F1 $\in$ \[0.390, 0.546\] on the test set.
+With the threshold optimized on the validation set ($\tau = 0.66$; Section @sec-evaluation), the final model reached an F1-score of 0.618 on the validation set, 0.469 on the 2025 test set (95% bootstrap confidence interval \[0.390, 0.546\], 300 resamples) and 0.559 on the 2026 external data (Table @tbl-final). Specificity remained above 0.92 in all three periods, whereas recall dropped from 0.667 in 2024 to 0.424 in 2025.
 
-External walk-forward cross-validation (incrementally retraining the model year by year) confirmed the relative stability of LightGBM (mean F1 = 0.541 $\pm$ 0.045) compared with CatBoost (0.528 $\pm$ 0.040) and Logistic Regression (0.461 $\pm$ 0.025) across the seven temporal evaluation points (2020--2026).
+: Performance of the final model (LightGBM, threshold = 0.66) across temporal partitions. {#tbl-final}
+
+| Metric | Validation 2024 | Test 2025 | External 2026 |
+|----------|-----|----|-----|
+| Accuracy | 0.890 | 0.862 | 0.842 |
+| Precision | 0.576 | 0.525 | 0.644 |
+| Recall | 0.667 | 0.424 | 0.493 |
+| F1-score | 0.618 | 0.469 | 0.559 |
+| ROC-AUC | 0.897 | 0.798 | 0.866 |
+| PR-AUC | 0.625 | 0.499 | 0.652 |
+| Matthews Correlation Coefficient (MCC) | 0.556 | 0.394 | 0.471 |
+| Specificity | 0.925 | 0.936 | 0.931 |
+
+The drop from validation to test is expected under temporal drift [@gama_survey_2014], and the higher precision and PR-AUC in 2026 coincide with the higher prevalence of the target in that year (Table @tbl-sensitivity), to which precision-based metrics are sensitive [@saito_precision-recall_2015]. External walk-forward validation (retraining the model year by year) gave a mean F1 of 0.541 $\pm$ 0.045 for LightGBM, 0.528 $\pm$ 0.040 for CatBoost and 0.461 $\pm$ 0.025 for logistic regression across seven temporal evaluation points (2020--2026).
 
 ## Ablation study of feature groups
 
-Table @tbl-ablation summarizes the ablation study conducted on the LightGBM model, evaluating the impact of removing entire feature families on predictive performance.
+Table @tbl-ablation summarizes the ablation study conducted on the LightGBM model, which removes entire feature families and measures the effect on the 2025 test set at the fixed threshold of 0.5.
 
-: Ablation study (LightGBM, 2025 test set). {#tbl-ablation}
+<!-- TODO (authors): the full-model row (F1 0.466, ROC-AUC 0.788) differs from LightGBM in Table tbl-comparison (F1 0.475, ROC-AUC 0.798) for the same model, year and threshold. Confirm with the experiments which values are correct, or state that the ablation retrains the model (e.g., another seed), before submission. -->
+
+: Ablation study (LightGBM, 2025 test set, threshold = 0.5). {#tbl-ablation}
 
 | Variant | No. vars | F1 | Recall | Precision | ROC-AUC | PR-AUC |
 |---------|----|---|---|----|---|---|
@@ -401,108 +376,68 @@ Table @tbl-ablation summarizes the ablation study conducted on the LightGBM mode
 | Without Interaction Features | 26 | 0.415 | 0.634 | 0.309 | 0.778 | 0.348 |
 | Without Territorial Features | 23 | 0.415 | 0.721 | 0.292 | 0.792 | 0.367 |
 
-The removal of categorical interaction features and territorial attributes produced the largest decreases in F1-score observed in the study (0.415 in both cases, compared with 0.466 for the full model).
+Removing the categorical interaction features or the territorial attributes produced the largest decreases in F1-score (0.415 in both cases, compared with 0.466 for the full model). Without the territorial features the model became less selective---recall rose from 0.541 to 0.721 while precision fell from 0.410 to 0.292---and without the interaction features PR-AUC fell from 0.507 to 0.348, the largest decrease observed. ROC-AUC, in contrast, changed little in both variants (0.792 and 0.778 versus 0.788), so the ranking of records was largely preserved and much of the loss in F1-score reflects the fixed threshold of 0.5 rather than a loss of discrimination.
 
-Removing the territorial features shifted the model toward a less selective behavior---increasing recall (0.541 $\rightarrow$ 0.721) at the expense of a substantial reduction in precision (0.410 $\rightarrow$ 0.292)---whereas excluding the categorical interaction features produced the largest decrease in PR-AUC observed in the study (0.507 $\rightarrow$ 0.348). Overall, these results indicate that the predictive signal depends primarily on the territorial and institutional structure of the system rather than on the historical variables considered in isolation.
+Removing the historical growth features did not degrade performance (F1 = 0.471), and removing frequency encoding changed the F1-score only marginally (0.458) while ROC-AUC rose to 0.818. Both results point to redundancy between these groups and the territorial interaction features, consistent with the multicollinearity audit.
 
-In contrast, ROC-AUC remained stable or even improved slightly in both variants (0.792 and 0.778 versus 0.788 for the full model), indicating that the model\'s probabilistic ranking capability is resilient to the removal of these feature groups and that the observed impact on F1-score is mainly attributable to the fixed decision threshold (0.5) used in this experiment, which differs from the calibrated threshold ($\tau = 0.66$) adopted for the final model.
+## Global feature importance
 
-By comparison, removing the historical growth features did not degrade performance (F1 = 0.471), while removing frequency encoding produced only a marginal variation in F1-score (0.458) together with an improvement in ROC-AUC (0.818). These findings indicate informational redundancy with the remaining territorial interaction blocks and empirically validate the previous multicollinearity audit.
+Permutation importance [@altmann_permutation_2010] and the mean absolute SHAP values (Section @sec-discussion) identify the same leading predictors: the territorial-institutional frequency variables and the *tipo_caso_DENUNCIA* feature, in agreement with the ablation study. The SHAP interaction analysis identified *freq_inter_distrito_tipo_caso* $\times$ *ubigeo_pjfs* as the feature pair with the highest mean interaction value (0.108). A controlled counterfactual analysis showed that, in several individual cases, changing a single feature was sufficient to cross the decision threshold, and that these features were institutional descriptors of the case rather than measures of accumulated workload.
 
-## Explainability: global feature importance
+## Calibration and consistency with the feature space
 
-Both permutation importance and the mean absolute SHAP values (Section @sec-interpretability) consistently identify the territorial-institutional frequency variables and the *tipo_caso_DENUNCIA* feature as the most influential predictors, consistent with the findings of the ablation study regarding the relevance of territorial features.
-
-The SHAP interaction analysis identified the combination *freq_inter_distrito_tipo_caso* $\times$ *ubigeo_pjfs* as the feature pair with the highest mean interaction value (0.108). Furthermore, the controlled counterfactual analysis showed that, in several individual cases, a single feature was sufficient to cross the decision threshold, highlighting that the model is more sensitive to the institutional typology of the case than to the accumulated historical workload.
-
-## Temporal robustness and uncertainty quantification
-
-Fig. @fig-reliability shows that the model maintains adequate calibration for low predicted probabilities, although it exhibits overconfidence in the medium-to-high probability range (ECE = 0.091; MCE = 0.464).
-
-Since the operational decision threshold ($\tau = 0.66$) is located near this region, the predicted score should be interpreted as a relative prioritization criterion rather than as an exactly calibrated probability.
+Fig. @fig-reliability shows that the model is reasonably calibrated for low predicted probabilities but overconfident in the medium-to-high range (ECE = 0.091; MCE = 0.464). Because the operational threshold ($\tau = 0.66$) lies in that range, the score should be read as a ranking criterion for prioritization rather than as a calibrated probability.
 
 ![Reliability diagram of the final model (LightGBM, $\tau = 0.66$) on the 2025 test set.](media/image8.png){#fig-reliability width=.55}
 
-## Unsupervised validation and territorial fairness
+The clusters of the unsupervised analysis with the highest average case backlog also concentrated the highest proxy risk rates (Table @tbl-unsupervised), so the structure found without labels is consistent with the one the classifier learned.
 
-The unsupervised validation confirmed that the clusters with the highest average case backlog concentrated the highest proxy risk rates, supporting the consistency between the identified operational structure and the model predictions (Table @tbl-unsupervised).
-
-The preliminary fairness audit identified performance differences across prosecution office types and specialties. These differences should be interpreted as indicators for institutional monitoring rather than as evidence of causal discrimination, in accordance with the literature on the limitations of risk assessment tools in the justice system [@dressel_accuracy_2018].
-
-Overall, the calibration assessment, unsupervised structure analysis, and fairness audit indicate that the model maintains stable behavior under different validation criteria, reinforcing its reliability as a decision-support tool for operational management.
-
-# Interpretability and impact {#sec-interpretability}
+# Discussion {#sec-discussion}
 
 ## Interpretability
 
-The interpretability analysis is based exclusively on SHAP [@lundberg_unified_2017], applied to the final model on the 2025 test set. Fig. @fig-shap-global presents the global summary of the mean absolute SHAP values for the most influential features.
-
-Fig. @fig-shap-global shows that the model primarily bases its predictions on territorial and institutional patterns rather than on isolated historical variables.
-
-In particular, the features associated with territorial organization, institutional specialization, and operational frequency patterns account for the greatest predictive contribution, suggesting that the proxy risk reflects specific operational configurations of the Public Prosecutor\'s Office -- Office of the Attorney General of Peru (MPFN) rather than the individual volume of operational combinations.
-
-Five features account for 53% of the total SHAP signal, whereas the remaining 50 features contribute only 6%, indicating that the model prioritizes operational patterns associated with case processing frequency, territorial organization, and prosecutorial specialization.
-
-By contrast, the historical features provide complementary information, consistent with the ablation study (Table @tbl-ablation), which showed that interaction features contributed more to predictive performance than individual historical indicators.
+The interpretability analysis uses SHAP [@lundberg_unified_2017; @lundberg_local_2020], applied to the final model on the 2025 test set. Fig. @fig-shap-global presents the mean absolute SHAP values of the most influential features. The model bases its predictions mainly on territorial and institutional patterns: features describing territorial organization, institutional specialization and operational frequency carry the largest contributions, which suggests that the proxy risk reflects specific operational configurations of the MPFN rather than the volume handled by each combination. Five features account for 53% of the total SHAP signal, whereas the 50 least influential features contribute 6%. The historical features play a secondary role, consistent with the ablation study (Table @tbl-ablation).
 
 ![Global feature importance according to mean SHAP values.](media/image9.png){#fig-shap-global width=.75}
 
-While Fig. @fig-shap-global summarizes the global importance of the features at the model level, Fig. @fig-shap-interaction illustrates how these features contribute positively or negatively to individual predictions, making it possible to analyze the variability of their effects across different operational combinations.
-
-Whereas some features exhibit relatively stable contributions, others show greater dispersion in their SHAP values, indicating that their effect depends on the operational context and on their interaction with other features within the operational combination. This behavior reflects the nonlinear nature of the model and justifies the use of interpretability tools to understand how different feature configurations modify the predictions [@lundberg_unified_2017].
+Fig. @fig-shap-interaction shows how the contribution of territorial frequency varies with geographic location across individual predictions. Some features contribute in a stable way, whereas others vary with the operational context, a sign of the interactions that a nonlinear model can represent [@lundberg_local_2020]. The risk therefore does not depend on location or case type in isolation but on their combination, which agrees with the ablation result that removing the interaction features degrades performance more than removing any other group. These findings are predictive associations learned by the model, not causal relationships.
 
 ![SHAP interaction between territorial frequency and geographic location.](media/image10.png){#fig-shap-interaction width=.75}
 
-These results suggest that the proxy risk does not depend on geographic location or case type in isolation, but rather on their specific combination---consistent with the finding of the ablation study that removing interaction features degrades predictive performance more than removing any other individual feature group.
+## A structural signal
 
-These findings should be interpreted as global predictive associations learned by the model rather than as causal relationships.
+The dominance of territorial features over historical ones follows from the nature of the target. Because the label is defined with percentiles of backlog and processing rate, it captures persistent overload associated with the installed capacity of each prosecutorial district and office type, rather than year-to-year dynamics. This has two consequences. On the one hand, it explains why the ablation penalizes the removal of the territorial interaction features more than the removal of the trend features. On the other, it means that a large part of what the model predicts is which operational combinations tend to be congested, a property that is partly persistent over time. The value of the model, then, lies less in anticipating sudden changes than in ranking combinations consistently with the information available before each year, under a leakage-free protocol. How much of this ranking would be recovered by simply carrying forward the previous year\'s label is an open question that the present design does not answer (Section @sec-limitations).
+
+## Model behavior
+
+The stability of LightGBM relative to CatBoost may be related to the ordered categorical encoding of the latter, which can respond more strongly to shifts in category frequencies across years [@prokhorenkova_catboost_2018]; such shifts were monitored with the PSI (Section @sec-evaluation). CatBoost\'s advantage in 2025 should therefore be read as a property of that partition rather than as systematic superiority. The limited gain of the stacking model is explained by the high correlation among the base models---four of which are gradient boosting variants---which reduces the diversity a meta-model needs [@wolpert_stacked_1992]. Finally, the low F1-score of the linear SVM (0.268) agrees with the unsupervised analysis (Section @sec-feature-space): the classes are not linearly separable in the feature space.
 
 ## Operational impact
 
-To evaluate the potential operational impact of the model, a sensitivity analysis based on parametric cost assumptions was conducted for illustrative purposes only. A 10:1 cost ratio between a false negative and a false positive was assumed, considering the greater institutional impact of failing to identify a potential alert.
+To illustrate the operational consequences of the errors, a sensitivity analysis with parametric costs was conducted. A 10:1 cost ratio between a false negative and a false positive was assumed, reflecting the greater institutional impact of missing a congestion alert. Under this assumption, a cost of S/ 50,000 was assigned to each false negative and S/ 5,000 to each false positive. On the 2025 test set (99 FN, 66 FP, 73 TP and 961 TN), the model yields an illustrative loss of S/ 5,280,000 (Table @tbl-impact). These values are not official costs of the MPFN; they serve only to compare operating scenarios, such as alternative thresholds.
 
-Under this assumption, a cost of S/ 50,000 was assigned to each false negative and S/ 5,000 to each false positive. Based on the 2025 test set (99 FN, 66 FP, 73 TP, and 961 TN), the model yielded an illustrative estimated loss of S/ 5,280,000 (Table @tbl-impact). These values do not represent official costs of the Public Prosecutor\'s Office -- Office of the Attorney General of Peru (MPFN) and are intended solely to compare operational scenarios.
-
-: Operational impact under illustrative cost assumptions. [The reported costs are parametric assumptions (not audited figures). The causal analysis module (DoubleML-IRM) was designed but not executed due to technical limitations.]{.note} {#tbl-impact}
+: Operational impact under illustrative cost assumptions. [The reported costs are parametric assumptions, not audited figures.]{.note} {#tbl-impact}
 
 | FN | FP | TP | TN | FN Cost | FP Cost | Estimated Loss | FN:FP |
 |---|---|---|---|---|---|-----|---|
 | 99 | 66 | 73 | 961 | S/ 50,000 | S/ 5,000 | S/ 5,280,000 | 10:1 |
 
-As a future methodological direction, a causal analysis module based on Double Machine Learning (IRM) was designed; however, it was not executed because of computational environment limitations. Consequently, its results are not part of the present study and are proposed as future work.
-
-In this way, the model predictions provide an objective criterion to support the preventive prioritization of operational combinations with a higher proxy risk of prosecutorial congestion, thereby strengthening the operational planning of the Public Prosecutor\'s Office.
-
-These findings are consistent with recent studies identifying institutional organization and historical operational patterns as relevant factors for the predictive analysis of judicial systems, although the present work integrates these elements within a single reproducible framework [@azaria_alleviating_2024; @vasconcelos_analysis_2023].
-
-## Discussion of underlying mechanisms
-
-The dominance of territorial features over historical features is consistent with the nature of the target. Because it is defined using percentiles of case backlog and case processing rate, it captures structural operational overload associated with the installed capacity of each Prosecutorial District---reflecting heterogeneity across organizational units---rather than their internal temporal dynamics. This explains why the ablation study penalizes the removal of territorial interaction features more severely than the removal of historical trend features.
-
-The stability of LightGBM relative to CatBoost is consistent with the latter\'s ordered categorical encoding, which is more sensitive to shifts in category frequencies across years (PSI, Section @sec-evaluation). Furthermore, DeLong\'s test compares probabilistic ranking performance (ROC-AUC) rather than the threshold-dependent F1-score; therefore, CatBoost\'s advantage in 2025 reflects a characteristic of that particular temporal partition rather than a systematic superiority.
-
-The limited contribution of the stacking model is explained by the high correlation among the base models---four of which are gradient boosting variants---which reduces the diversity required for a meta-model to provide additional predictive value.
-
-Finally, the performance of the SVM (F1 = 0.268) confirms the findings of the unsupervised validation (Section @sec-feature-space): the decision boundary is not linearly separable in the feature space, thereby disadvantaging a linear-margin classifier compared with models capable of capturing nonlinear interactions.
+With a recall of 0.424 in 2025, the model misses more than half of the combinations at risk, so it is suited to support, not replace, the institution\'s own monitoring: its scores can order the combinations to be reviewed first, while the final decision remains with practitioners. This use is consistent with studies that identify institutional organization and operational patterns as relevant factors in the predictive analysis of judicial systems [@azaria_alleviating_2024; @vasconcelos_analysis_2023], and with the view that predictive tools in justice should be auditable and remain under human control [@rudin_stop_2019; @taylor_is_2025].
 
 # Limitations {#sec-limitations}
 
-The target variable corresponds to a proxy risk of prosecutorial congestion constructed using percentile-based rules and does not constitute an official measure of the Public Prosecutor\'s Office -- Office of the Attorney General of Peru (MPFN). Although its definition was subjected to sensitivity analysis, it remains without validation through external expert judgment. The unit of analysis consists of aggregated combinations of operational variables rather than individual cases; therefore, the predictions should be interpreted as support for operational prioritization rather than for the evaluation of specific cases.
+The target is a proxy of prosecutorial congestion built with percentile rules; it is not an official measure of the MPFN and has not been validated by external expert judgment, although its thresholds were examined in a sensitivity analysis. The unit of analysis is an aggregated operational combination rather than an individual case, so predictions support operational prioritization, not the assessment of specific cases.
 
-The results were obtained exclusively from data provided by the Public Prosecutor\'s Office of Peru (2019--2026). Although the framework is reproducible, its application to other judicial systems requires retraining and recalibration.
+Because the signal is mainly structural, part of it may be captured by the persistence of the label over time. The study compares the models against a non-informative baseline but not against a persistence rule that carries forward the previous year\'s label, nor against a model restricted to territorial identity; such comparisons are needed to quantify the added value of the learned model and are left for future work.
 
-The selection of the final model prioritized stability during temporal validation, even though CatBoost achieved better performance on the 2025 test set, indicating that the relative ranking of models may vary across consecutive time periods. The economic impact analysis employs parametric cost assumptions for illustrative purposes only and does not represent official estimates of the MPFN.
+The 2023 block was used both for consensus feature selection and as part of the internal temporal folds, so the internal cross-validation estimates may be optimistic; the 2024, 2025 and 2026 evaluations are unaffected. The Friedman test over four folds has limited power, and the scores are overconfident in the range where the decision threshold lies, so they should not be interpreted as calibrated probabilities. The 2026 data cover only January to May and show a higher prevalence of the target, which limits the comparability of that year with the complete ones.
 
-The Double Machine Learning module was designed as a methodological extension but was not executed because of computational environment limitations; consequently, the identified relationships correspond exclusively to predictive associations and should not be interpreted as causal evidence.
-
-Finally, the limited number of positive observations and the small sample size of certain subgroups restrict the precision of the fairness analyses and increase variability across temporal partitions. Therefore, these results should be interpreted as exploratory evidence.
+The results come exclusively from Peruvian data (2019--2026); applying the approach to other justice systems requires retraining and local validation. The cost analysis relies on illustrative assumptions, and the relationships identified are predictive associations, not causal effects. Finally, the small number of positive cases in some subgroups did not allow a quantitative assessment of performance across office types and specialties, which remains necessary before any institutional use [@berk_fairness_2018].
 
 # Conclusions {#sec-conclusions}
 
-This study developed and validated a machine learning framework to estimate the proxy risk of prosecutorial congestion in the Public Prosecutor\'s Office of Peru, integrating consensus-based feature selection, multicollinearity auditing, temporal validation, and model interpretability within a reproducible methodological workflow. The results demonstrated stable performance on data not used during training and confirmed the feasibility of the proposed approach for supporting the early identification of scenarios with higher operational risk.
+This study estimated a proxy risk of prosecutorial congestion from the open records of the Public Prosecutor\'s Office of Peru, under a protocol that excludes the variables defining the target, learns every threshold and preprocessing parameter on the training years, selects the model and its threshold on 2024, and evaluates it on a hold-out year and on a prospective partial year. Under these conditions LightGBM reached an F1-score of 0.469 and a ROC-AUC of 0.798 on the 2025 test set and an F1-score of 0.559 on the 2026 data, with high specificity and a modest recall. These results show that a useful ranking of operational combinations can be obtained from open administrative data, while the decline from validation to test illustrates why temporal evaluation, rather than random cross-validation, is needed to estimate how such a model would perform when applied [@tashman_out-of-sample_2000; @kapoor_leakage_2023].
 
-The analysis showed that the predictive capability of the model depends primarily on territorial and institutional patterns, whereas historical features provide complementary information. The consistency between the ablation study and the SHAP analysis supports this finding and demonstrates that the model captures relevant operational configurations to support the preventive prioritization of operational combinations with higher estimated proxy risk. Furthermore, the operational impact analysis demonstrated the potential of the proposed approach to support planning decisions and the preventive allocation of resources without replacing the judgment of Public Prosecutor\'s Office practitioners.
+The ablation study and the SHAP attributions agree that the risk is driven mainly by territorial and institutional configurations, with lagged workload adding little. Methodologically, this agreement between two independent sources strengthens the interpretation; substantively, it indicates that prosecutorial congestion, as measured here, is largely a structural property of how offices are organized across the territory. The scores are therefore best used to prioritize the review of combinations, not as calibrated probabilities nor as a substitute for the judgment of prosecutors and managers.
 
-From a methodological perspective, the main contribution of this work is the integration, within a single framework, of robust feature selection, temporal validation designed to prevent data leakage, robustness assessment, and model interpretability. This integration helps address a gap identified in the literature on predictive analytics applied to the prosecutorial domain, where these components are typically investigated in isolation.
-
-Future research will focus on validating the definition of the proxy risk through expert judgment, executing the causal analysis module based on Double Machine Learning, comparing the operational impact analysis with official institutional data, extending the temporal training window as new data become available, and evaluating the transferability of the framework to other justice systems through retraining and local validation.
+Future work should compare the model with persistence and territorial-identity baselines, validate the proxy target with institutional experts, assess performance across office types and specialties, recalibrate the scores, estimate causal effects with methods such as double machine learning, and test the transferability of the approach to other justice systems as new data become available.
