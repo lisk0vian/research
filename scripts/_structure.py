@@ -10,6 +10,9 @@ rules, not the scripts.
 
 from __future__ import annotations
 
+import re
+from pathlib import Path
+
 # --- Naming ------------------------------------------------------------------
 # Institutional code lowercased (c15-2026) or a short kebab-case slug.
 SLUG_PATTERN = r"^[a-z0-9]+(-[a-z0-9]+)*$"
@@ -99,6 +102,7 @@ SKILL_REGISTRY = [
     "paper-new",
     "paper-build",
     "paper-journal",
+    "paper-guide",
     "paper-validate",
     "paper-colab",
     "paper-search",
@@ -111,6 +115,7 @@ SKILL_REGISTRY = [
     "paper-zenodo",
     "paper-cover-letter",
     "paper-title-page",
+    "paper-compliance",
 ]
 
 # Files matching these are never committed (scanned via `git ls-files`).
@@ -121,6 +126,63 @@ SECRET_PATTERNS = [
     "*token*",
     "*secret*",
 ]
+
+
+# PyYAML silently coerces `2026-10-10` into a datetime.date and `0123` into an
+# int, so a value written bare comes back as something that has no .strip().
+# Quoting anything that would be re-read as a non-string keeps set_type_field's
+# output round-trippable.
+_UNQUOTED_YAML = re.compile(
+    r"^\s*(-?\d[\d_]*(?:\.\d+)?([eE][-+]?\d+)?"
+    r"|\d{4}-\d{2}-\d{2}(?:[T ][\d:.+Z-]*)?"
+    r"|0[xXoOb][0-9a-fA-F_]+"
+    r"|true|false|yes|no|on|off|null|none|~)\s*$",
+    re.I,
+)
+
+
+def _yaml_scalar(value: str) -> str:
+    text = str(value)
+    if not text or "#" in text or ":" in text or _UNQUOTED_YAML.match(text):
+        return '"' + text.replace("\\", "\\\\").replace('"', '\\"') + '"'
+    return text
+
+
+def set_type_field(type_yaml: Path, key: str, value: str) -> bool:
+    """Set or insert a scalar key in a journal's type.yaml, in place.
+
+    type.yaml is hand-annotated: `notes:` carries the journal's real editorial
+    constraints and several keys have explanatory comments above them. Dumping it
+    back through yaml.safe_load/safe_dump would delete all of that, so this
+    edits the text. An existing key is rewritten (keeping its comment); a missing
+    one is appended, which is what a hand-written `guide:` needs.
+
+    Returns True when the file changed.
+    """
+    path = Path(type_yaml)
+    if not path.is_file():
+        raise FileNotFoundError(f"type.yaml not found: {path}")
+    text = path.read_text(encoding="utf-8")
+    line = f"{key}: {_yaml_scalar(value)}"
+
+    pattern = re.compile(rf"(?m)^{re.escape(key)}:\s*(.*?)\s*$")
+    m = pattern.search(text)
+    if m:
+        trailing = m.group(0).split("#", 1)
+        comment = f"  # {trailing[1].strip()}" if len(trailing) > 1 else ""
+        # Never let a comment swallow a URL written after the value.
+        inline = trailing[1].strip() if len(trailing) > 1 and "://" not in trailing[0] else ""
+        if inline and not inline.startswith("#"):
+            comment = f"  # {inline}"
+        new = pattern.sub(f"{line}{comment}", text, count=1)
+    else:
+        if not text.endswith("\n"):
+            text += "\n"
+        new = text + line + "\n"
+    if new == text:
+        return False
+    path.write_text(new, encoding="utf-8")
+    return True
 
 
 def format_block_from_type(type_meta: dict) -> str:

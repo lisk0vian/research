@@ -78,6 +78,7 @@ that know *when* to call them and interview you for the arguments.
 | Create a paper | `python scripts/paper_new.py --slug <slug> --journal <journal> --author id:role:order ...` |
 | Change journal | `python scripts/paper_journal.py --slug <slug> --journal <journal>` |
 | Add a journal from a link | `python scripts/paper_journal.py --add-journal <slug> --meta meta.json` |
+| File a downloaded Guide-for-Authors page | see §5 `paper-guide` (script: `scripts/journal_guide.py`) |
 | Build PDF, DOCX and LaTeX zip | `python scripts/paper_build.py --slug <slug> --format all` |
 | Check environment only | `python scripts/paper_build.py --slug <slug> --check-only` |
 | Measure DOCX/LaTeX-zip vs PDF parity | `python scripts/paper_parity.py --slug <slug>` (Word, else LibreOffice) |
@@ -217,6 +218,7 @@ Registry:
 | `paper-new` | Scaffold a paper via `scripts/paper_new.py` |
 | `paper-build` | Render PDF/DOCX via `scripts/paper_build.py` |
 | `paper-journal` | Set/change the journal via `scripts/paper_journal.py` |
+| `paper-guide` | Consult and file the offline Guide-for-Authors bank (`scripts/journal_guide.py`) |
 | `paper-validate` | Run `scripts/paper_validate.py` |
 | `paper-colab` | Generate, sync and debug a Colab notebook (reads `COLAB.md`) |
 | `paper-search` | Literature search, citation verification, BibTeX |
@@ -228,6 +230,46 @@ Registry:
 | `paper-zenodo` | Upload experiments to Zenodo and get a DOI (reads `manifest.yaml` + `authors/`) |
 | `paper-cover-letter` | Write the submission cover letter (Elsevier tutorial structure) via `scripts/paper_cover_letter.py` |
 | `paper-title-page` | Separate title page + anonymized manuscript with verified author data via `scripts/paper_title_page.py` |
+| `paper-compliance` | Check `paper/main.qmd` against the journal's banked guide, report in chat (`paper-guide` owns the bank) |
+
+### The Guide-for-Authors bank
+
+Elsevier's author guides are behind a captcha, so the repository keeps its own
+copy of each one under `templates/journals/<slug>/guide/`:
+
+```
+guide/
+├── index.md      the map: one line per section + its link
+├── SOURCES.md    url + retrieval date + sha256 of the raw page
+├── external.md   pages the guide links to but does not contain
+├── sections/     one file per guide section, verbatim
+├── _raw/         gitignored: the downloaded page as handed over
+└── _work/        gitignored: the conversion proposal, before it is applied
+```
+
+`type.yaml` declares `guide: guide/index.md` and `guide_retrieved: "YYYY-MM-DD"`
+(the date the page was downloaded, because these pages change without notice).
+Declaring `guide:` is what makes a journal's guide auditable; a journal without
+it is simply opt-in.
+
+Rules:
+
+- **The text is verbatim.** Segmented and cross-referenced, never summarised: a
+  condensed guide can only be as good as whoever condensed it, and the numbers
+  (abstract length, keyword count, highlights) are exactly what must not drift.
+- **A section is small enough to read whole** (the script re-cuts over 300
+  lines). A lookup reads `index.md` and then one section, not the whole guide.
+- **The raw download is never committed**, but its provenance is: `SOURCES.md`
+  records the URL, the retrieval date and the sha256, so a re-conversion can
+  still be verified against the file it came from.
+- **References resolve locally or say where they live.** An anchor in the same
+  page becomes a link to the section that holds it; a page not mirrored yet keeps
+  its URL and a `NOT MIRRORED` row in `external.md`; a page already mirrored
+  lives once in `_shared/elsevier/` and every journal points at that copy.
+- **The script proposes, the agent decides.** `journal_guide.py` converts,
+  reports what it stripped, cuts on headings and checks the result; where a
+  section really ends, what is a distinct section, and what deserves mirroring
+  are judgement calls made by the `paper-guide` skill, not by the code.
 
 ### Review subagents
 
@@ -262,6 +304,10 @@ on every PR that touches `papers/`, `authors/`, `templates/`, `scripts/`,
 - no spreadsheet artefacts under `paper/`, `outputs/`, `experiments/`;
 - no secrets/credentials tracked by git;
 - every skill folder has a `SKILL.md` whose `name` matches the folder;
+- a journal that declares `guide:` has a consistent guide — every section
+  reachable from `index.md`, every relative link and anchor resolving, a
+  provenance table with url/retrieved/sha256, no committed `_raw/`, and an
+  `external.md` queue that matches what is mirrored;
 - review rounds with `schema_version: 2` prove each quote verbatim, cover
   every raw id in `merged_from`/`discarded`, and close every major in triage.
 

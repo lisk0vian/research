@@ -26,6 +26,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from _repo import find_repo_root, load_yaml  # noqa: E402
+import journal_guide  # noqa: E402
 from _structure import (  # noqa: E402
     ARTEFACT_SCOPE_DIRS,
     FORBIDDEN_ARTEFACT_EXTENSIONS,
@@ -71,6 +72,10 @@ class Report:
 
     def warn(self, where: str, msg: str) -> None:
         self.warnings.append(f"{where}: {msg}" if where else msg)
+
+    def add(self, level: str, where: str, msg: str) -> None:
+        """Record an issue whose severity comes from elsewhere (journal_guide)."""
+        (self.error if level == "error" else self.warn)(where, msg)
 
     @property
     def ok(self) -> bool:
@@ -123,6 +128,11 @@ def check_journals(repo: Path, rep: Report) -> None:
         rep.error("templates/journals/", "missing (shared journal catalog)")
         return
     for d in sorted(p for p in journals_dir.iterdir() if p.is_dir()):
+        # `_shared/` holds pages mirrored once for every journal, not a journal,
+        # so it has no type.yaml. Underscore-prefixed folders opt out of the
+        # per-journal contract the same way.
+        if d.name.startswith("_"):
+            continue
         type_yaml = d / "type.yaml"
         if not type_yaml.is_file():
             rep.error(f"templates/journals/{d.name}/", "missing type.yaml")
@@ -130,6 +140,16 @@ def check_journals(repo: Path, rep: Report) -> None:
         data = load_yaml(type_yaml)
         if not data.get("journal"):
             rep.error(f"templates/journals/{d.name}/type.yaml", "missing 'journal' name")
+        # A journal that declares `guide:` is auditable; one that does not is
+        # simply opt-in and reports nothing.
+        for issue in journal_guide.check_guide(repo, d.name).issues:
+            rep.add(issue.level, issue.where, issue.message)
+    # Cross-guide checks run once, not per journal: duplicates and shared-file
+    # integrity are, by definition, never visible from a single journal.
+    for issue in journal_guide.check_duplicates(repo).issues:
+        rep.add(issue.level, issue.where, issue.message)
+    for issue in journal_guide.check_shared_files(repo).issues:
+        rep.add(issue.level, issue.where, issue.message)
 
 
 def check_skills(repo: Path, rep: Report) -> None:
