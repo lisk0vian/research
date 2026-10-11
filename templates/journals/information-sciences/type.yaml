@@ -45,3 +45,5 @@ parity:
   latex_zip:
     word_delta_max_pt: 0.5
     hard_px_max: 0
+guide: guide/index.md
+guide_retrieved: "2026-10-10"
