@@ -1,0 +1,43 @@
+---
+# papers/c20-2026/paper/cover-letter.qmd
+# Cover letter for the submission to Engineering Applications of Artificial Intelligence. Rendered by
+#   python scripts/paper_build.py --slug c20-2026 --format all
+# into build/c20-2026-cover-letter.docx/.pdf. Checked by
+#   python scripts/paper_cover_letter.py --slug c20-2026 --check
+# Every number in the letter must also appear in main.qmd.
+format:
+  docx: default
+  pdf:
+    papersize: a4
+    geometry: margin=2.5cm
+    pagestyle: empty
+    fontsize: 11pt
+---
+
+Moisés Evangelista Gamarra\
+Servicio Nacional de Adiestramiento en Trabajo Industrial, Perú
+
+The Editor-in-Chief\
+*Engineering Applications of Artificial Intelligence*\
+Elsevier
+
+October 10, 2026
+
+Dear Editor,
+
+We wish to submit an original research paper entitled **"Hybrid machine learning and dynamical forecasts for subseasonal temperature prediction at high-Andean stations: a blind benchmark with foundation models and conformal calibration"** for consideration for publication in *Engineering Applications of Artificial Intelligence*.
+
+Frost warnings and agricultural planning in the tropical Andes depend on temperature guidance one to four weeks ahead, where machine learning has rarely been tested at high-elevation stations and where reported gains are hard to trust because evaluations seldom keep the test years unseen until the models are fixed. We address both gaps with an artificial intelligence forecasting system for weekly temperature anomalies at five Peruvian stations between 2,421 and 4,475 m, evaluated under a protocol in which every model, hyperparameter and the primary system were frozen before two blind years (July 2022 to June 2024) were scored.
+
+The manuscript makes three contributions. First, a hybrid model that gives the bias-corrected Climate Forecast System version 2 (CFSv2) forecast to a ridge regression reaches skill scores of 0.42, 0.38 and 0.41 against climatology, matching CFSv2 at week 1 and improving on it at weeks 2 and 3–4; a control fitted on the same rows attributes the gain to the dynamical input. Second, a diagnosis of the Chronos time-series foundation model shows that, used zero-shot, it is over-confident for window-mean anomalies (coverage 0.22–0.31) until it receives absolute-temperature context. Third, a conformal calibration selected on development years raises the coverage of the ensemble's 90% intervals from 0.63–0.75 to 0.87–0.90. Every comparison is tested with a moving-block bootstrap and Holm's correction, and analyses declared after the blind scores were seen are reported as dated amendments, apart from the confirmatory results.
+
+The work matches what *Engineering Applications of Artificial Intelligence* asks of its papers: novel aspects of AI in a real-world engineering application, validated using public data sets for easy replicability. The station records are open, and the pipeline and notebooks are archived on Zenodo. Beyond climate services, the blind protocol and the calibration check give readers who deploy ensembles or foundation models in other forecasting problems a transferable way to verify that a model can be trusted on data it has not seen.
+
+The manuscript "Hybrid machine learning and dynamical forecasts for subseasonal temperature prediction at high-Andean stations: a blind benchmark with foundation models and conformal calibration" has not been published elsewhere, is not under consideration by another journal, and reflects original research conducted by its authors. None of the authors have any conflicts of interest to disclose concerning this study.
+
+Thank you for your valuable time.
+
+Sincerely,
+
+Moisés Evangelista Gamarra\
+mevangelistag@senati.pe
