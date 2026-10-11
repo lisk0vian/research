@@ -189,7 +189,7 @@ papers/<slug>/
 ├── outputs/        # machine-readable results (CSV/JSON/PNG/PKL)
 ├── tests/          # optional synthetic-fixture test suite
 ├── reviews/        # round-N/: comments, responses, ai-review
-├── build/          # rendered outputs (only the PDF is committed)
+├── build/          # rendered outputs (regenerated, never committed)
 └── legacy/         # original .docx/.pdf when migrating a paper
 ```
 

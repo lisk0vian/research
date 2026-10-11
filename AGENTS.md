@@ -43,7 +43,7 @@ papers/<slug>/
 ├── outputs/                # machine-readable results (CSV/JSON/PNG/PKL)
 ├── tests/                  # optional: per-paper suite (see section 6)
 ├── reviews/round-N/        # human review (comments/responses) + panel v2 (packet/raw/consolidated/triage, see section 5)
-├── build/                  # <slug>.pdf/.docx/-latex.zip + render/ scratch (only the PDF committed)
+├── build/                  # <slug>.pdf/.docx/-latex.zip + render/ scratch (regenerated, never committed)
 └── legacy/                 # original .docx/.pdf when migrating an existing paper
 ```
 
