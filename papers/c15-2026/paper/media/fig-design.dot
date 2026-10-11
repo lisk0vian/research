@@ -1,0 +1,53 @@
+// Fig. 7 (fig-design): experimental design, drawn from the manuscript text
+// (Sections "Temporal data partitioning" to "Evaluation protocol").
+// Render: dot -Tpng -Gdpi=300 fig-design.dot -o image7.png
+digraph design {
+  graph [rankdir=TB, nodesep=0.45, ranksep=0.3, fontname="Helvetica", bgcolor="white", pad=0.1];
+  node  [shape=box, style="rounded", fontname="Helvetica", fontsize=10, margin="0.12,0.08", penwidth=1.2];
+  edge  [penwidth=1.1, arrowsize=0.7];
+
+  split [label=<<B>1  Temporal split</B><BR ALIGN="LEFT"/>
+Train 2019–2023<BR ALIGN="LEFT"/>
+  (walk-forward, 4 folds)<BR ALIGN="LEFT"/>
+Validation 2024<BR ALIGN="LEFT"/>
+Test 2025 (hold-out)<BR ALIGN="LEFT"/>
+External 2026 (Jan–May)<BR ALIGN="LEFT"/>>];
+
+  prep [label=<<B>2  Preprocessing</B><BR ALIGN="LEFT"/>
+<I>fitted on training years only</I><BR ALIGN="LEFT"/>
+Median imputation + flags<BR ALIGN="LEFT"/>
+One-hot + frequency encoding<BR ALIGN="LEFT"/>
+Leakage exclusion list<BR ALIGN="LEFT"/>
+Consensus selection (≥2/6)<BR ALIGN="LEFT"/>>];
+
+  models [label=<<B>3  Models</B><BR ALIGN="LEFT"/>
+Logistic regression<BR ALIGN="LEFT"/>
+Linear SVM (Platt)<BR ALIGN="LEFT"/>
+XGBoost · LightGBM · CatBoost<BR ALIGN="LEFT"/>
+LightGBM (Optuna)<BR ALIGN="LEFT"/>
+Soft voting · Temporal stacking<BR ALIGN="LEFT"/>
+Class weighting<BR ALIGN="LEFT"/>>];
+
+  hpo [label=<<B>4  Hyperparameter search</B><BR ALIGN="LEFT"/>
+RandomizedSearchCV (100 iter.)<BR ALIGN="LEFT"/>
+Optuna TPE (100 trials)<BR ALIGN="LEFT"/>
+Objective: F1 over<BR ALIGN="LEFT"/>
+  the temporal folds<BR ALIGN="LEFT"/>>];
+
+  select [label=<<B>5  Selection on 2024</B><BR ALIGN="LEFT"/>
+Best validation F1<BR ALIGN="LEFT"/>
+  → LightGBM<BR ALIGN="LEFT"/>
+Threshold grid 0.05–0.95<BR ALIGN="LEFT"/>
+  → τ = 0.66<BR ALIGN="LEFT"/>>];
+
+  eval [label=<<B>6  Final evaluation</B><BR ALIGN="LEFT"/>
+2025 test · 2026 external<BR ALIGN="LEFT"/>
+F1, ROC-AUC, PR-AUC, MCC<BR ALIGN="LEFT"/>
+Bootstrap 95% CI<BR ALIGN="LEFT"/>
+Calibration (ECE) · PSI drift<BR ALIGN="LEFT"/>>];
+
+  { rank=same; split -> prep -> models; }
+  { rank=same; hpo -> select -> eval; }
+  models -> hpo [constraint=true];
+  split -> hpo [style=invis];
+}
