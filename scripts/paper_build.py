@@ -506,13 +506,16 @@ def export_figures(paper_dir: Path, build_dir: Path) -> str:
 
 def render_submission_docs(paper_dir: Path, render_dir: Path, build_dir: Path,
                            slug: str, wants: list[str]) -> int:
-    """Render the title page (anonymized papers) and the cover letter.
+    """Render the title page and the cover letter.
 
+    The title page is rendered for anonymized papers, and also for any paper
+    whose main.qmd carries a `title-page:` block (a separate title page for a
+    single anonymized journal, where the manuscript keeps its authors).
     Both are plain pandoc docx/pdf, not the journal format: they are
     separate submission files that the editor reads, never typeset.
     """
     docs: list[tuple[str, str]] = []
-    if is_blind(paper_dir):
+    if is_blind(paper_dir) or isinstance(qmd_front_matter(paper_dir).get("title-page"), dict):
         page = render_dir / "title-page.qmd"
         page.write_text(title_page_markdown(qmd_front_matter(paper_dir)), encoding="utf-8")
         docs.append(("title-page", page.name))
