@@ -462,17 +462,21 @@ def empty_header_xml() -> str:
 def footer_xml(first_author: str) -> str:
     """cas-sc footer: "<author> et al.:" in sans, "Preprint submitted to
     Elsevier" in italic roman, "Page X of Y" flush right in sans. The page
-    count is the section's: the highlights page before it is unnumbered."""
+    count is the section's: the highlights page before it is unnumbered.
+    An empty first_author drops the "<author> et al.:" run, as the class does
+    in its blind modes."""
     def fld(instr: str) -> str:
         return (f'<w:fldSimple w:instr=" {instr} "><w:r><w:t>1</w:t></w:r>'
                 '</w:fldSimple>')
     roman_it = (f'<w:rPr><w:rFonts w:ascii="{FONT}" w:hAnsi="{FONT}" '
                 f'w:cs="{FONT}"/><w:i/></w:rPr>')
+    author_run = (f'<w:r><w:t xml:space="preserve">{xml_escape(first_author)} et al.: </w:t></w:r>'
+                  if first_author else "")
     return (
         XMLDECL
         + f'<w:ftr {W_NS}>'
         + '<w:p><w:pPr><w:pStyle w:val="Footer"/></w:pPr>'
-        + f'<w:r><w:t xml:space="preserve">{xml_escape(first_author)} et al.: </w:t></w:r>'
+        + author_run
         + f'<w:r>{roman_it}<w:t>Preprint submitted to Elsevier</w:t></w:r>'
         + "<w:r><w:tab/></w:r>"
         + '<w:r><w:t xml:space="preserve">Page </w:t></w:r>'

@@ -25,6 +25,10 @@ journal:
   # at submission; the journal applies its own at proof).
   biblio-style: "cas-model2-names-etal"
   equations: centered
+  # EAAI runs double anonymized review: build/c20-2026.pdf/.docx are the
+  # anonymized manuscript, and build/c20-2026-title-page.docx/.pdf carry the
+  # authors, affiliations and the statements below.
+  formatting: doubleblind
   corresponding:
     - mark: cor1
       text: "Corresponding author"
@@ -42,14 +46,31 @@ author:
     affiliation: [{ref: aff-1}]
     cas:
       cormark: 1
+      # CRediT roles confirmed by the authors on 2026-10-10: lead author.
+      credit: "Conceptualization, Methodology, Supervision, Project administration, Writing - review & editing"
   - name: Jerremi Aron Chancan Labajos
     email: 1520481@senati.pe
     orcid: "0009-0005-6789-076X"
     affiliation: [{ref: aff-1}]
+    cas:
+      # CRediT roles confirmed by the authors on 2026-10-10.
+      credit: "Software, Investigation, Formal analysis, Validation, Data curation, Visualization, Writing - original draft"
 affiliations:
   - id: aff-1
-    name: Servicio Nacional de Adiestramiento en Trabajo Industrial
-    country: Perú
+    name: Servicio Nacional de Adiestramiento en Trabajo Industrial (SENATI)
+    # Postal address confirmed by the authors on 2026-10-10 (SENATI head
+    # office, Independencia, as published on senati.edu.pe).
+    address: Av. Alfredo Mendiola 3520, Independencia
+    postal-code: "15311"
+    city: Lima
+    country: Peru
+# Title-page-only statements: EAAI's double anonymized guidelines take them
+# out of the manuscript and put them on the separate title page. Funding is
+# manifest.yaml's text. No competing interests: confirmed by the authors on
+# 2026-10-10.
+title-page:
+  funding: "This work was supported by the Servicio Nacional de Adiestramiento en Trabajo Industrial (SENATI), Peru (Project C20-2026)."
+  competing-interests: "The authors declare that they have no known competing financial interests or personal relationships that could have appeared to influence the work reported in this paper."
 abstract: |
   Temperature forecasts one to four weeks ahead support frost warnings and
   agricultural planning in the tropical Andes, where machine learning has
@@ -543,8 +564,12 @@ of the pooled models on the blind folds [@Kratzert2019wrr]. In Fig. @fig-design,
 
 ![Validation design: expanding training windows, 28-day embargo, development and blind test years, CFSv2 archive and ENSO episodes; models were frozen at the dashed line.](media/Fig03_validation_design.pdf){#fig-design width=1}
 
+<!-- TODO after acceptance: restore the citation "archived on Zenodo
+[@c20-2026-code]" (the entry stays in references.bib). It is withheld because
+it names the authors, and EAAI runs double anonymized review. -->
 **Reproducibility.** The pipeline, its configuration and the two notebooks
-that run it end to end are archived on Zenodo [@c20-2026-code], and the station
+that run it end to end are archived on Zenodo (reference withheld for double
+anonymized review), and the station
 data are the open dataset described in Section @sec-data [@SENAMHI2024]. Every
 number in this paper is read from a machine-readable output of that pipeline.
 

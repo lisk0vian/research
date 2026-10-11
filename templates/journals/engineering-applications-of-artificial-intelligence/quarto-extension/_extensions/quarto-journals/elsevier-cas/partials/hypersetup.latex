@@ -12,8 +12,11 @@
 $if(title-meta)$
   pdftitle={$title-meta$},
 $endif$
+$if(cas-blind)$
+$else$
 $if(author-meta)$
   pdfauthor={$author-meta$},
+$endif$
 $endif$
 $if(lang)$
   pdflang={$lang$},

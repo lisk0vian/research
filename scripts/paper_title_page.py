@@ -97,8 +97,12 @@ def check(repo: Path, slug: str) -> int:
 
     journal = front.get("journal") if isinstance(front.get("journal"), dict) else {}
     if not str(journal.get("formatting") or "").endswith("blind"):
-        warnings.append("journal.formatting is not singleblind/doubleblind: paper_build makes no "
-                        "separate title page and the manuscript keeps the authors")
+        if isinstance(front.get("title-page"), dict):
+            warnings.append("journal.formatting is not singleblind/doubleblind: the manuscript "
+                            "keeps the authors; paper_build still renders the separate title page")
+        else:
+            warnings.append("journal.formatting is not singleblind/doubleblind: paper_build makes no "
+                            "separate title page and the manuscript keeps the authors")
     if not str(front.get("title") or "").strip():
         errors.append("main.qmd has no title")
 

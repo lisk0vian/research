@@ -33,27 +33,39 @@ author:
     affiliation: [{ref: aff-1}]
     cas:
       cormark: 1
-      # TODO: confirm the CRediT roles with the authors before submission.
-      credit: "Conceptualization, Methodology, Software, Formal analysis, Data curation, Writing - original draft, Visualization"
+      # CRediT roles confirmed by the authors on 2026-10-10: lead author.
+      credit: "Conceptualization, Methodology, Supervision, Project administration, Writing - review & editing"
   - name: Edwar Abrahan Alama Carreño
     email: 1634030@senati.pe
     orcid: "0009-0006-8029-4302"
     affiliation: [{ref: aff-1}]
     cas:
-      # TODO: confirm the CRediT roles with the authors before submission.
-      credit: "Validation, Investigation, Writing - review & editing"
+      # CRediT roles confirmed by the authors on 2026-10-10.
+      credit: "Software, Investigation, Formal analysis, Validation, Data curation, Visualization, Writing - original draft, Writing - review & editing"
   - name: Pamela Estefani Figueroa Rosas
     email: 1546935@senati.pe
     orcid: "0009-0007-6100-9382"
     affiliation: [{ref: aff-1}]
     cas:
-      # TODO: confirm the CRediT roles with the authors before submission.
-      credit: "Supervision, Project administration, Writing - review & editing"
+      # CRediT roles confirmed by the authors on 2026-10-10.
+      credit: "Software, Investigation, Formal analysis, Validation, Data curation, Visualization, Writing - original draft, Writing - review & editing"
 affiliations:
   - id: aff-1
     name: Servicio Nacional de Adiestramiento en Trabajo Industrial (SENATI)
+    # Postal address confirmed by the authors on 2026-10-10 (SENATI head
+    # office, Independencia, as published on senati.edu.pe).
+    address: Av. Alfredo Mendiola 3520, Independencia
+    postal-code: "15311"
     city: Lima
-    country: Perú
+    country: Peru
+# Separate title page. Information Sciences runs single anonymized review, so
+# the manuscript keeps its authors and paper_build renders this page next to
+# it (build/c26-2026-title-page.docx/.pdf). No competing interests: confirmed
+# by the authors on 2026-10-10. Funding is manifest.yaml's text, confirmed by
+# the authors on 2026-10-10 (SENATI funds the work and the publication).
+title-page:
+  funding: "This work was supported by the Servicio Nacional de Adiestramiento en Trabajo Industrial (SENATI), Peru (Project C26-2026)."
+  competing-interests: "The authors declare that they have no known competing financial interests or personal relationships that could have appeared to influence the work reported in this paper."
 abstract: |
   Missing-person report registers describe territorial and temporal patterns whose interpretation must distinguish recorded volume from population frequency. This study develops and applies a reproducible GeoAI framework to the 142,374 reports of Peru's National Registry of Information on Missing Persons (RENIPED, 2019--2025), organized as a panel of 26 territories by 84 months. The framework integrates rates with official denominators, multi-algorithm clustering, spatial association and multilevel validation. Rates ranged from 2.84 to 9.96 reports per 10,000 person-years; ten territories, led by Tacna, Apurímac, Huánuco, Cusco and Junín, had rates above the rest of the country after false discovery rate control, and the classification held in two sensitivity analyses. Metropolitan Lima accounted for a third of the reports, with a rate 14% above the rest of the country. Spatial autocorrelation was significant with the four nearest neighbors (Moran's I = 0.288; p = 0.018) but not with contiguity; after Benjamini--Hochberg adjustment, cold spots were identified in the north and no hot spots. The gap statistic favored a single cluster; four states descriptively summarize monthly profiles. A specification multiverse showed that the clusters and the initial hot-spot corridor depended on specific analytical decisions. The framework offers reproducible quantitative evidence to inform institutional search and prevention.
 keywords:
