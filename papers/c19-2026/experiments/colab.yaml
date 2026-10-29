@@ -1,0 +1,52 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Jerremi Aron Chancan Labajos
+# Colab spec for c19-2026. The notebook is generated from this file:
+#   python scripts/paper_notebook.py --slug c19-2026
+# Never edit notebooks/experiments.ipynb by hand. Rules: COLAB.md (repo root).
+
+title: "c19-2026: National Health Vulnerability Index (INVS): Identifying Medical Deserts and Prioritizing Hospital Infrastructure in Peru"
+drive_folder: c19-2026            # MyDrive/<drive_folder>/{code,data,outputs}
+
+# required | optional | none. "required" stops the notebook in cell 2 without a GPU.
+gpu: none
+
+# Installed once per runtime (cell 2). Never list torch: Colab ships a CUDA build.
+pip: [libpysal, esda, pyproj, optuna, kneed, shap, catboost, statsmodels, scikit-learn, xgboost, mapie, SALib, psutil, joblib, reportlab, factor_analyzer, matplotlib, seaborn, pandas, numpy]
+
+# Commands run in order before the pipeline (cell 2); a non-zero exit stops the
+# notebook. setup = fetch data; probes = seconds-long checks of anything a long
+# stage depends on (network, a binary format, a model download).
+setup: []
+probes: []
+
+# The pipeline entry point (cell 3). It must accept --mode full|smoke, --force,
+# --only STAGE..., --from/--to, and report failures through _colab_runtime
+# (COLAB.md, "The pipeline contract").
+run: [run_all.py]
+report: []
+# figures: outputs/figures/*.png
+
+# Files hashed into every stage fingerprint (paths under data/ or outputs/).
+state_inputs: []
+# Code hashed into every fingerprint besides the stage file itself (globs).
+shared_modules: ["_*.py", "config.yaml"]
+# First stage whose work changes in smoke mode (EXP_FAST=1); earlier stages are
+# shared by smoke and full runs. Unset = every stage.
+smoke_from: null
+
+# Stage -> what it writes, shown in notebooks/README.md.
+stages:
+  00_verify_datasets: outputs/logs/verify.txt
+  01_clean_renipress: outputs/21_calidad_datos/data_quality.xlsx
+  02_spatial_clusters: outputs/16_espacial_lisa_getis/moran.txt
+  03_build_invs: outputs/03_indice_invs/ablation_invs.xlsx
+  04_define_target: outputs/04_modelado_ml/target_prevalence.txt
+  05_train_classifier: outputs/27_modelos_persistidos/modelo_final.joblib
+  06_evaluate_classifier: outputs/28_metricas_extendidas/metrics.xlsx
+  07_explain_shap: outputs/05_shap/shap_summary.png
+  08_test_geographic_transfer: outputs/09_validacion_externa/lodo.xlsx
+  09_audit_equity: outputs/06_equidad_calibracion/vif.xlsx
+  10_stress_noise: outputs/20_robustez_ruido/noise.xlsx
+  11_conformal_sota: outputs/10_conformal/conformal.xlsx
+  12_economic_priority: outputs/24_economico/cost_benefit.xlsx
+  13_reproducibility_package: outputs/39_doi_package/doi.zip

@@ -1,0 +1,11 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Jerremi Aron Chancan Labajos
+project: C19-2026-hospital
+design_version: "1.0"
+source:
+  file: "renipress.csv"
+data:
+  renipress: "renipress.csv"
+  censo: "censo-2017.csv"
+seeds:
+  master: 42

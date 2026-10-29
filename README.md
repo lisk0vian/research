@@ -43,6 +43,7 @@ built, validated and tested the same way.
 | [`C15-2026`](./papers/c15-2026/) | A Reproducible Methodological Framework for Prosecutorial Congestion Risk Prediction | *Machine Learning with Applications* | `Revision` |
 | [`C20-2026`](./papers/c20-2026/) | Subseasonal Temperature Forecasting in Andean Stations: A Benchmark of ML and DL Models with Anomaly Decomposition | *Engineering Applications of Artificial Intelligence* | `In Progress` |
 | [`C21-2026`](./papers/c21-2026/) | Temporal Validation of Low Birth Weight Classification in a National Peruvian Birth Registry (2015–2025) | *Discover Artificial Intelligence* | `Revision` |
+| [`C19-2026`](./papers/c19-2026/) | National Health Vulnerability Index (INVS): Identifying Medical Deserts and Prioritizing Hospital Infrastructure in Peru | *Applied Geography* | `Planning` |
 | [`C26-2026`](./papers/c26-2026/) | A Reproducible GeoAI Framework for Explainable Spatiotemporal Analysis of National Missing-Person Registers | *Information Sciences* | `In Progress` |
 
 **Legacy (frozen, pre-standardization):**

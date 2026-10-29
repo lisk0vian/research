@@ -1,0 +1,48 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Jerremi Aron Chancan Labajos
+# papers/c19-2026/manifest.yaml
+# Single source of truth for this paper's metadata. Does NOT duplicate author
+# data: it references authors/<id>.yaml by id only.
+
+paper: c19-2026
+title: "National Health Vulnerability Index (INVS): Identifying Medical Deserts and Prioritizing Hospital Infrastructure in Peru"
+
+# --- Editorial target ---
+journal: applied-geography          # must exist under templates/journals/<journal>/
+internal_code: "C19-2026" # institutional code (empty "" if none)
+
+# --- Funding / institution ---
+institution: "SENATI"
+funding: "This work was funded by SENATI, Peru (Project C19-2026)."             # exact text for the paper's Funding section
+
+# --- Authors (id + role + order for THIS paper only) ---
+# Full details (name, orcid, email, affiliation) live in authors/<id>.yaml
+authors:
+  - id: moises
+    role: corresponding
+    order: 1
+
+# --- Claims: verifiable statements made by the paper ---
+# Each claim anchors a number/result in the text to its origin in the pipeline,
+# so paper-refs and the reviewers can audit that nothing was fabricated.
+claims:
+  - id: claim-1
+    text: "EXAMPLE: The model reaches F1 = 0.469 on the 2025 test set."
+    source: "experiments/exp-01/results/metrics.json"   # where the number comes from
+    status: draft                                        # draft | verified | stale
+
+# --- Figures: registry of each figure and its origin ---
+figures:
+  - id: fig-1
+    caption: "EXAMPLE: Methodological workflow diagram."
+    file: "media/image2.png"          # path relative to paper/
+    source: "migrated"                # migrated (came from Word) | experiments/exp-XX
+
+# --- Zenodo archive (populated by paper_zenodo.py) ---
+# zenodo_status: draft | published
+# zenodo_doi: "10.5281/zenodo.XXXX"        # only after --publish/--yes
+# zenodo_deposit_id: XXXX
+# zenodo_draft_url: "https://zenodo.org/deposit/XXXX"   # draft only
+# zenodo_reserved_doi: "10.5281/zenodo.XXXX"            # draft only
+# zenodo_record_url: "https://zenodo.org/records/XXXX" # published only
+# zenodo_version: "1.0.0"

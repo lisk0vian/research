@@ -1,0 +1,15 @@
+% Header partial (include-in-header of the elsevier-cas format).
+%
+% STIX text/math fonts: cas-sc.cls selects stix; make sure pdflatex finds the
+% MiKTeX/TeX Live stix.map even when the map database has not been rebuilt
+% (the maps were regenerated with `initexmf --mkmaps` on the reference box).
+\pdfmapfile{+stix.map}
+%
+% CAS social-buttons icons: ON, matching cas-sc-sample.pdf, which prints the
+% 8pt footnote icons thumbnails/cas-email.jpeg and thumbnails/cas-url.jpeg
+% (cas-common.sty \printemails / \printurls). The files ship as
+% format-resources of the extension, so pdflatex resolves thumbnails/*.jpeg.
+% To reproduce a journal build without the icons, set the flag again:
+%   \ExplSyntaxOn
+%   \bool_gset_true:N \g_stm_nologo_bool
+%   \ExplSyntaxOff

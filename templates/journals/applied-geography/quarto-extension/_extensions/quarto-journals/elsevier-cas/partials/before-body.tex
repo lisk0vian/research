@@ -1,0 +1,81 @@
+$-- Front matter, mirroring els-cas-templates/cas-sc-sample.tex lines 39-153:
+$--   \let\WriteBookmarks\relax / \floatpagepagefraction / \textpagefraction
+$--   (sample lines 40-42, immediately after \begin{document})
+$--   \shorttitle / \shortauthors (running heads, cas.lua provides the authors)
+$--   \title [mode = title]{...} + \tnotemark[..] + \tnotetext[..]
+$--   \author[aff]{Name}[key=value,..] + \cormark + \fnmark + \ead + \credit
+$--   \affiliation[N]{organization=..,addressline=..,city=..,country=..}
+$--   \cortext / \fntext / \nonumnote
+$--   abstract, graphical abstract, highlights, keywords, \maketitle
+\let\WriteBookmarks\relax
+\def\floatpagepagefraction{1}
+\def\textpagefraction{.001}
+$if(title)$
+\shorttitle{$if(journal.short-title)$$journal.short-title$$else$$title$$endif$}
+$if(short-authors)$\shortauthors{$short-authors$}$endif$
+\title [mode = title]{$title$$if(subtitle)$ \\ $subtitle$$endif$}
+$if(journal.title-notes)$
+\tnotemark[$for(journal.title-notes)$$it.index$$sep$,$endfor$]
+$for(journal.title-notes)$
+\tnotetext[$it.index$]{$it.text$}
+$endfor$
+$endif$
+$endif$
+$for(by-author)$
+\author[$for(by-author.affiliations)$$it.number$$sep$,$endfor$]{$if(by-author.name-latex-raw)$$by-author.name-latex-raw$$else$$by-author.name.literal$$endif$}$if(by-author.cas-opts)$[$by-author.cas-opts$]$endif$
+$if(by-author.cas-cormark)$\cormark[$by-author.cas-cormark$]$endif$
+$if(by-author.cas-fnmark)$\fnmark[$by-author.cas-fnmark$]$endif$
+$if(by-author.email)$\ead{$by-author.email$}$endif$
+$if(by-author.url)$\ead[$by-author.cas-url-style$]{$by-author.url$}$endif$
+$if(by-author.credit)$
+\credit{$by-author.credit$}
+$endif$
+$endfor$
+$-- Affiliation numbering comes from authors.lua (declaration order), which is
+$-- exactly how cas-sc-sample.tex numbers them [1],[2],[3]. The sample's key order
+$-- changes with the presence of `state`:
+$--   with state   : organization, addressline, city, postcode, state, country
+$--   without state: organization, addressline, postcode, postcodesep, city, country
+$-- `postcodesep={}` clears the (lazily expanded) postcode separator so that
+$-- "1011 NX Amsterdam" prints without a comma, as in the sample.
+$-- A nameless affiliation is only a ref marker (the sample's dangling [4] for
+$-- Han Thane) and is never printed.
+$for(affiliations)$
+$if(it.name)$\affiliation[$it.number$]{organization={$it.name$$if(it.department)$, $it.department$$endif$},$if(it.address)$addressline={$it.address$},$endif$$if(it.region)$$if(it.city)$city={$it.city$},$endif$$if(it.postal-code)$postcode={$it.postal-code$},$endif$state={$it.region$},$else$$if(it.postal-code)$postcode={$it.postal-code$},postcodesep={},$endif$$if(it.city)$city={$it.city$},$endif$$endif$$if(it.country)$country={$it.country$}$endif$}
+$endif$
+$endfor$
+$for(journal.corresponding)$
+\cortext[$it.mark$]{$it.text$}
+$endfor$
+$for(journal.author-notes)$
+\fntext[$it.mark$]{$it.text$}
+$endfor$
+$if(journal.nonumnote)$
+\nonumnote{$journal.nonumnote$}
+$endif$
+
+$if(abstract)$
+\begin{abstract}
+$abstract$
+\end{abstract}
+$endif$
+
+$if(journal.graphical-abstract)$
+\begin{graphicalabstract}
+$journal.graphical-abstract$
+\end{graphicalabstract}
+$endif$
+
+$if(journal.highlights)$
+\begin{highlights}
+$for(journal.highlights)$\item $it$
+$endfor$
+\end{highlights}
+$endif$
+
+$if(keywords)$
+\begin{keywords}
+$for(keywords/allbutlast)$$keywords$ \sep $endfor$$for(keywords/last)$$keywords$$endfor$
+\end{keywords}
+$endif$
+\maketitle

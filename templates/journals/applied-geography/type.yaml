@@ -1,0 +1,17 @@
+journal: "Applied Geography"
+publisher: Elsevier
+issn: "0143-6228"
+format: latex
+extension: "quarto-journals/elsevier-cas"
+quarto_extension: "quarto-journals/elsevier-cas"
+quarto_format: elsevier-cas-pdf
+quarto_docx_format: elsevier-cas-docx
+formatting: doubleblind
+cite_style: authoryear
+url: "https://www.sciencedirect.com/journal/applied-geography/publish/guide-for-authors"
+notes: >
+  Elsevier CAS template (cas-sc.cls), double-anonymized review. Abstract <=250 words,
+  1-7 keywords, highlights 3-5 bullets x 85 chars. LaTeX submission (.tex source required;
+  PDF not acceptable). Double column only for LaTeX. Source: Guide for Authors 2026-10-28.
+guide: guide/index.md
+guide_retrieved: "2026-10-28"

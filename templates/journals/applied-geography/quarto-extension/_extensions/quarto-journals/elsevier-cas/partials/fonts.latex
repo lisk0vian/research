@@ -1,0 +1,24 @@
+$-- Copied from Quarto's share/formats/pdf/pandoc/fonts.latex with ONE change:
+$-- the official Elsevier sample (cas-sc-sample.tex) never loads lmodern, and
+$-- loading it here would replace cas-sc.cls's STIX fonts with Latin Modern.
+$-- The cas-sc class owns typography: it loads T1 encoding + stix itself.
+$-- Keep in sync with scripts/cas_fidelity.py (preamble check).
+\usepackage{iftex}
+\ifPDFTeX
+  \usepackage[$if(fontenc)$$fontenc$$else$T1$endif$]{fontenc}
+  \usepackage[utf8]{inputenc}
+  \usepackage{textcomp} % provide euro and other symbols
+\else % if luatex or xetex
+$if(mathspec)$
+  \ifXeTeX
+    \usepackage{mathspec} % this also loads fontspec
+  \else
+    \usepackage{unicode-math} % this also loads fontspec
+  \fi
+$else$
+  \usepackage{unicode-math} % this also loads fontspec
+$endif$
+  \defaultfontfeatures{Scale=MatchLowercase}$-- must come before Beamer theme
+  \defaultfontfeatures[\rmfamily]{Ligatures=TeX,Scale=1}
+\fi
+$-- $if(fontfamily)$ / \usepackage{lmodern} removed on purpose: see above.
