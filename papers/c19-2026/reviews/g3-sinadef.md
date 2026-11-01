@@ -96,6 +96,19 @@ Null (500 reps): **false-positive rate 7.6 %**, above the pre-registered 7 %
 below the 92 % target; 1.2 and 1.5 are inside or at the edge; bias and power
 pass.
 
+**Update 2026-11-01 (G5 forced run, plan v14):** the stage now writes the
+Monte Carlo SEs. False-positive rate 7.6 % (MCSE 1.19 points, 500 null
+replications); coverage 90.0 % (MCSE 2.1), 92.5 % (1.9) and 93.5 % (1.7) at
+planted OR 1.1, 1.2 and 1.5 (200 replications each). Every other number in this
+note is byte-identical in the G5 run (`main.json`, `gee.json`, `controls.json`,
+`placebo.csv`, `simulation.csv`, `h3b_cause_groups.csv`). New descriptive
+diagnostic, `unknown_cause_by_place_time.csv`: the unknown-cause share is higher
+outside facilities, most of all in the ≤30-min band (22.5 % vs 12.9 %; >120 min:
+11.3 % vs 9.1 %). If unknown-cause deaths are amenable in similar proportion
+across bands, dropping them removes more near-hospital outside deaths, which
+would steepen the H3a gradient; the null is therefore not produced by this
+selection (descriptive, an assumption, not a test).
+
 **Consequence (pre-registered):** the false-positive rate exceeds 7 %, so the
 model is **not used for confirmatory inference**. Since H3a is null anyway, the
 failure does not create a positive claim; it confirms that RQ3 must be reported

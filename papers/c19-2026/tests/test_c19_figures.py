@@ -72,6 +72,52 @@ def test_forest_rows_keep_the_plotting_order():
     assert len(rows) == 12
 
 
+def test_rq2_table_puts_the_reference_first_and_reports_2sfca_zeros():
+    s = pd.DataFrame({
+        "variant": ["centroid_km", "fca_60", "fca_120"], "spearman": [0.9, 0.5, 0.3],
+        "spearman_ci_low": [0.89, 0.48, 0.25], "spearman_ci_high": [0.91, 0.56, 0.35],
+        "kendall": [0.74, 0.36, 0.21], "jaccard_top": [0.43, np.nan, 0.50],
+        "kappa_60": [0.74, 0.54, 0.27], "kappa_120": [0.58, 0.55, 0.49],
+        "flagged_main_60": [746] * 3, "flagged_main_120": [235] * 3,
+        "flagged_variant_60": [746, 746, 746], "flagged_variant_120": [235, 279, 235],
+        "kappa_natural": [np.nan, 0.418, 0.326], "zero_share_districts": [np.nan, 0.149, 0.027],
+        "zero_share_population": [np.nan, 0.042, 0.012]})
+    t, note = ft.rq2_table(s)
+    assert t.iloc[0]["Variant"].startswith("Travel time, person-weighted")
+    assert t.iloc[0]["Districts flagged (60 / 120 min)"] == "746 / 235"
+    assert t.iloc[2]["Districts flagged (60 / 120 min)"] == "746 / 279"   # ties at the cut
+    assert t.iloc[1]["Variant"].endswith("(km)")
+    assert "0.418" in note and "14.9 %" in note and "4.2 % of people" in note
+    assert "| — |" in ft.to_markdown(t)                                     # the undefined Jaccard
+
+
+def test_scale_bar_length_follows_latitude():
+    import _figstyle as st
+    assert st.degrees_for_km(111.32, 0.0) == pytest.approx(1.0)
+    assert st.degrees_for_km(200, -60.0) == pytest.approx(2 * 200 / 111.32)
+
+
+def test_bivariate_key_prints_every_quadrant_at_a_legible_size():
+    import _figqa as qa
+    import _figstyle as st
+    plt = st.setup()
+    fig, ax = st.figure(plt, 75, 108)
+    try:
+        ax.set_xlim(-81.6, -68.4)   # Peru's lon/lat box, as on the real map
+        ax.set_ylim(-19.3, 0.9)
+        st.map_axes(ax)
+        cells = {"high_need_poor_access": (371, 2.3), "low_need_poor_access": (375, 10.2),
+                 "high_need_good_access": (425, 5.1), "low_need_good_access": (701, 82.5)}
+        k = ft.bivariate_key(ax, cells)
+        st.map_furniture(ax)
+        texts = [t.get_text() for t in k.texts]
+        assert "371\n2.3 %" in texts and "701\n82.5 %" in texts
+        assert qa.check_text(fig) == []
+        assert qa.check_clipping(fig) == []
+    finally:
+        plt.close(fig)
+
+
 def test_forest_plot_draws_at_page_size():
     import _figqa as qa
     import _figstyle as st

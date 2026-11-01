@@ -390,15 +390,15 @@ DATASETS = {
         "dataset_url": "https://malariaatlas.org/project-resources/accessibility-to-healthcare/",
         "file_url": "https://data.malariaatlas.org/geoserver/ows?service=CSW&version=2.0.1&request=DirectDownload&ResourceId=Explorer:2020_walking_only_friction_surface",
         "edition": "2020, 1 km",
-        "retrieved": None,
+        "retrieved": "2026-11-01",
         "license": "CC BY 4.0 (data.malariaatlas.org; Earth Engine catalog terms)",
         "local_file": "2020_walking_only_friction_surface.zip",
         "format": "ZIP containing 2020_walking_only_friction_surface.geotiff",
         "unit": "Travel friction at 1 km",
-        "sha256": None,
+        "sha256": "2f0a8ddf4b494356cfee632b550a7c01ff10ff8a574d61b3a949475c325257a8",
         "download": True,
-        "notes": ["Pre-specified walking-time variant (plan M4), restored in v14. The hash "
-                  "is recorded after the first Colab download (its .sha256 sidecar)."],
+        "notes": ["Pre-specified walking-time variant (plan M4), restored in v14. Hash taken "
+                  "from the .sha256 sidecar of the first Colab download (2026-11-01)."],
     },
     "hydrobasins": {
         "title": "HydroBASINS South America, levels 1-12 (v1c)",

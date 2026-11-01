@@ -41,7 +41,7 @@ import _figstyle as st  # noqa: E402
 from _access import _kappa, _matched_flags, bootstrap_spearman  # noqa: E402
 from _paths import OUTPUTS, SEED_BASE, normalizar_cadena  # noqa: E402
 
-RESULTS_VERSION = 1
+RESULTS_VERSION = 2  # v2: map labels/scale bar, bivariate Fig 4 key, simplified geometry, table labels
 
 IN2 = OUTPUTS / "02_geo_inputs"
 REG = OUTPUTS / "02_regions"
@@ -55,6 +55,9 @@ TABLES = OUT / "tables"
 QA_DIR = OUT / "qa"
 AMAZON_DEPTS = {"AMAZONAS", "LORETO", "MADRE DE DIOS", "SAN MARTIN", "UCAYALI"}  # G1 proxy
 THRESHOLD = 60.0
+# Drawing only: 0.005 deg (~0.5 km) is ~0.03 mm on the printed maps and shrinks the
+# vector PDFs from ~13 MB; every number comes from the tables, never from geometry.
+SIMPLIFY_DEG = 0.005
 
 
 # --- pure helpers (tested in tests/test_c19_figures.py) -----------------------------------
@@ -167,11 +170,13 @@ def load_inputs() -> dict:
     gdf = gpd.read_file(IN2 / "districts.gpkg")
     if gdf.crs is not None and gdf.crs.to_epsg() != 4326:
         gdf = gdf.to_crs(4326)  # the travel-time raster is on a lon/lat grid
+    outline = gdf.dissolve().boundary.simplify(SIMPLIFY_DEG)  # dissolve first: no slivers
+    gdf["geometry"] = gdf.geometry.simplify(SIMPLIFY_DEG, preserve_topology=True)
     return {
         "grid": {k: g[k] for k in g.files},
         "times": np.load(IN3 / "access_times.npz")["times"],
         "gdf": gdf,
-        "outline": gdf.dissolve().boundary,
+        "outline": outline,
         "access": pd.read_csv(IN3 / "district_access.csv", dtype={"ubigeo": str}),
         "regions": pd.read_csv(REG / "districts_regions.csv", dtype={"ubigeo": str}),
         "osm_strata": pd.read_csv(REG / "osm_stratified.csv"),
@@ -207,26 +212,27 @@ def _legend_patches(items):
 WORKFLOW_DOT = r"""
 digraph G {
   graph [rankdir=LR, fontname="Helvetica", fontsize=9, nodesep=0.18, ranksep=0.3,
-         size="6.4,2.1!", ratio=compress, margin=0, dpi=300];
+         size="6.4,2.1!", ratio=compress, margin=0, pad=0.02, dpi=300];
   node  [shape=box, style="rounded,filled", fillcolor="#F2F2F2", color="#888888",
          fontname="Helvetica", fontsize=8, margin="0.06,0.03", height=0.3];
   edge  [color="#666666", arrowsize=0.5, penwidth=0.7];
   subgraph cluster_data { label="Data"; fontsize=8; color="#BBBBBB"; style=rounded;
     ren [label="RENIPRESS 2026\npublic complex hospitals"];
     pop [label="Census 2025 +\nWorldPop 2025"];
-    fri [label="Friction surfaces\n(motorized, walking)"];
+    fri [label="MAP friction 2020\n(motorized, walking)"];
     sin [label="SINADEF deaths\n2022–2025"]; }
   subgraph cluster_measure { label="Measurement (RQ1)"; fontsize=8; color="#BBBBBB"; style=rounded;
     grid [label="30-arcsec grid:\ncensus-scaled population"];
     dij  [label="Multi-source Dijkstra:\nminutes per cell"];
-    dis  [label="Person-weighted\ndistrict travel time", fillcolor="#FCE3D2"]; }
+    dis  [label="Person-weighted\ndistrict travel time", fillcolor="#FCE3D2"];
+    need [label="Need × access\nquadrants"]; }
   subgraph cluster_checks { label="Checks and sensitivity (RQ2)"; fontsize=8; color="#BBBBBB"; style=rounded;
     osrm [label="OSRM routing\n(convergent check)"];
-    var  [label="Straight line, 2SFCA,\ndestinations, walking"]; }
+    var  [label="Straight line, centre cell,\n2SFCA, destinations, walking"]; }
   subgraph cluster_out { label="External test (RQ3)"; fontsize=8; color="#BBBBBB"; style=rounded;
     glm [label="Logistic GLM, department FE,\ndistrict-cluster SEs"];
     sim [label="Placebo, GEE,\nknown-truth simulation"]; }
-  pop -> grid; fri -> dij; ren -> dij; grid -> dij; dij -> dis;
+  pop -> grid; fri -> dij; ren -> dij; grid -> dij; dij -> dis; dis -> need; pop -> need;
   dis -> osrm; dis -> var; dis -> glm; sin -> glm; glm -> sim;
 }
 """
@@ -282,6 +288,7 @@ def fig2_access(plt, x: dict) -> Fig:
     hosp = x["hospitals"][x["hospitals"]["status"] != "gross"]
     ax.scatter(hosp["lon"], hosp["lat"], s=2.5, c="#000000", linewidths=0, zorder=4)
     st.map_axes(ax)
+    st.map_furniture(ax)
     from matplotlib.lines import Line2D
     handles = _legend_patches(list(zip(st.TIME_LABELS, st.TIME_COLORS)))
     handles.append(Line2D([], [], marker="o", color="none", markerfacecolor="#000000",
@@ -343,28 +350,69 @@ def fig3_methods(plt, x: dict) -> Fig:
         [(f"{label} ({int(counts.get(key, 0))})", color) for key, (label, color) in st.AGREE.items()]),
         loc="lower left", fontsize=6, handlelength=1.0)
     st.map_axes(ax)
+    st.map_furniture(ax)
     st.panel_letter(ax, "a", x=0.02)
 
     for label, color in zip(st.ALT_LABELS, st.ALT_COLORS):
         m = v["band"] == label
         ax2.scatter(v.loc[m, "popweighted_km"].clip(lower=0.1), v.loc[m, "main_min"].clip(lower=0.1),
-                    s=3, color=color, alpha=0.75, linewidths=0, label=label)
+                    s=3, color=color, alpha=0.8, linewidths=0, label=label)
     ax2.axhline(THRESHOLD, color="#999999", lw=0.6, ls="--")
     ax2.axvline(cut, color="#999999", lw=0.6, ls=":")
     ax2.set_xscale("log")
     ax2.set_yscale("log")
+    st.plain_log_axis(ax2.xaxis)
+    st.plain_log_axis(ax2.yaxis)
+    ax2.annotate(f"{THRESHOLD:.0f} min", xy=(0, THRESHOLD), xycoords=("axes fraction", "data"),
+                 xytext=(2, 2), textcoords="offset points", fontsize=6, color="#555555")
+    ax2.annotate(f"{cut:.1f} km (matched)", xy=(cut, 1), xycoords=("data", "axes fraction"),
+                 xytext=(2, -2), textcoords="offset points", ha="left", va="top", fontsize=6,
+                 color="#555555")
     ax2.set_xlabel("Population-weighted straight-line distance (km, log scale)")
     ax2.set_ylabel("Person-weighted travel time (min, log scale)")
-    ax2.legend(loc="lower right", markerscale=2.5)
+    ax2.legend(loc="lower right", markerscale=2.5, title="District mean altitude",
+               title_fontsize=6.5)
     st.panel_letter(ax2, "b")
     data = v[["ubigeo", "main_min", "popweighted_km", "agreement", "band"]].assign(km_cut=cut)
     return Fig("Fig3_methods", fig=fig, data=data, kind="map",
                notes=[st.MAP_NOTE, f"matched straight-line cut: {cut:.1f} km"])
 
 
+def bivariate_key(ax, cells: dict, rect=(0.11, 0.03, 0.27, 0.20)):
+    """2 x 2 legend over the Pacific: need (rows) x travel time (columns).
+
+    `cells` maps a quadrant key to (districts, % of people), printed in its square.
+    The default box (lon ~-80.0 to -76.6, lat ~-17.8 to -14.2 on the Peru map) stays
+    off the coast and leaves room inside the figure for the "Need" labels on its left.
+    """
+    from matplotlib.patches import Rectangle
+    k = ax.inset_axes(rect)
+    for row, need in enumerate(("low", "high")):          # bottom row: low need
+        for col, acc in enumerate(("good", "poor")):      # right column: deficient access
+            key = f"{need}_need_{acc}_access"
+            _, color = st.QUADRANT[key]
+            k.add_patch(Rectangle((col, row), 1, 1, facecolor=color, edgecolor="white", lw=0.8))
+            n, pct = cells.get(key, (0, 0.0))
+            k.text(col + 0.5, row + 0.5, f"{n:,}\n{pct:.1f} %", ha="center", va="center",
+                   fontsize=6, linespacing=1.1,
+                   color="white" if key == "high_need_poor_access" else "#222222")
+    k.set_xlim(0, 2)
+    k.set_ylim(0, 2)
+    k.set_aspect("equal")
+    k.set_xticks([0.5, 1.5], ["≤60", ">60"])
+    k.set_yticks([0.5, 1.5], ["Low", "High"])
+    k.set_xlabel("Travel time (min)", fontsize=6.5, labelpad=1)
+    k.set_ylabel("Need", fontsize=6.5, labelpad=1)
+    k.tick_params(length=0, labelsize=6, pad=1)
+    for side in k.spines.values():
+        side.set_visible(False)
+    return k
+
+
 def fig4_need_access(plt, x: dict) -> Fig:
     pr = x["priority"]
-    fig, ax = st.figure(plt, st.SINGLE_MM, 108)
+    width = 75.0  # Peru's lon/lat aspect at 108 mm high: no empty side margins
+    fig, ax = st.figure(plt, width, 108)
     gdf = x["gdf"].merge(pr[["ubigeo", "quadrant"]], on="ubigeo", how="left")
     for key, (label, color) in st.QUADRANT.items():
         part = gdf[gdf["quadrant"] == key]
@@ -375,16 +423,17 @@ def fig4_need_access(plt, x: dict) -> Fig:
         missing.plot(ax=ax, color="#FFFFFF", edgecolor="#BBBBBB", linewidth=0.2)
     x["outline"].plot(ax=ax, color="#777777", linewidth=0.35)
     total = pr["population"].sum()
-    rows, items = [], []
-    for key, (label, color) in st.QUADRANT.items():
+    rows, cells = [], {}
+    for key in st.QUADRANT:
         sub = pr[pr["quadrant"] == key]
         share = 100 * sub["population"].sum() / total
         rows.append({"quadrant": key, "districts": len(sub), "population_pct": share})
-        items.append((f"{label}: {len(sub)} districts, {share:.1f} % of people", color))
-    ax.legend(handles=_legend_patches(items), loc="lower left", fontsize=5.8, handlelength=1.0)
+        cells[key] = (len(sub), share)
     st.map_axes(ax)
+    st.map_furniture(ax)
+    bivariate_key(ax, cells)
     return Fig("Fig4_need_access", fig=fig, data=pd.DataFrame(rows), kind="map",
-               width=st.SINGLE_MM, notes=[st.MAP_NOTE])
+               width=width, notes=[st.MAP_NOTE, "key cells: districts and % of people"])
 
 
 def forest_rows(s8: dict) -> pd.DataFrame:
@@ -429,8 +478,8 @@ def fig5_rq3(plt, x: dict) -> Fig:
     ax.axvline(1.0, color="#444444", lw=0.6)
     if 1.1 in planted:
         ax.axvline(1.1, color="#999999", lw=0.6, ls="--")
-        ax.text(1.1, y.max() + 0.7, f"planted OR 1.10 (power {planted[1.1]['power']:.2f})",
-                ha="center", va="bottom", fontsize=6, color="#555555")
+        ax.text(1.098, y.max() + 0.7, f"planted OR 1.10 (power {planted[1.1]['power']:.2f})",
+                ha="right", va="bottom", fontsize=6, color="#555555")  # left of the line, not across it
     ax.set_yticks(y)
     ax.set_yticklabels(rows["label"])
     ax.set_ylim(-0.7, y.max() + 1.4)
@@ -451,27 +500,33 @@ def figA1_osrm(plt, x: dict) -> Fig:
                                      "Amazon basin, ≥500 m"))
     p["sample"] = np.where(p["phase"] == "remote", "enriched", "pre-specified")
     fig, ax = st.figure(plt, st.SINGLE_MM, 82)
-    colors = {"Outside basin": "#0072B2", "Amazon basin, <500 m": "#D55E00",
-              "Amazon basin, ≥500 m": "#E69F00"}
-    for stratum, color in colors.items():
+    # Colour and marker both differ, so the strata survive grayscale and deuteranopia.
+    style = {"Outside basin": ("#0072B2", "o"), "Amazon basin, <500 m": ("#D55E00", "s"),
+             "Amazon basin, ≥500 m": ("#E69F00", "^")}
+    pos = p[(p["friction_min"] > 0) & (p["osm_min"] > 0)]  # a log axis cannot show zero
+    for stratum, (color, marker) in style.items():
         for sample, face in (("pre-specified", color), ("enriched", "none")):
-            m = (p["stratum"] == stratum) & (p["sample"] == sample)
-            ax.scatter(p.loc[m, "friction_min"], p.loc[m, "osm_min"], s=7, facecolors=face,
-                       edgecolors=color, linewidths=0.6,
+            m = (pos["stratum"] == stratum) & (pos["sample"] == sample)
+            ax.scatter(pos.loc[m, "friction_min"], pos.loc[m, "osm_min"], s=7, marker=marker,
+                       facecolors=face, edgecolors=color, linewidths=0.6,
                        label=f"{stratum}" if sample == "pre-specified" else None)
-    lim = [max(1.0, float(min(p["friction_min"].min(), p["osm_min"].min())) * 0.8),
-           float(max(p["friction_min"].max(), p["osm_min"].max())) * 1.2]
+    lim = [float(min(pos["friction_min"].min(), pos["osm_min"].min())) / 1.5,
+           float(max(pos["friction_min"].max(), pos["osm_min"].max())) * 1.5]
     ax.plot(lim, lim, color="#999999", lw=0.6, ls="--")
     ax.set_xscale("log")
     ax.set_yscale("log")
     ax.set_xlim(lim)
     ax.set_ylim(lim)
+    st.plain_log_axis(ax.xaxis)
+    st.plain_log_axis(ax.yaxis)
     ax.set_xlabel("Friction-surface travel time (min)")
     ax.set_ylabel("OSRM routing time (min)")
-    ax.legend(loc="upper left", fontsize=6, title="Filled: pre-specified sample;\nhollow: enriched",
-              title_fontsize=5.8)
+    ax.legend(loc="upper left", fontsize=6.5, title="Filled: pre-specified sample;\nhollow: enriched",
+              title_fontsize=6.5, alignment="left")
+    notes = [f"{len(p) - len(pos)} centroid(s) with a zero time are not drawn"] if len(pos) < len(p) else []
     return Fig("FigA1_osrm", fig=fig, data=p[["ubigeo", "phase", "stratum", "friction_min",
-                                              "osm_min"]], kind="single", width=st.SINGLE_MM)
+                                              "osm_min"]], kind="single", width=st.SINGLE_MM,
+               notes=notes)
 
 
 def save_and_check(f: Fig, report) -> list[Path]:
@@ -522,7 +577,7 @@ def table2(x: dict) -> None:
     t = equity_table(x["access"], x["regions"])
     t.columns = ["Basin", "Altitude band", "Districts", "Population (millions)",
                  "Mean travel time (min)", "Population >60 min (%)", "Population >120 min (%)"]
-    write_table("table2_equity", t, {"Population (millions)": ".2f",
+    write_table("table2_equity", t, {"Districts": ",", "Population (millions)": ".2f",
                                      "Mean travel time (min)": ".1f",
                                      "Population >60 min (%)": ".1f",
                                      "Population >120 min (%)": ".1f"},
@@ -542,68 +597,100 @@ def table3(x: dict) -> None:
     p = x["pilot"].dropna(subset=["friction_min", "osm_min"]).merge(
         x["regions"][["ubigeo", "mean_altitude", "amazon"]], on="ubigeo", how="left")
     p["dept"] = p["department"].map(normalizar_cadena)
-    pre = p[p["phase"] != "remote"]
+    pre, rem = p[p["phase"] != "remote"], p[p["phase"] == "remote"]
     basin = pre["amazon"].fillna(False).astype(bool)
+    rem_basin = rem["amazon"].fillna(False).astype(bool)
     strata = x["osm_strata"].set_index(["sample", "subset"])
 
-    def from_02(sample, subset, label):
+    def from_02(sample, subset, label, d):
+        """Spearman and CI as stage 02 wrote them; the median ratio from the same rows."""
         r = strata.loc[(sample, subset)]
         return {"Sample and stratum": label, "n": int(r["n"]), "Spearman": float(r["spearman"]),
                 "CI low": float(r["ci_low"]), "CI high": float(r["ci_high"]),
-                "Median OSRM/friction": np.nan}
+                "Median OSRM/friction": float((d["osm_min"] / d["friction_min"]).median())}
 
     rows = [
-        from_02("pre_registered", "all", "Pre-specified: all"),
+        from_02("pre_registered", "all", "Pre-specified: all", pre),
         _spearman_row("Pre-specified: outside Amazon departments (G1 proxy, pre-specified rule)",
                       pre[~pre["dept"].isin(AMAZON_DEPTS)]),
-        from_02("pre_registered", "non_amazon", "Pre-specified: outside Amazon basin (post hoc)"),
-        from_02("pre_registered", "amazon", "Pre-specified: Amazon basin (post hoc)"),
+        from_02("pre_registered", "non_amazon", "Pre-specified: outside Amazon basin (post hoc)",
+                pre[~basin]),
+        from_02("pre_registered", "amazon", "Pre-specified: Amazon basin (post hoc)", pre[basin]),
         _spearman_row("Pre-specified: Amazon basin, <500 m (post hoc)",
                       pre[basin & (pre["mean_altitude"] < 500)]),
         _spearman_row("Pre-specified: Amazon basin, ≥500 m (post hoc)",
                       pre[basin & (pre["mean_altitude"] >= 500)]),
-        from_02("enriched", "all", "Enriched remote sample: all"),
-        from_02("enriched", "non_amazon", "Enriched remote sample: outside basin"),
-        from_02("enriched", "amazon", "Enriched remote sample: Amazon basin"),
+        from_02("enriched", "all", "Enriched remote sample: all", rem),
+        from_02("enriched", "non_amazon", "Enriched remote sample: outside basin", rem[~rem_basin]),
+        from_02("enriched", "amazon", "Enriched remote sample: Amazon basin", rem[rem_basin]),
     ]
-    write_table("table3_engine", pd.DataFrame(rows),
+    t = pd.DataFrame(rows)
+    # Stage 02 and this table must count the same centroids, or a median describes other
+    # rows than its Spearman: say so loudly in the note instead of failing the stage.
+    mismatch = [f"{r['Sample and stratum']} ({len(d)} vs {r['n']})"
+                for r, d in zip(rows, (pre, None, pre[~basin], pre[basin], None, None, rem,
+                                       rem[~rem_basin], rem[rem_basin]))
+                if d is not None and len(d) != r["n"]]
+    note = ("Bootstrap 95 % CIs over centroids. The 0.80 rule applies to the pre-specified "
+            "sample outside the Amazon.")
+    if mismatch:
+        print(f"[check] table3 median rows differ from stage 02: {mismatch}")
+        note += " CHECK: median ratio rows differ from stage 02 for " + "; ".join(mismatch) + "."
+    write_table("table3_engine", t,
                 {"Spearman": ".3f", "CI low": ".3f", "CI high": ".3f", "Median OSRM/friction": ".2f"},
-                note="Bootstrap 95 % CIs over centroids. The 0.80 rule applies to the pre-specified sample outside the Amazon.")
+                note=note)
 
 
 VARIANT_LABEL = {
-    "centroid_km": "Straight line from district centre",
-    "popweighted_km": "Straight line, population-weighted",
-    "centre_cell_min": "Travel time at the district centre (no population weighting)",
-    "calibrated_min": "Travel time × OSRM/friction band ratio",
-    "public_essalud_min": "Destinations: public + EsSalud",
-    "all_min": "Destinations: all complex hospitals",
-    "all_uncat_min": "Destinations: all + uncategorised hospital-like",
-    "walking_min": "Walking time",
-    "fca_60": "2SFCA, 60-min catchment",
-    "fca_120": "2SFCA, 120-min catchment",
+    "centroid_km": "Straight line from district centre (km)",
+    "popweighted_km": "Straight line, population-weighted (km)",
+    "centre_cell_min": "Travel time at the district centre cell (min)",
+    "calibrated_min": "Travel time × OSRM/friction band ratio (min)",
+    "public_essalud_min": "Destinations: public + EsSalud (min)",
+    "all_min": "Destinations: all complex hospitals (min)",
+    "all_uncat_min": "Destinations: all + uncategorised hospital-like (min)",
+    "walking_min": "Walking time (min)",
+    "fca_60": "2SFCA, 60-min catchment (hospitals per 10,000)",
+    "fca_120": "2SFCA, 120-min catchment (hospitals per 10,000)",
 }
 
 
+def rq2_table(s: pd.DataFrame) -> tuple[pd.DataFrame, str]:
+    """Table 4 rows (main measure first, as the reference) and its note, from stability.csv."""
+    def count(v):
+        return f"{int(v):,}" if pd.notna(v) else "—"
+
+    first = s.iloc[0]
+    rows = [{"Variant": "Travel time, person-weighted (main measure, min)",
+             "Spearman (95 % CI)": None, "Kendall": np.nan, "Top-100 Jaccard": np.nan,
+             "κ at 60 min": np.nan, "κ at 120 min": np.nan,
+             "Districts flagged (60 / 120 min)":
+                 f"{count(first['flagged_main_60'])} / {count(first['flagged_main_120'])}"}]
+    for r in s.itertuples():
+        rows.append({"Variant": VARIANT_LABEL.get(r.variant, r.variant),
+                     "Spearman (95 % CI)": ci_text(r.spearman, r.spearman_ci_low, r.spearman_ci_high),
+                     "Kendall": r.kendall, "Top-100 Jaccard": r.jaccard_top,
+                     "κ at 60 min": r.kappa_60, "κ at 120 min": r.kappa_120,
+                     "Districts flagged (60 / 120 min)":
+                         f"{count(r.flagged_variant_60)} / {count(r.flagged_variant_120)}"})
+    note = ("κ: variants in minutes use the same thresholds; km and 2SFCA flag as many districts "
+            "as the main measure (quantile matching; scores tied at the cut are all flagged). "
+            "Top-100 Jaccard is undefined (—) when tied scores straddle the 100th district.")
+    fca = s[s["variant"].astype(str).str.startswith("fca_")].set_index("variant")
+    if {"fca_60", "fca_120"} <= set(fca.index) and "kappa_natural" in fca:
+        a, b = fca.loc["fca_60"], fca.loc["fca_120"]
+        note += (f" 2SFCA, no hospital in the catchment (score 0) against >60 min: κ = "
+                 f"{a['kappa_natural']:.3f} with the 60-min catchment ({100 * a['zero_share_districts']:.1f} % "
+                 f"of districts and {100 * a['zero_share_population']:.1f} % of people score 0) and "
+                 f"{b['kappa_natural']:.3f} with the 120-min catchment "
+                 f"({100 * b['zero_share_districts']:.1f} % and {100 * b['zero_share_population']:.1f} %).")
+    return pd.DataFrame(rows), note
+
+
 def table4(x: dict) -> None:
-    s = x["stability"].copy()
-    s["Variant"] = s["variant"].map(VARIANT_LABEL).fillna(s["variant"])
-    s["Spearman (95% CI)"] = [ci_text(r.spearman, r.spearman_ci_low, r.spearman_ci_high)
-                              for r in s.itertuples()]
-    cols = {"unit": "Unit", "kendall": "Kendall", "jaccard_top": "Top-100 Jaccard",
-            "kappa_60": "κ at 60 min", "kappa_120": "κ at 120 min"}
-    out = s[["Variant", "unit", "Spearman (95% CI)", "kendall", "jaccard_top", "kappa_60",
-             "kappa_120"]].rename(columns=cols)
-    if "kappa_natural" in s:
-        out["κ, no hospital in catchment"] = s["kappa_natural"]
-        out["Districts with score 0 (%)"] = 100 * s["zero_share_districts"]
+    out, note = rq2_table(x["stability"])
     write_table("table4_rq2", out, {"Kendall": ".3f", "Top-100 Jaccard": ".3f",
-                                    "κ at 60 min": ".3f", "κ at 120 min": ".3f",
-                                    "κ, no hospital in catchment": ".3f",
-                                    "Districts with score 0 (%)": ".1f"},
-                note="Kappa: variants in minutes use the same thresholds; km and 2SFCA flag as many "
-                     "districts as the main measure (quantile matching). Jaccard is undefined (—) when "
-                     "ties straddle the 100th district.")
+                                    "κ at 60 min": ".3f", "κ at 120 min": ".3f"}, note=note)
 
 
 def tableA2(x: dict) -> None:
@@ -625,44 +712,71 @@ def tableA2(x: dict) -> None:
                      f"Pre-specified limits: FP ≤ 7 %, bias ≤ 10 %, coverage 92–97 %.")
 
 
+MODEL_LABEL = {"ridge_regularized_linear": "Ridge (regularized linear)",
+               "isotonic_on_friction": "Isotonic on friction time",
+               "gradient_boosting_monotone": "Gradient boosting (monotone)"}
+VERDICT_LABEL = {"not_refuted": "Contribution not refuted",
+                 "no_positive_contribution": "No positive contribution"}
+CAUSE_LABEL = {"amenable_acute": "Amenable, acute", "amenable_chronic": "Amenable, chronic",
+               "cancer": "Cancer (negative control)", "external": "External causes",
+               "other": "Other causes", "unknown": "Unknown cause"}
+BAND_LABEL = {"<=30": "≤30 min", "30-60": "30–60 min", "60-120": "60–120 min", ">120": ">120 min"}
+
+
+def p_text(p: float) -> str:
+    return "<0.001" if p < 0.001 else f"{p:.3f}"
+
+
 def tableA3(x: dict) -> None:
     c = x["calibration"]
     rows = [{"Model": "Constant ratio (baseline)", **c["baseline_metrics"]},
             {"Model": "Band ratios", **c["band_metrics"]}]
-    rows += [{"Model": k.replace("_", " "), **v} for k, v in c["candidates"].items()]
+    rows += [{"Model": MODEL_LABEL.get(k, k.replace("_", " ")), **v}
+             for k, v in c["candidates"].items()]
     t = pd.DataFrame(rows)[["Model", "mape", "remote_spearman", "kappa_60", "kappa_120"]]
-    t.columns = ["Model", "MAPE", "Remote Spearman", "κ at 60 min", "κ at 120 min"]
-    write_table("tableA3_ml_calibration", t, {c_: ".3f" for c_ in t.columns[1:]},
-                note=f"Leave-one-department-out; winner: {c['winner']}.")
+    t["mape"] = 100 * t["mape"]
+    t.columns = ["Model", "MAPE (%)", "Remote Spearman", "κ at 60 min", "κ at 120 min"]
+    write_table("tableA3_ml_calibration", t,
+                {"MAPE (%)": ".1f", "Remote Spearman": ".3f", "κ at 60 min": ".3f",
+                 "κ at 120 min": ".3f"},
+                note=f"Leave-one-department-out; selected: "
+                     f"{MODEL_LABEL.get(c['winner'], c['winner'])}.")
     p = x["predictive"]
     rows = []
-    for key in ("all_causes", "amenable"):
+    for key, label in (("all_causes", "All causes"), ("amenable", "Amenable causes")):
         r = p[key]
-        rows.append({"Population": key.replace("_", " "), "n": r["n_rows"],
+        rows.append({"Population": label, "Deaths": r["n_rows"],
                      "ΔBrier": r["delta_brier"], "CI low": r["delta_brier_ci"][0],
                      "CI high": r["delta_brier_ci"][1], "Permutation drop": r["permutation_brier_drop"],
-                     "Verdict": r["verdict"]})
+                     "Verdict": VERDICT_LABEL.get(r["verdict"], r["verdict"])})
     write_table("tableA3_ml_predictive", pd.DataFrame(rows),
-                {"ΔBrier": ".5f", "CI low": ".5f", "CI high": ".5f", "Permutation drop": ".5f"})
+                {"Deaths": ",", "ΔBrier": ".5f", "CI low": ".5f", "CI high": ".5f",
+                 "Permutation drop": ".5f"})
 
 
 def tableA4(x: dict) -> None:
     s8 = x["s8"]
     t = pd.DataFrame(s8["h3b"]["by_cause"])[["cause_group", "n", "or_per_60", "ci_low",
                                               "ci_high", "p_value"]]
+    t["cause_group"] = t["cause_group"].map(CAUSE_LABEL).fillna(t["cause_group"])
     t.columns = ["Cause group", "Deaths", "OR per +60 min", "CI low", "CI high", "p"]
     inter = s8["h3b"].get("interaction_p", {})
     acute_chronic = next((v for k, v in inter.items() if "amenable_chronic" in k), np.nan)
-    write_table("tableA4_h3b", t, {"OR per +60 min": ".3f", "CI low": ".3f", "CI high": ".3f",
-                                   "p": ".3g"},
-                note=f"Time × cause interaction, chronic vs acute: p = {acute_chronic:.3g}.")
+    write_table("tableA4_h3b", t, {"Deaths": ",", "OR per +60 min": ".3f", "CI low": ".3f",
+                                   "CI high": ".3f", "p": p_text},
+                note=f"Time × cause interaction, chronic vs acute: p = {p_text(acute_chronic)}.")
     u = x["unknown"].copy()
     outside = u["outside"].astype(str).str.lower().eq("true")  # CSV booleans come back as text
+    u["order"] = u["band"].map({k: i for i, k in enumerate(BAND_LABEL)})
     u["outside"] = np.where(outside, "Outside a facility", "In a facility")
+    u = u.sort_values(["order", "outside"]).drop(columns="order")  # "In a ..." before "Outside ..."
+    u["band"] = u["band"].map(BAND_LABEL).fillna(u["band"])
     u = u.rename(columns={"band": "Travel time", "outside": "Place of death",
                           "share_unknown": "Unknown cause (%)", "deaths": "Deaths"})
     u["Unknown cause (%)"] = 100 * u["Unknown cause (%)"]
-    write_table("tableA4b_unknown_cause", u, {"Unknown cause (%)": ".1f"})
+    write_table("tableA4b_unknown_cause", u, {"Unknown cause (%)": ".1f", "Deaths": ","},
+                note="Deaths 2022–2025 with the district of residence resolved by name, all causes; "
+                     "travel time is the person-weighted mean of that district.")
 
 
 # --- main ---------------------------------------------------------------------------------------
