@@ -60,6 +60,8 @@ papers/*/data/processed/*
 *.hdf5
 *.sqlite
 *.db
+# CatBoost writes its training artefacts to ./catboost_info on every fit
+catboost_info/
 # ...but keep small example/config CSVs if you explicitly force-add them
 # (use: git add -f path/to/file.csv)
 
@@ -222,3 +224,7 @@ papers/*/experiments/.claude/
 papers/*/experiments/.opencode/
 papers/*/experiments/skills-lock.json
 .sync_manifest.json
+
+# ---- Browser/agent scratch (machine-local) ----
+# Playwright MCP dumps console logs and page snapshots on every session.
+.playwright-mcp/
