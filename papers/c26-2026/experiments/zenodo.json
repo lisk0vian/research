@@ -1,0 +1,72 @@
+{
+  "metadata": {
+    "title": "A reproducible GeoAI framework for explainable spatiotemporal analysis of national missing-person registers: multi-algorithm clustering and multilevel validation (Peru, 2019-2025): code and Colab notebook",
+    "upload_type": "software",
+    "version": "1.0.0",
+    "description": "<p>Code and Colab notebook for the paper <em>A reproducible GeoAI framework for explainable spatiotemporal analysis of national missing-person registers: multi-algorithm clustering and multilevel validation (Peru, 2019-2025)</em>, submitted to <em>Information Sciences</em> (Elsevier).</p>\n<p>The pipeline reads the open reports of Peru's National Registry of Information on Missing Persons (RENIPED, 2019&ndash;2025) and official population denominators, builds the 26-territory by 84-month panel, and runs the rate comparison, multi-algorithm clustering, spatial association and multilevel validation, including the specification multiverse. The analysis plan (<code>config/analysis_plan.json</code>) is fingerprinted and checked at the start of every run. Every table and figure in the paper is written by the pipeline.</p>\n<p>Run end to end with the included Colab notebook (<code>notebooks/experiments.ipynb</code>) or locally with <code>python run_all.py</code>; dependencies are listed in <code>requirements-experiments.txt</code>. Internal code: C26-2026.</p>\n",
+    "creators": [
+      {
+        "name": "Moisés Evangelista Gamarra",
+        "orcid": "0009-0002-5382-1390",
+        "affiliation": "Servicio Nacional de Adiestramiento en Trabajo Industrial, Perú"
+      },
+      {
+        "name": "Edwar Abrahan Alama Carreño",
+        "orcid": "0009-0006-8029-4302",
+        "affiliation": "SENATI, Perú"
+      },
+      {
+        "name": "Pamela Estefani Figueroa Rosas",
+        "orcid": "0009-0007-6100-9382",
+        "affiliation": "SENATI, Perú"
+      }
+    ],
+    "license": "MIT",
+    "keywords": [
+      "reproducibility",
+      "research code",
+      "information-sciences",
+      "C26-2026"
+    ],
+    "language": "eng",
+    "access_right": "open",
+    "publication_date": "2026-10-11"
+  },
+  "files": [
+    "colab.yaml",
+    "colab_run.py",
+    "config/analysis_plan.json",
+    "config/analysis_plan.lock.json",
+    "export_population.py",
+    "README.md",
+    "requirements-experiments.txt",
+    "run_all.py",
+    "src/reniped/__init__.py",
+    "src/reniped/article_figures.py",
+    "src/reniped/audit.py",
+    "src/reniped/clustering.py",
+    "src/reniped/config.py",
+    "src/reniped/features.py",
+    "src/reniped/figures.py",
+    "src/reniped/io_utils.py",
+    "src/reniped/maps.py",
+    "src/reniped/multiverse.py",
+    "src/reniped/panel.py",
+    "src/reniped/pipeline.py",
+    "src/reniped/population.py",
+    "src/reniped/prioridad.py",
+    "src/reniped/results.py",
+    "src/reniped/spatial.py",
+    "src/reniped/temporal.py",
+    "timings.yaml",
+    "experiments.ipynb",
+    "_colab_runtime.py"
+  ],
+  "total_size_bytes": 276302,
+  "instance": "production",
+  "generated_at": "2026-10-11T02:10:59.120308+00:00",
+  "status": "published",
+  "doi": "10.5281/zenodo.23290595",
+  "deposit_id": 23290595,
+  "record_url": "https://zenodo.org/records/23290595"
+}

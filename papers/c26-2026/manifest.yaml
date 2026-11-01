@@ -6,6 +6,8 @@
 
 paper: c26-2026
 title: "A reproducible GeoAI framework for explainable spatiotemporal analysis of national missing-person registers: multi-algorithm clustering and multilevel validation (Peru, 2019-2025)"
+# Title of the Zenodo software record (scripts/paper_zenodo.py).
+zenodo_title: "A reproducible GeoAI framework for explainable spatiotemporal analysis of national missing-person registers: multi-algorithm clustering and multilevel validation (Peru, 2019-2025): code and Colab notebook"
 
 # --- Editorial target ---
 journal: information-sciences          # must exist under templates/journals/<journal>/
@@ -104,3 +106,8 @@ figures:
     caption: "Specification curves. (a) Territorial association. (b) Global spatial autocorrelation."
     file: "media/Fig6_validation_en.png"
     source: "outputs/figures_article/Fig6_validation_en.png"
+zenodo_status: published
+zenodo_doi: 10.5281/zenodo.23290595
+zenodo_deposit_id: 23290595
+zenodo_record_url: https://zenodo.org/records/23290595
+zenodo_version: 1.0.0
