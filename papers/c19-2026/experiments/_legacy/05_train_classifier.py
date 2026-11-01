@@ -7,6 +7,12 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 from _common import *
+from _deps import *
+
+FAST = os.environ.get("EXP_FAST") == "1"
+N_TRIALS_TOTAL = 2 if FAST else 50
+TRIALS_PER_STEP = 2 if FAST else 10
+N_STEPS = 1 if FAST else 5
 
 _ld = load_df_activos()
 if _ld is not None:
@@ -16,20 +22,20 @@ if _ld is not None:
 # `train_test_split(..., groups_ml, ...)` en la versión anterior NO agrupaba
 # nada: sklearn.train_test_split no soporta partición por grupos, solo
 # barajaba `groups_ml` como un arreglo más. Como muchos establecimientos
-# (filas de RENIPRESS) comparten el mismo UBIGEO, y varias FEATURES
-# (poblacion_total, tasa_vulnerabilidad_regional, ratio_adulto_mayor) y el
+# (filas de RENIPRESS) comparten el mismo ubigeo, y varias FEATURES
+# (population_total, region_pop_ratio, share_60_plus) y el
 # propio VULNERABLE dependen de agregados a nivel distrital/departamental,
 # la partición aleatoria dejaba filas del MISMO distrito en train Y test,
 # inflando artificialmente el AUC interno. Se reemplaza por GroupShuffleSplit
-# agrupando por UBIGEO (distrito), que garantiza que ningún distrito aparezca
+# agrupando por ubigeo (distrito), que garantiza que ningún distrito aparezca
 # simultáneamente en ambos conjuntos.
 # =============================================================================
-FEATURES = ['NIVEL', 'poblacion_total', 'tasa_vulnerabilidad_regional', 'ratio_adulto_mayor']
+FEATURES = ['care_level', 'population_total', 'region_pop_ratio', 'share_60_plus']
 X_ml = df_activos[FEATURES].copy()
 y_ml = df_activos['VULNERABLE'].values
-groups_ml = df_activos['DEPARTAMENTO_NORM'].values
-groups_ubigeo_ml = df_activos['UBIGEO'].values
-regiones_ml = df_activos['REGION_NATURAL'].values
+groups_ml = df_activos['department_norm'].values
+groups_ubigeo_ml = df_activos['ubigeo'].values
+regiones_ml = df_activos['natural_region'].values
 
 from sklearn.model_selection import GroupShuffleSplit
 
@@ -38,20 +44,20 @@ idx_train, idx_test = next(gss_outer.split(X_ml, y_ml, groups=groups_ubigeo_ml))
 
 X_train_puro, X_test_puro = X_ml.iloc[idx_train], X_ml.iloc[idx_test]          # conservan el índice original de df_activos (igual que antes)
 y_train_puro, y_test_puro = y_ml[idx_train], y_ml[idx_test]
-groups_train, groups_test = groups_ml[idx_train], groups_ml[idx_test]          # se preserva DEPARTAMENTO_NORM para el CV interno (Bloque 5)
+groups_train, groups_test = groups_ml[idx_train], groups_ml[idx_test]          # se preserva department_norm para el CV interno (Bloque 5)
 
 # --- Verificación explícita de ausencia de fuga distrital -------------------
-distritos_train = set(df_activos.iloc[idx_train]['UBIGEO'])
-distritos_test = set(df_activos.iloc[idx_test]['UBIGEO'])
+distritos_train = set(df_activos.iloc[idx_train]['ubigeo'])
+distritos_test = set(df_activos.iloc[idx_test]['ubigeo'])
 interseccion_distritos = distritos_train & distritos_test
-print(f"🔎 Verificación anti-fuga (UBIGEO): {len(distritos_train)} distritos en train | "
+print(f"🔎 Verificación anti-fuga (ubigeo): {len(distritos_train)} distritos en train | "
       f"{len(distritos_test)} en test | {len(interseccion_distritos)} distritos en ambos conjuntos")
 assert len(interseccion_distritos) == 0, (
-    f"⚠️ FUGA DE INFORMACIÓN DETECTADA: {len(interseccion_distritos)} distritos (UBIGEO) "
+    f"⚠️ FUGA DE INFORMACIÓN DETECTADA: {len(interseccion_distritos)} distritos (ubigeo) "
     f"aparecen simultáneamente en train y test."
 )
 print(f"🎯 Prevalencia VULNERABLE — train: {y_train_puro.mean()*100:.2f}% | test: {y_test_puro.mean()*100:.2f}% "
-      f"(sin estratificación forzada por y, ya que la partición ahora se rige por el grupo geográfico UBIGEO)")
+      f"(sin estratificación forzada por y, ya que la partición ahora se rige por el grupo geográfico ubigeo)")
 
 print("\n" + "="*80 + "\n[📊 BLOQUE 5: NESTED SPATIAL CV CON OPTUNA (50 TRIALS) BASADO EN ESTRUCTURA TERRITORIAL]\n" + "="*80)
 t5 = time.time()
@@ -79,27 +85,16 @@ def optimizar_spatial_loop(trial, X_tr_raw, y_tr_raw, grps_tr):
             m = HistGradientBoostingClassifier(max_iter=trial.suggest_int('hg_i', 40, 120), random_state=SEED_BASE)
 
         m.fit(X_in_tr, y_tr_raw[train_idx])
+        if len(np.unique(y_tr_raw[val_idx])) < 2:
+            continue  # a one-class fold has no AUC; skip it instead of failing the trial
         scores.append(roc_auc_score(y_tr_raw[val_idx], m.predict_proba(X_in_va)[:,1]))
-    return np.mean(scores)
+    return np.mean(scores) if scores else 0.5
 
-print("🔄 Iniciando Búsqueda Exhaustiva Espacial (50 Trials con Reporte de Convergencia)...")
+print(f"🔄 Iniciando Búsqueda Exhaustiva Espacial ({N_TRIALS_TOTAL} Trials con Reporte de Convergencia)...")
 study = optuna.create_study(direction='maximize')
-for step in range(5):
-    study.optimize(lambda t: optimizar_spatial_loop(t, X_train_puro, y_train_puro, groups_train), n_trials=10)
-    print(f"   📈 Convergencia Parcial Iteración {(step+1)*10}/50 | Mejor AUC Histórico: {study.best_value:.4f}")
-
-def construir_modelo(best_params):
-    if best_params['model_type'] == 'LightGBM':
-        return lgb.LGBMClassifier(n_estimators=best_params.get('lgb_n', 80), verbosity=-1, random_state=SEED_BASE)
-    elif best_params['model_type'] == 'CatBoost':
-        return CatBoostClassifier(iterations=best_params.get('cat_i', 80), verbose=0, random_state=SEED_BASE)
-    elif best_params['model_type'] == 'ExtraTrees':
-        return ExtraTreesClassifier(n_estimators=best_params.get('et_n', 80), random_state=SEED_BASE)
-    elif best_params['model_type'] == 'XGBoost':
-        return xgb.XGBClassifier(n_estimators=best_params.get('xgb_n', 80), use_label_encoder=False,
-                                  eval_metric='logloss', verbosity=0, random_state=SEED_BASE)
-    else:
-        return HistGradientBoostingClassifier(max_iter=best_params.get('hg_i', 80), random_state=SEED_BASE)
+for step in range(N_STEPS):
+    study.optimize(lambda t: optimizar_spatial_loop(t, X_train_puro, y_train_puro, groups_train), n_trials=TRIALS_PER_STEP)
+    print(f"   📈 Convergencia Parcial Iteración {len(study.trials)}/{N_TRIALS_TOTAL} | Mejor AUC Histórico: {study.best_value:.4f}")
 
 pipe_final = Pipeline([('imputer', SimpleImputer(strategy='median')), ('scaler', StandardScaler())])
 X_tr_sc = pipe_final.fit_transform(X_train_puro).astype(np.float32)
@@ -165,8 +160,7 @@ else:
 
 ruta_excel_missing_post = os.path.join(DIR_SALIDA, "30_tablas_dataset", "missing_data_post_imputacion.csv")
 df_missing_post.to_csv(ruta_excel_missing_post, index=False)
-df_missing_post.to_csv(os.path.join(DIR_SALIDA, "30_tablas_dataset", "missing_data_post_imputacion.csv"), index=False)
-print(f"  💾 Excel/CSV exportados: {ruta_excel_missing_post}")
+print(f"  💾 CSV exportado: {ruta_excel_missing_post}")
 REGISTRO_TABLAS.append(("Verificación de datos perdidos POST-imputación", df_missing_post))
 
 # =============================================================================
@@ -199,3 +193,15 @@ REGISTRO_TABLAS.append(("Ablation Study — predictores del clasificador", pd.Da
 
 
 print("Stage 05_train_classifier done.")
+save_run_state(
+    FEATURES=FEATURES,
+    X_ml=X_ml, y_ml=y_ml, groups_ml=groups_ml,
+    groups_ubigeo_ml=groups_ubigeo_ml, regiones_ml=regiones_ml,
+    X_train_puro=X_train_puro, X_test_puro=X_test_puro,
+    y_train_puro=y_train_puro, y_test_puro=y_test_puro,
+    groups_train=groups_train, groups_test=groups_test,
+    pipe_final=pipe_final, X_tr_sc=X_tr_sc, X_te_sc=X_te_sc,
+    model_global=model_global, probs_test=probs_test, study=study,
+    base_auc=base_auc,
+)
+print("Stage 05 run state saved.")

@@ -1,0 +1,309 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Jerremi Aron Chancan Labajos
+#
+# Frozen analysis plan (light pre-registration) for papers/c19-2026.
+# Stage 00 records this file's sha256 and fails when it changes without a
+# version bump, so every threshold below is fixed before any real-data run.
+# Decisions and their evidence: reviews/decision-0001-contribution.md and
+# reviews/g0-feasibility-2026-10-30.md.
+#
+# v2 (2026-10-31) closes the Q1 review of the frozen v1 before any outcome data
+# is touched: explicit ICD-10 cause groups, TIPO LUGAR mapping, a fixed
+# low-completeness threshold, the post-2017 polygon sensitivity and the OSM
+# pilot rule.
+# v3 (2026-10-31) corrects the polygon count measured on the real layer: 21
+# census districts have no polygon (19 created after 2017 + 2 older HDX gaps).
+# v4 (2026-10-31) declares the hospital audit rule before RQ2/RQ3: gross
+# misplacements (> 20 km) leave the main set and are re-placed at their own
+# district centroid in a sensitivity; the 95 % point-in-polygon criterion is
+# evaluated after that declared exclusion, and both shares are reported.
+# v5 (2026-10-31) records the G1 post-hoc reading: the engine ranks districts
+# but is weak on absolute 120-minute statements; 60 min is the main threshold,
+# 120 secondary with a caveat. The Amazon proxy, the friction-quintile strata
+# and the point-estimate test are declared deviations, to be redone with the
+# DEM and the HydroBASINS basin in the region stage.
+# v7 (2026-10-31): real SINADEF read at 03:31:55 UTC (601,092 deaths 2022-2025;
+# sha256 bb4058...); outcome data accessed.
+# v8 (2026-10-31): the estimator changes to a logistic GLM with department fixed
+# effects and district-cluster robust SEs (population-averaged OR). Declared
+# after the outcome data were read; see outcome.model_change_note. A GEE
+# exchangeable sensitivity is pre-registered with the same-sign/overlapping-CI
+# criterion.
+# v9 (2026-10-31): H3a is evaluated on amenable causes only (the v8 code used
+# all causes by mistake); other causes are exploratory post hoc. Fixes the
+# Callao name crosswalk, drops excluded places, removes code-only district
+# assignments from the main model, and validates with cell-level simulation
+# (district x age x sex x cause) at full size with a district random intercept.
+
+paper: c19-2026
+version: 13
+frozen: "2026-10-31"
+
+change_log:
+  - {version: 1, date: "2026-10-30", reason: "initial freeze", sinadef_outcome_data_accessed: false}
+  - {version: 2, date: "2026-10-31", reason: "Q1 review: ICD-10 groups, TIPO LUGAR mapping, completeness threshold, polygon sensitivity, OSM pilot", sinadef_outcome_data_accessed: false}
+  - {version: 3, date: "2026-10-31", reason: "real boundary layer: 21 districts without polygon (not 19)", sinadef_outcome_data_accessed: false}
+  - {version: 4, date: "2026-10-31", reason: "hospital audit rule (20 km gross cut, centroid sensitivity); 30 arcsec grid declared", sinadef_outcome_data_accessed: false}
+  - {version: 5, date: "2026-10-31", reason: "G1 post-hoc: 60 min main threshold, 120 secondary; G1 deviations declared; calibrated friction in RQ2; remote sample", sinadef_outcome_data_accessed: false}
+  - {version: 6, date: "2026-10-31", reason: "ML reinstated as subordinate correction (A) and robustness check (B), after G3; citations verified", sinadef_outcome_data_accessed: false}
+  - {version: 7, date: "2026-10-31", reason: "real SINADEF read at 03:31:55 UTC: 601,092 deaths 2022-2025, sha256 bb4058...; outcome data accessed", sinadef_outcome_data_accessed: true}
+  - {version: 8, date: "2026-10-31", reason: "estimator changed to GLM + district-cluster robust, declared after outcome access (03:31:55Z); GEE sensitivity pre-registered", sinadef_outcome_data_accessed: true}
+  - {version: 9, date: "2026-10-31", reason: "H3a on amenable causes only (v8 code used all causes); Callao crosswalk, excluded places and code-only rows fixed; cell-level simulation", sinadef_outcome_data_accessed: true}
+  - {version: 10, date: "2026-10-31", reason: "district altitude added once as the pre-registered RQ3 covariate after the region stage; result reported as is, no further variants", sinadef_outcome_data_accessed: true}
+  - {version: 11, date: "2026-10-31", reason: "ML B additionally evaluated on the H3a amenable population, declared after the all-causes B (reviewer request); both populations reported", sinadef_outcome_data_accessed: true}
+  - {version: 13, date: "2026-10-31", reason: "G4 human review: descriptive equity table of access by altitude band and Amazon basin added post hoc (no new inference); sex is not applicable to the district-level exposure and is reported as a limitation; headline uncertainty is reported as the variant range, not a bootstrap CI; policy statements rest on RQ1/RQ2 only (RQ3 is null)", sinadef_outcome_data_accessed: true}
+  - {version: 12, date: "2026-10-31", reason: "G4 panel declarations: H3b interaction gains the altitude covariate (bug); completeness-r-flag vs travel time and the code-only-assignment sensitivity are added to stage 08; stage 08 records the FP/coverage/GEE rule verdicts; stage 02 persists the OSM bootstrap CIs; stage 09 adds a three-state ML-B verdict and the calibrated person-weighted shares; walking_time variant waived (surface not downloaded) and grid_vs_centroid waived (covered by the OSM centroid pilot); M2 fidelity/Spearman thresholds, the 11-province exclusion and the min-located-public flag are waived (no departmental table reported); GEE on a 50k subsample and the 200-permutation placebo are declared", sinadef_outcome_data_accessed: true}
+
+access_thresholds:
+  main_minutes: 60
+  secondary_minutes: 120
+  secondary_caveat: >-
+    The friction surface is optimistic on long trips (median OSRM/friction 1.24
+    over 60 min) and agreement at 120 min is weak (kappa 0.36); 120 is reported
+    as a secondary threshold, never as an absolute statement.
+
+deviations_g1:
+  - "Amazon = five departments (proxy), not the HydroBASINS basin; the DEM and the basin arrive with the region stage."
+  - "The 200-centroid sample was stratified by friction-time quintiles, not by altitude (DEM not built yet)."
+  - "The 0.80 threshold was applied to the point estimate; its bootstrap CI crosses the threshold."
+
+questions:
+  RQ1: >-
+    Which districts have deficient access to a public complex hospital, in
+    minutes of travel time weighted by population?
+  RQ2: >-
+    How much does the ranking of worst access change when the access method
+    changes?
+  RQ3: >-
+    Is access associated with dying outside a health facility, adjusting for
+    age, sex and cause, with the gradient stronger for causes amenable to
+    hospital care?
+
+# --- Outcome O1 (SINADEF) ---------------------------------------------------
+outcome:
+  source: sinadef
+  unit: death
+  definition: "TIPO LUGAR != 'EESS' (death outside a health facility)"
+  place_mapping:
+    facility: ["EESS"]
+    outside: ["DOMICILIO", "VIA PUBLICA", "OTRO"]
+    excluded: ["", "SIN REGISTRO", "IGNORADO"]   # counted and reported
+    sensitivity: exclude_OTRO                    # "OTRO" is outside but unclassified
+  residence: "last six digits of COD# UBIGEO DOMICILIO"
+  period: [2022, 2025]
+  sensitivity_period: [2020, 2021]
+  model: glm_logit_department_fe_district_cluster
+  estimand: population_averaged_or
+  model_change_note: >-
+    Changed after the outcome data were first read (2026-10-31T03:31:55Z). The
+    exposure is district-level, so district-cluster robust SEs are the standard
+    correction (Cameron & Miller 2015; Liang & Zeger 1986); department fixed
+    effects avoid the random-effect/exposure correlation (Mundlak 1978); and the
+    500-replication simulation must fit the same estimator on 600k rows.
+  sensitivity_estimator: gee_exchangeable_district
+  sensitivity_criterion: "same sign and overlapping 95 % CI"
+  estimator_citations:
+    cameron_miller_2015: "10.3368/jhr.50.2.317"
+    liang_zeger_1986: "10.1093/biomet/73.1.13"
+    mundlak_1978: "10.2307/1913646"
+  covariates: [age_group, sex, cause_group, district_mean_altitude]
+  age_groups: [0-14, 15-44, 45-59, 60-74, 75+, unknown]
+  cause_groups:   # ICD-10 prefixes; checked on CAUSA A (CIE-X) first, then B..F
+    amenable_acute: ["I21", "I22", "I60", "I61", "I62", "I63", "I64",
+                     "O00", "O01", "O02", "O03", "O04", "O05", "O06", "O07",
+                     "O08", "O09", "O10", "O11", "O12", "O13", "O14", "O15",
+                     "O16", "O20", "O21", "O22", "O23", "O24", "O25", "O26",
+                     "O27", "O28", "O29", "O30", "O31", "O32", "O33", "O34",
+                     "O35", "O36", "O37", "O38", "O39", "O40", "O41", "O42",
+                     "O43", "O44", "O45", "O46", "O47", "O48", "O60", "O61",
+                     "O62", "O63", "O64", "O65", "O66", "O67", "O68", "O69",
+                     "O70", "O71", "O72", "O73", "O74", "O75", "O85", "O86",
+                     "O87", "O88", "O89", "O90", "O91", "O92", "O95", "O96",
+                     "O97", "O98", "O99"]
+    amenable_chronic: ["E10", "E11", "E12", "E13", "E14", "I10", "I11",
+                       "I12", "I13", "I15", "J40", "J41", "J42", "J43", "J44",
+                       "J45", "J46", "N18"]
+    external: ["V", "W", "X", "Y"]   # sensitivity only; not in the H3b contrast
+    cancer: ["C"]                    # negative control
+    other: all_remaining
+  hypotheses:
+    H3a: >-
+      Longer travel time means a higher odds of dying outside a facility among
+      amenable causes (acute + chronic), adjusting for age, sex and cause group.
+      Main population: districts resolved by name; code-only assignments are a
+      sensitivity. Other causes are reported as exploratory post hoc.
+    H3b: >-
+      The travel-time gradient is larger for amenable_acute than for
+      amenable_chronic (interaction tested); external causes are reported
+      separately and never enter the acute contrast.
+  negative_control: cancer
+  exclusions:
+    - deaths with missing or unknown district of residence, counted and reported
+    - deaths with an excluded TIPO LUGAR, counted and reported
+    - districts without a census row (UBIGEO 160109, 2 facilities), reported
+  completeness:
+    low_threshold: "deaths per 1,000 < 0.5 x department median"
+    exclude_low_completeness_districts: sensitivity
+    bias_flag_abs_r_with_travel_time: 0.30
+
+# --- M1 destinations --------------------------------------------------------
+destinations:
+  main:
+    institutions: [MINSA, GOBIERNO REGIONAL]
+    min_care_level: 5          # II-1 and above; supersedes "II-2" in decision 0001
+  variants:
+    - public_plus_essalud
+    - all_institutions
+    - all_plus_hospital_like_uncategorised
+  validation:
+    located_share_min: 0.90
+    point_in_polygon_min: 0.95
+    point_in_polygon_basis: >-
+      Evaluated after the declared exclusion of gross misplacements (a hospital
+      more than 20 km from its own district polygon); both the raw share and
+      the post-exclusion share are reported.
+    gross_misplacement_km: 20
+    gross_sensitivity: centroid_of_own_district
+    min_located_public_flag: 2
+
+# --- M2 population ----------------------------------------------------------
+population:
+  source: worldpop_peru_1km_2025
+  allocation: dasymetric_reallocated_to_census2025_district_totals
+  conservation_error: 0
+  fidelity_within_30pct_share_min: 0.90
+  spearman_vs_centroid_refute: 0.95
+  boundary_sensitivity:
+    census_districts_without_polygon: 21   # 19 created after 2017 + 2 older HDX gaps
+    provinces_with_splits: [Apurimac/Chincheros, Ayacucho/Huanta,
+                            Ayacucho/La Mar, Cusco/La Convencion,
+                            Huancavelica/Tayacaja, Junin/Chanchamayo,
+                            La Libertad/Trujillo, Loreto/Mariscal Ramon Castilla,
+                            Moquegua/Mariscal Nieto, San Martin/Tocache,
+                            Ucayali/Padre Abad]
+    method: >-
+      The 21 census districts without a polygon were split out of mother
+      districts whose old polygon still includes their territory, so the
+      mother's census total (which excludes them) is spread over too large an
+      area. The exact mothers cannot be resolved without the 2025 boundary
+      layer; the conservative substitute is to repeat the population-weighted
+      results excluding the 11 provinces that contain a post-2017 split.
+
+# --- M3 travel time ---------------------------------------------------------
+travel_time:
+  engine: malaria_atlas_friction_surface_motorized_2020
+  resolution_km: 1
+  physical_consistency:
+    time_ge_distance_over_max_speed: 1.00
+    hospital_pixel_minutes: 0
+  independent_check:
+    reference: osm_routing_osrm_cached
+    pilot_centroids: 20
+    full_centroids: 200
+    fallback_centroids: 50   # keeps the check affordable on Colab
+    run_full_if: "pilot completes in < 10 min and < 2 GB"
+    report_sample_size: true
+    remote_sample: {min_district_mean_minutes: 45, target: 150}
+    secondary_metrics: post_hoc_added_after_G1
+    spearman_min_outside_amazon: 0.80
+  city_pairs:
+    count: [6, 8]
+    mape_max: 0.30
+  refute_if:
+    spearman_outside_amazon: 0.80   # below this, switch main engine to OSM routing
+
+# --- M4 method sensitivity (RQ2) -------------------------------------------
+sensitivity:
+  variants:
+    - centroid_straight_line
+    - population_weighted_straight_line
+    - walking_time
+    - two_step_fca_60_120
+    - destination_sets
+    - grid_vs_centroid
+    - calibrated_friction   # time x OSRM/friction ratio by trip-length band (G1)
+  calibrated_friction: >-
+    Travel time multiplied by the OSRM/friction ratio measured on the G1 sample
+    by trip-length band; the share of districts that change class is reported.
+  robust_if:
+    spearman_min: 0.85
+    jaccard_top100_min: 0.60
+  refute_travel_time_if:
+    spearman: 0.95
+    kappa_deficient_60_120: 0.90
+  bootstrap_unit: district
+
+# --- M5 need ----------------------------------------------------------------
+need:
+  components: [share_60_plus, share_disability_5plus]
+  method: equal_weight_z_scores
+  stability_kendall_min: 0.80
+  priority_quadrant_membership_min: 0.80
+
+# --- M6 missing coordinates -------------------------------------------------
+missing_coordinates:
+  sensitivity: unlocated_hospitals_at_district_centroid
+  class_change_max: 0.05
+
+# --- M7 spatial statistics --------------------------------------------------
+spatial:
+  unit: district_polygons
+  permutations: 9999
+  fdr_q: 0.05
+  neighbourhoods: [queen, k4, k8]
+  stable_global_i: same_sign_and_significance_in_all
+  local_cluster_count_variation_max: 0.25
+
+# --- Known-truth simulation -------------------------------------------------
+simulation:
+  design: cells_district_age_sex_cause   # same fit, full size, district random intercept
+  null_replications: 500
+  false_positive_max: 0.07
+  planted_or_per_60min: [1.1, 1.2, 1.5]
+  bias_max: 0.10
+  ci_coverage: [0.92, 0.97]
+
+# --- M9 regions -------------------------------------------------------------
+regions:
+  altitude: copernicus_dem_glo30_district_mean
+  amazon: hydrobasins_amazon_basin_clipped_to_peru
+  categories: [amazon, non_amazon]   # no Costa/Sierra/Selva
+
+# --- Machine learning, subordinate roles (after G3, plan v6) -----------------
+machine_learning:
+  role: >-
+    A measurement correction and a robustness check. Neither substitutes the
+    statistical inference of RQ1-RQ3; both run after G3 and only if their
+    pre-registered criteria are met.
+  a_calibration:
+    target: "log(OSRM minutes / friction minutes) on the G1 routes"
+    models: [regularized_linear, isotonic_on_friction, gradient_boosting_monotone_only_if_better]
+    rule: "the simplest model that wins leave-one-department-out validation is used"
+    validation: leave_one_department_out
+    features: [district_altitude, amazon_flag, friction_band, log_friction_minutes, straight_line_km]
+    output: calibrated_min variant in RQ2
+    refuted_if: >-
+      no model beats the constant-ratio baseline on unseen departments (MAPE,
+      Spearman in remote districts, kappa at 60 and 120 min).
+  b_predictive:
+    model: HistGradientBoostingClassifier with a monotonic constraint on access time
+    features: [age_group, sex, cause_group, district_altitude, amazon_flag]
+    target: death_outside_a_health_facility
+    populations: >-
+      all causes (pre-registered, plan v6) and the H3a amenable
+      population (added once, plan v11, after the all-causes B ran);
+      both are reported.
+    validation: leave_one_department_out
+    metrics: [delta_brier_ci_bootstrap_by_district, permutation_of_access_within_department]
+    refuted_if: >-
+      the delta-Brier CI includes 0, or the access effect vanishes under the
+      within-department permutation.
+    notes: >-
+      Expected rows ~600k (deaths 2022-2025). Age and cause dominate; the effect
+      only needs to be distinguishable from zero. Access proxies rurality, so
+      altitude and the Amazon flag are controls.
+  citations:
+    roberts_2017: "10.1111/ecog.02881"
+    ploton_2020: "10.1038/s41467-020-18321-y"
+    niculescu_mizil_2005: "10.1145/1102351.1102430"
+    grinsztajn_2022: "arXiv:2207.08815"

@@ -2,10 +2,17 @@
 # Copyright (c) 2026 Jerremi Aron Chancan Labajos
 project: C19-2026-hospital
 design_version: "1.0"
-source:
-  file: "renipress.csv"
+# Raw files under data/raw/. Provenance, links and hashes: data/SOURCES.md.
+# colab.yaml's state_inputs must name the same files (a test checks it).
+# The access inputs (boundaries, worldpop, friction) are downloaded by Colab's
+# setup (experiments/_download_inputs.py) and live on Drive, not in the repo.
 data:
-  renipress: "renipress.csv"
-  censo: "censo-2017.csv"
+  renipress: "renipress_2026-10-30.csv"   # SUSALUD, datosabiertos.gob.pe, October 2026 edition
+  census: "censo-2025-distrital.csv"       # INEI Censos Nacionales 2025, built by census2025_prepare.py
+  boundaries: "per_admin_boundaries.shp.zip"                 # OCHA COD-AB Peru, Admin 3
+  worldpop: "per_pop_2025_CN_1km_R2025A_UA_v1.tif"           # WorldPop 2025, 1 km, CC BY 4.0
+  friction: "2020_motorized_friction_surface.zip"            # Malaria Atlas Project, CC BY 4.0
+  sinadef: "TB_SINADEF_2026-10-30.csv"                       # MINSA SINADEF daily table, ODC-By
+  hydrobasins: "hybas_sa_lev01-12_v1c.zip"                   # HydroSHEDS, Amazon basin flag
 seeds:
   master: 42

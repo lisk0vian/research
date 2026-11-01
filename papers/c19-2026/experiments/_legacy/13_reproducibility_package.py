@@ -7,6 +7,15 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 from _common import *
+from _deps import *
+globals().update(load_run_state())
+
+import platform
+import subprocess
+import tracemalloc
+
+tiempo_inicio_global = time.time()
+n_duplicados_originales = N_ANTES_DEDUP - N_DESPUES_DEDUP
 
 _ld = load_df_activos()
 if _ld is not None:
@@ -80,7 +89,7 @@ tabla1_dict = {
     "Coordenadas geográficas válidas": N_COORDS_VALIDAS,
     "Coordenadas geográficas inválidas": N_COORDS_INVALIDAS,
     "Departamentos representados": int(cobertura_dptos) if not pd.isna(cobertura_dptos) else "N/D",
-    "Distritos únicos (UBIGEO)": df_activos['UBIGEO'].nunique(),
+    "Distritos únicos (ubigeo)": df_activos['ubigeo'].nunique(),
     "Muestra final de análisis (n)": N_FINAL_ANALISIS,
     "Prevalencia del target VULNERABLE (%)": round(df_activos['VULNERABLE'].mean()*100, 2),
     "Variables predictoras utilizadas": len(FEATURES),
@@ -92,30 +101,30 @@ df_tabla1.to_csv(os.path.join(DIR_SALIDA, "30_tablas_dataset/tabla1_resumen_data
 REGISTRO_TABLAS.append(("Tabla 1 — Resumen del dataset", df_tabla1))
 
 tabla_variables = pd.DataFrame([
-    {"Variable": "NIVEL", "Tipo": "Ordinal (1-8)", "Fuente": "RENIPRESS (CATEGORIA mapeada)", "Uso": "Predictor — resolutividad del EESS"},
-    {"Variable": "poblacion_total", "Tipo": "Numérica continua", "Fuente": "INEI Censo 2017", "Uso": "Predictor — demanda poblacional"},
-    {"Variable": "tasa_vulnerabilidad_regional", "Tipo": "Numérica continua", "Fuente": "Derivada (RENIPRESS + INEI)", "Uso": "Predictor — contexto regional"},
-    {"Variable": "ratio_adulto_mayor", "Tipo": "Numérica continua (proporción)", "Fuente": "Derivada (INEI)", "Uso": "Predictor — vulnerabilidad etaria"},
-    {"Variable": "dist_km_hosp_complejo", "Tipo": "Numérica continua", "Fuente": "Derivada (geoespacial, NearestNeighbors)", "Uso": "Insumo del índice INVS (Dim1)"},
-    {"Variable": "ANOMALIA_ESPACIAL", "Tipo": "Binaria", "Fuente": "Derivada (IsolationForest+LOF+DBSCAN)", "Uso": "Insumo del índice INVS (Dim6) y del target"},
+    {"Variable": "care_level", "Tipo": "Ordinal (1-8)", "Fuente": "RENIPRESS (category mapeada)", "Uso": "Predictor — resolutividad del EESS"},
+    {"Variable": "population_total", "Tipo": "Numérica continua", "Fuente": "INEI Censo 2025", "Uso": "Predictor — demanda poblacional"},
+    {"Variable": "region_pop_ratio", "Tipo": "Numérica continua", "Fuente": "Derivada (RENIPRESS + INEI)", "Uso": "Predictor — contexto regional"},
+    {"Variable": "share_60_plus", "Tipo": "Numérica continua (proporción)", "Fuente": "Derivada (INEI)", "Uso": "Predictor — vulnerabilidad etaria"},
+    {"Variable": "dist_km_complex_hospital", "Tipo": "Numérica continua", "Fuente": "Derivada (geoespacial, NearestNeighbors)", "Uso": "Insumo del índice INVS (Dim1)"},
+    {"Variable": "spatial_anomaly", "Tipo": "Binaria", "Fuente": "Derivada (IsolationForest+LOF+DBSCAN)", "Uso": "Insumo del índice INVS (Dim6) y del target"},
     {"Variable": "INVS", "Tipo": "Numérica continua (0-1)", "Fuente": "Derivada (PCA sobre 6 dimensiones)", "Uso": "Índice compuesto de vulnerabilidad"},
     {"Variable": "VULNERABLE", "Tipo": "Binaria", "Fuente": "Derivada (regla de consenso de expertos)", "Uso": "Variable objetivo (target) del clasificador"},
-    {"Variable": "REGION_NATURAL", "Tipo": "Categórica (Costa/Sierra/Selva)", "Fuente": "Mapeo manual por departamento", "Uso": "Grupo de validación de generalización geográfica (LORO)"},
-    {"Variable": "DEPARTAMENTO_NORM", "Tipo": "Categórica", "Fuente": "RENIPRESS (normalizada)", "Uso": "Grupo de validación (GroupKFold/LODO)"},
+    {"Variable": "natural_region", "Tipo": "Categórica (Costa/Sierra/Selva)", "Fuente": "Mapeo manual por departamento", "Uso": "Grupo de validación de generalización geográfica (LORO)"},
+    {"Variable": "department_norm", "Tipo": "Categórica", "Fuente": "RENIPRESS (normalizada)", "Uso": "Grupo de validación (GroupKFold/LODO)"},
 ])
 print("\n" + tabla_variables.to_string(index=False))
 tabla_variables.to_csv(os.path.join(DIR_SALIDA, "30_tablas_dataset/tabla_variables.csv"), index=False)
 REGISTRO_TABLAS.append(("Tabla de variables del estudio", tabla_variables))
 
 # =============================================================================
-# 15bis. RECONCILIACIÓN DEL CONTEO DE DISTRITOS (UBIGEO) ENTRE FUENTES  [NUEVO v21]
+# 15bis. RECONCILIACIÓN DEL CONTEO DE DISTRITOS (ubigeo) ENTRE FUENTES  [NUEVO v21]
 # =============================================================================
 
-print("\n" + "="*80 + "\n[🗺️ BLOQUE 15bis: RECONCILIACIÓN DEL CONTEO DE DISTRITOS (UBIGEO) ENTRE FUENTES]\n" + "="*80)
+print("\n" + "="*80 + "\n[🗺️ BLOQUE 15bis: RECONCILIACIÓN DEL CONTEO DE DISTRITOS (ubigeo) ENTRE FUENTES]\n" + "="*80)
 t15b = time.time()
-ubigeos_renipress_crudo = set(df['UBIGEO'].dropna().unique())
-ubigeos_renipress_activos = set(df_activos['UBIGEO'].dropna().unique())
-ubigeos_inei_distrital = set(df_inei_dist['UBIGEO'].dropna().unique())
+ubigeos_renipress_crudo = set(df['ubigeo'].dropna().unique())
+ubigeos_renipress_activos = set(df_activos['ubigeo'].dropna().unique())
+ubigeos_inei_distrital = set(df_census['ubigeo'].dropna().unique())
 ubigeos_interseccion = ubigeos_renipress_activos & ubigeos_inei_distrital
 ubigeos_renipress_sin_inei = ubigeos_renipress_activos - ubigeos_inei_distrital
 ubigeos_inei_sin_renipress = ubigeos_inei_distrital - ubigeos_renipress_activos
@@ -123,11 +132,11 @@ ubigeos_inei_sin_renipress = ubigeos_inei_distrital - ubigeos_renipress_activos
 df_reconciliacion_distritos = pd.DataFrame([
     {"Fuente": "RENIPRESS (crudo, todos los estados)", "N_distritos_UBIGEO_unicos": len(ubigeos_renipress_crudo)},
     {"Fuente": "RENIPRESS (solo establecimientos ACTIVOS)", "N_distritos_UBIGEO_unicos": len(ubigeos_renipress_activos)},
-    {"Fuente": "INEI Censo 2017 (nivel DISTRITAL)", "N_distritos_UBIGEO_unicos": len(ubigeos_inei_distrital)},
+    {"Fuente": "INEI Censo 2025 (nivel DISTRITAL)", "N_distritos_UBIGEO_unicos": len(ubigeos_inei_distrital)},
     {"Fuente": "Intersección RENIPRESS(activos) ∩ INEI(distrital)", "N_distritos_UBIGEO_unicos": len(ubigeos_interseccion)},
     {"Fuente": "Distritos con EESS activo pero SIN dato censal INEI", "N_distritos_UBIGEO_unicos": len(ubigeos_renipress_sin_inei)},
     {"Fuente": "Distritos con dato censal INEI pero SIN EESS activo en RENIPRESS", "N_distritos_UBIGEO_unicos": len(ubigeos_inei_sin_renipress)},
-    {"Fuente": "Distritos únicos en la muestra final de análisis (df_activos)", "N_distritos_UBIGEO_unicos": df_activos['UBIGEO'].nunique()},
+    {"Fuente": "Distritos únicos en la muestra final de análisis (df_activos)", "N_distritos_UBIGEO_unicos": df_activos['ubigeo'].nunique()},
 ])
 print(df_reconciliacion_distritos.to_string(index=False))
 print("\n  💡 La cifra reportada en el manuscrito como 'número de distritos analizados' DEBE corresponder a la")
@@ -173,7 +182,7 @@ info_entorno = {
     "Semillas_utilizadas": SEEDS,
     "Hardware": info_hardware,
     "Hash_SHA256_RENIPRESS": hash_renipress,
-    "Hash_SHA256_INEI": hash_inei,
+    "Hash_SHA256_INEI": hash_census,
 }
 with open(os.path.join(DIR_SALIDA, "18_reproducibilidad/environment_info.json"), "w") as f:
     json.dump(info_entorno, f, indent=4, default=str)
@@ -327,10 +336,10 @@ económica sobre la base metodológica ya validada en v20.
 
 ## Dataset
 - **RENIPRESS**: {N_FILAS_CRUDAS_RENIPRESS:,} registros crudos → {N_FINAL_ANALISIS:,} registros tras limpieza y fusión.
-- **INEI Censo 2017**: información poblacional distrital.
+- **INEI Censo 2025**: información poblacional distrital.
 - Hash SHA256 RENIPRESS: `{hash_renipress}`
-- Hash SHA256 INEI: `{hash_inei}`
-- Distritos únicos en la muestra final de análisis: **{df_activos['UBIGEO'].nunique():,}** (ver reconciliación completa en `44_reconciliacion_distritos/`).
+- Hash SHA256 INEI: `{hash_census}`
+- Distritos únicos en la muestra final de análisis: **{df_activos['ubigeo'].nunique():,}** (ver reconciliación completa en `44_reconciliacion_distritos/`).
 
 ## Ejecución
 1. Ejecutar el script principal en Google Colab (requiere montar Google Drive).
@@ -497,33 +506,10 @@ print("[📝 RESUMEN FINAL: TABLAS Y FIGURAS REGISTRADAS PARA EL INFORME]")
 print(f"  📊 Tablas registradas: {len(REGISTRO_TABLAS)} | 🖼️ Figuras registradas: {len(REGISTRO_FIGURAS)}")
 print("="*80)
 
-shutil.make_archive(DIR_SALIDA.rstrip('/'), 'zip', DIR_SALIDA)
-log("Pipeline v21 finalizado correctamente. ZIP completo generado.")
-
-# =============================================================================
-# 23. DESCARGA AUTOMÁTICA DE LOS ZIP AL PC DEL USUARIO
-# =============================================================================
-
-print("\n" + "="*80 + "\n[⬇️ BLOQUE 23: DESCARGA AUTOMÁTICA DE RESULTADOS COMPRIMIDOS AL EQUIPO LOCAL]\n" + "="*80)
-RUTA_ZIP_COMPLETO = DIR_SALIDA.rstrip('/') + ".zip"
-RUTA_ZIP_DOI = DIR_DOI.rstrip('/') + ".zip"
-
-try:
-    from google.colab import files as colab_files
-    print(f"  📦 Preparando descarga: {RUTA_ZIP_COMPLETO}")
-    colab_files.download(RUTA_ZIP_COMPLETO)
-    print(f"  📦 Preparando descarga: {RUTA_ZIP_DOI}")
-    colab_files.download(RUTA_ZIP_DOI)
-    print("  ✅ Descarga automática iniciada — revisa la carpeta de descargas de tu navegador/PC.")
-    print("     (Si el navegador bloqueó descargas múltiples, autoriza 'múltiples archivos' y vuelve a ejecutar este bloque.)")
-except Exception as e:
-    print(f"  ⚠️ No se pudo iniciar la descarga automática (entorno sin soporte de google.colab.files): {e}")
-    print(f"     Los ZIP ya están disponibles manualmente en Google Drive en:")
-    print(f"       • {RUTA_ZIP_COMPLETO}")
-    print(f"       • {RUTA_ZIP_DOI}")
+log(f"Paquete DOI listo: {DIR_DOI}.zip")
 
 print("\n" + "=" * 95)
-print("✅ PIPELINE COMPLETO V21 Q1 ULTRA PRODUCIDO — 25 MEJORAS v20 + 9 MEJORAS METODOLÓGICAS v21 ATENDIDAS")
+print("✅ PIPELINE COMPLETO V21 Q1 ULTRA PRODUCIDO")
 print("=" * 95)
 
 

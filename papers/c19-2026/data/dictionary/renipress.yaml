@@ -1,0 +1,515 @@
+dataset: renipress
+title: Registro Nacional de Entidades Prestadoras de Servicios de Salud (RENIPRESS)
+publisher: Superintendencia Nacional de Salud (SUSALUD), via Plataforma Nacional de Datos Abiertos
+dataset_url: https://www.datosabiertos.gob.pe/dataset/registro-nacional-de-entidades-prestadoras-de-servicios-de-salud-renipress
+file_url: https://www.datosabiertos.gob.pe/sites/default/files/RENIPRESS_30-10-2026.csv
+official_dictionary_url: https://www.datosabiertos.gob.pe/sites/default/files/Diccionario%20de%20datos%20RENIPRESS.pdf
+edition: October 2026 (monthly editions are published; April to October 2026 were available)
+retrieved: '2026-10-30'
+license: Open Data Commons Attribution License (ODC-By), http://opendefinition.org/licenses/odc-by/
+format: CSV, separator ';', UTF-8 with BOM
+unit: One row per registered facility (IPRESS), all statuses.
+sha256: 0c8f51e57d56ae83c03a3e3b8a52cc3f781c1b8a67b23f7270a1ec26c8b3269d
+rows: 36246
+rows_active: 27017
+notes:
+- 'The official data dictionary (PDF) is out of date: it uses other column names (CODIGO_IPRESS, CATEGORIA_IPRESS,
+  LONGITUD_NORTE, ...) and its descriptions are shifted by one row. The names and meanings in this dictionary
+  were checked against the file itself.'
+- The official dictionary describes NORTE as longitude and ESTE as latitude; the values show the opposite
+  (NORTE holds latitudes).
+raw_path: data/raw/renipress_2026-10-30.csv
+key: ubigeo (district) and facility_code (facility)
+category_to_care_level:
+  I-1: 1
+  I-2: 2
+  I-3: 3
+  I-4: 4
+  II-1: 5
+  II-E: 5
+  II-2: 6
+  III-1: 7
+  III-E: 7
+  III-2: 8
+  '0': 0
+care_level_meaning:
+  '0': 'no category: laboratories, imaging, dialysis, ambulances, doctors'' offices, a few facilities
+    pending categorisation'
+  1-4: primary care (I-1 to I-4)
+  5-6: secondary care (II-1, II-E, II-2)
+  7-8: tertiary care (III-1, III-E, III-2)
+columns:
+- name: institution
+  original_name: INSTITUCION
+  dtype: string
+  role: attribute
+  description: Institution that operates the facility (PRIVADO, GOBIERNO REGIONAL, MINSA, ESSALUD, OTRO,
+    the armed-forces and police health services, municipalities, INPE).
+  notes: 12 distinct values.
+  profile:
+    non_missing_pct: 100.0
+    n_distinct: 12
+    value_counts:
+      PRIVADO: 25342
+      GOBIERNO REGIONAL: 8890
+      MINSA: 581
+      ESSALUD: 495
+      OTRO: 256
+      SANIDAD DEL EJERCITO DEL PERU: 203
+      SANIDAD DE LA POLICIA NACIONAL DEL PERU: 167
+      SANIDAD DE LA MARINA DE GUERRA DEL PERU: 90
+      MUNICIPALIDAD PROVINCIAL: 70
+      INPE: 61
+      MUNICIPALIDAD DISTRITAL: 53
+      SANIDAD DE LA FUERZA AEREA DEL PERU: 38
+- name: facility_code
+  original_name: COD_IPRESS
+  dtype: string
+  role: id
+  description: Eight-digit RENIPRESS registration code of the facility.
+  notes: 'Keep as text: it has leading zeros. Unique per row.'
+  profile:
+    non_missing_pct: 100.0
+    n_distinct: 36246
+    examples:
+    - 00002806
+    - 00002807
+    - 00002808
+- name: name
+  original_name: NOMBRE
+  dtype: string
+  role: attribute
+  description: Name of the facility as registered.
+  notes: Free text.
+  profile:
+    non_missing_pct: 99.9
+    n_distinct: 31780
+    examples:
+    - LA NOVIA
+    - SANTA MARIA
+    - P.S. CAMBRUNE
+- name: classification
+  original_name: CLASIFICACION
+  dtype: string
+  role: attribute
+  description: Classification of the facility in the RENIPRESS typology (health post, health centre, polyclinic,
+    hospital or clinic, laboratory, imaging, dialysis, ...).
+  notes: About 150 distinct values. Support services can carry several classifications joined by commas.
+  profile:
+    non_missing_pct: 99.8
+    n_distinct: 150
+    examples:
+    - PUESTOS DE SALUD O POSTAS DE SALUD
+    - CENTROS DE SALUD O CENTROS MEDICOS
+    - POLICLINICOS
+- name: facility_type
+  original_name: TIPO_ESTABLECIMIENTO
+  dtype: string
+  role: attribute
+  description: Whether the facility is an establishment with or without inpatient beds, a medical support
+    service, a flexible offer or a therapeutic community.
+  notes: 'Five values: ESTABLECIMIENTO DE SALUD SIN INTERNAMIENTO, ESTABLECIMIENTO DE SALUD CON INTERNAMIENTO,
+    SERVICIO MÉDICO DE APOYO, OFERTA FLEXIBLE, COMUNIDADES TERAPÉUTICAS.'
+  profile:
+    non_missing_pct: 100.0
+    n_distinct: 5
+    value_counts:
+      ESTABLECIMIENTO DE SALUD SIN INTERNAMIENTO: 30474
+      SERVICIO MÉDICO DE APOYO: 4285
+      ESTABLECIMIENTO DE SALUD CON INTERNAMIENTO: 1432
+      OFERTA FLEXIBLE: 42
+      COMUNIDADES TERAPÉUTICAS: 13
+- name: department
+  original_name: DEPARTAMENTO
+  dtype: string
+  role: geography
+  description: Department of the facility, as published (uppercase, no accents).
+  notes: 25 values; Callao is a department and Lima is a single department (no Lima Metropolitana split).
+  profile:
+    non_missing_pct: 100.0
+    n_distinct: 25
+    value_counts:
+      LIMA: 14359
+      PIURA: 1895
+      CAJAMARCA: 1790
+      AREQUIPA: 1688
+      CUSCO: 1582
+      CALLAO: 1475
+      JUNIN: 1439
+      LORETO: 1054
+      LA LIBERTAD: 1036
+      LAMBAYEQUE: 1007
+      SAN MARTIN: 948
+      PUNO: 877
+      AMAZONAS: 796
+      AYACUCHO: 794
+      APURIMAC: 761
+      ANCASH: 725
+      TACNA: 690
+      ICA: 688
+      HUANUCO: 576
+      HUANCAVELICA: 542
+      MADRE DE DIOS: 388
+      UCAYALI: 386
+      PASCO: 381
+      MOQUEGUA: 205
+      TUMBES: 164
+- name: province
+  original_name: PROVINCIA
+  dtype: string
+  role: geography
+  description: Province of the facility, as published.
+  notes: ''
+  profile:
+    non_missing_pct: 100.0
+    n_distinct: 197
+    examples:
+    - TAHUAMANU
+    - MARISCAL NIETO
+    - TAYACAJA
+- name: district
+  original_name: DISTRITO
+  dtype: string
+  role: geography
+  description: District of the facility, as published.
+  notes: District names repeat across provinces; use ubigeo to identify a district.
+  profile:
+    non_missing_pct: 100.0
+    n_distinct: 1735
+    examples:
+    - TAHUAMANU
+    - CARUMAS
+    - CUCHUMBAYA
+- name: ubigeo
+  original_name: UBIGEO
+  dtype: string
+  role: geography
+  description: 'Six-digit INEI district code: two digits of department, two of province, two of district.'
+  notes: Join key with the census. Keep as text. The ETL pads to six digits.
+  profile:
+    non_missing_pct: 100.0
+    n_distinct: 1891
+    examples:
+    - '170303'
+    - '180102'
+    - '180103'
+- name: address
+  original_name: DIRECCION
+  dtype: string
+  role: contact
+  description: Street address of the facility.
+  notes: Free text, not normalised.
+  profile:
+    non_missing_pct: 100.0
+    n_distinct: 27620
+- name: disa_code
+  original_name: CO_DISA
+  dtype: string
+  role: organisation
+  description: Code of the Dirección de Salud (DISA/DIRESA) the facility belongs to.
+  notes: Stored as a float-looking string such as '25.0'. Present for about 75 % of rows.
+  profile:
+    non_missing_pct: 74.5
+    n_distinct: 29
+    value_counts:
+      '36.0': 4073
+      '23.0': 1951
+      '35.0': 1912
+      '7.0': 1497
+      '28.0': 1488
+      '4.0': 1302
+      '11.0': 1199
+      '17.0': 1117
+      '21.0': 1018
+      '22.0': 909
+      '8.0': 886
+      '24.0': 838
+      '18.0': 782
+      '30.0': 777
+      '29.0': 735
+      '5.0': 687
+      '1.0': 686
+      '19.0': 679
+      '3.0': 676
+      '2.0': 620
+      '15.0': 530
+      '32.0': 510
+      '13.0': 497
+      '14.0': 482
+      '27.0': 327
+      '34.0': 325
+      '25.0': 256
+      '26.0': 140
+      '33.0': 118
+- name: network_code
+  original_name: COD_RED
+  dtype: string
+  role: organisation
+  description: Code of the health network (Red de Salud).
+  notes: Same float-looking format. About 73 % present.
+  profile:
+    non_missing_pct: 72.7
+    n_distinct: 163
+    examples:
+    - '137.0'
+    - '138.0'
+    - '59.0'
+- name: microred_code
+  original_name: COD_MICRORRED
+  dtype: string
+  role: organisation
+  description: Code of the micro-network (Microred).
+  notes: Same float-looking format. About 77 % present.
+  profile:
+    non_missing_pct: 76.7
+    n_distinct: 925
+    examples:
+    - '915.0'
+    - '918.0'
+    - '444.0'
+- name: disa
+  original_name: DISA
+  dtype: string
+  role: organisation
+  description: Name of the DISA/DIRESA.
+  notes: ''
+  profile:
+    non_missing_pct: 74.5
+    n_distinct: 29
+    value_counts:
+      LIMA CENTRO: 4073
+      LIMA SUR: 1951
+      LIMA NORTE: 1912
+      CAJAMARCA: 1497
+      PIURA: 1488
+      AREQUIPA: 1302
+      CUSCO: 1199
+      JUNIN: 1117
+      LIMA ESTE: 1018
+      LIMA: 909
+      CALLAO: 886
+      LORETO: 838
+      LA LIBERTAD: 782
+      SAN MARTIN: 777
+      PUNO: 735
+      AYACUCHO: 687
+      AMAZONAS: 686
+      LAMBAYEQUE: 679
+      APURIMAC: 676
+      ANCASH: 620
+      ICA: 530
+      TACNA: 510
+      HUANCAVELICA: 497
+      HUANUCO: 482
+      PASCO: 327
+      UCAYALI: 325
+      MADRE DE DIOS: 256
+      MOQUEGUA: 140
+      TUMBES: 118
+- name: network
+  original_name: RED
+  dtype: string
+  role: organisation
+  description: Name of the health network.
+  notes: ''
+  profile:
+    non_missing_pct: 72.7
+    n_distinct: 162
+    examples:
+    - MADRE DE DIOS
+    - MOQUEGUA
+    - TAYACAJA
+- name: microred
+  original_name: MICRORED
+  dtype: string
+  role: organisation
+  description: Name of the micro-network.
+  notes: ''
+  profile:
+    non_missing_pct: 76.7
+    n_distinct: 877
+    examples:
+    - IBERIA
+    - CARUMAS
+    - ACRAQUIA
+- name: executing_unit_code
+  original_name: COD_UE
+  dtype: string
+  role: organisation
+  description: Code of the budget executing unit (unidad ejecutora).
+  notes: Present for about 26 % of rows.
+  profile:
+    non_missing_pct: 25.9
+    n_distinct: 245
+    examples:
+    - '879.0'
+    - '884.0'
+    - '1645.0'
+- name: executing_unit
+  original_name: UNIDAD_EJECUTORA
+  dtype: string
+  role: organisation
+  description: Name of the budget executing unit.
+  notes: ''
+  profile:
+    non_missing_pct: 25.9
+    n_distinct: 245
+    examples:
+    - SALUD MADRE DE DIOS
+    - SALUD MOQUEGUA
+    - RED DE SALUD TAYACAJA
+- name: category
+  original_name: CATEGORIA
+  dtype: string
+  role: attribute
+  description: 'MINSA category of the facility: I-1 to I-4 (primary), II-1, II-2, II-E (secondary), III-1,
+    III-2, III-E (tertiary). ''0'' means the facility has no category.'
+  notes: '''0'' is not a level. It marks laboratories, imaging, dialysis, ambulances, doctors'' offices
+    and a few facilities pending categorisation. See care_level.'
+  profile:
+    non_missing_pct: 100.0
+    n_distinct: 11
+    value_counts:
+      I-1: 11861
+      '0': 8589
+      I-2: 8585
+      I-3: 5931
+      I-4: 499
+      II-E: 354
+      II-1: 275
+      II-2: 90
+      III-1: 35
+      III-2: 17
+      III-E: 10
+- name: phone
+  original_name: TELEFONO
+  dtype: string
+  role: contact
+  description: Phone number of the facility.
+  notes: Personal-contact data; not used in any analysis.
+  profile:
+    non_missing_pct: 99.7
+    n_distinct: 30978
+- name: schedule
+  original_name: HORARIO
+  dtype: string
+  role: contact
+  description: Opening hours as free text (for example '7:00 - 19:00').
+  notes: Not normalised; about 8,600 distinct spellings.
+  profile:
+    non_missing_pct: 100.0
+    n_distinct: 8647
+- name: activity_start
+  original_name: INICIO_ACTIVIDAD
+  dtype: string
+  role: attribute
+  description: Date the facility started operating.
+  notes: Format 'YYYY-MM-DD HH:MM:SS' in the October 2026 edition. The official dictionary says ddmmyyyy
+    and the March 2026 cut used mm/dd/yyyy; parse explicitly before use.
+  profile:
+    non_missing_pct: 100.0
+    n_distinct: 10637
+    examples:
+    - '1995-01-01 00:00:00'
+    - '1995-05-01 00:00:00'
+    - '1963-10-21 00:00:00'
+- name: status
+  original_name: ESTADO
+  dtype: string
+  role: attribute
+  description: 'Registration status: ACTIVO, CIERRE TEMPORAL DE OFICIO, CIERRE TEMPORAL DE PARTE, BAJA
+    PROVISIONAL, BAJA PROVISIONAL DE OFICIO, BAJA DEFINITIVA, BAJA DEFINITIVA DE OFICIO.'
+  notes: Only ACTIVO is analysed.
+  profile:
+    non_missing_pct: 100.0
+    n_distinct: 7
+    value_counts:
+      ACTIVO: 27017
+      CIERRE TEMPORAL DE OFICIO: 4428
+      BAJA DEFINITIVA: 3486
+      BAJA PROVISIONAL: 943
+      BAJA DEFINITIVA DE OFICIO: 202
+      BAJA PROVISIONAL DE OFICIO: 142
+      CIERRE TEMPORAL DE PARTE: 28
+- name: lat_raw
+  original_name: NORTE
+  dtype: float
+  role: geography
+  description: Latitude in decimal degrees (negative in Peru), as published.
+  notes: Despite the name NORTE, and despite the official dictionary describing it as longitude, the values
+    are latitudes (about -18.3 to 0). Missing for about 36 % of rows; 0.0 is a placeholder. A comma decimal
+    separator can occur. See lat.
+  profile:
+    non_missing_pct: 63.6
+    n_distinct: 20823
+    examples:
+    - '-11.8671856'
+    - '-11.89472628'
+    - '-16.82438155'
+- name: lon_raw
+  original_name: ESTE
+  dtype: float
+  role: geography
+  description: Longitude in decimal degrees (negative in Peru), as published.
+  notes: Despite the name ESTE, the values are longitudes (about -81.3 to -68.6). See lon.
+  profile:
+    non_missing_pct: 63.6
+    n_distinct: 20814
+    examples:
+    - '-69.13774377'
+    - '-69.00601556'
+    - '-70.67862772'
+- name: image_url_1
+  original_name: IMAGEN_1
+  dtype: string
+  role: media
+  description: URL of the first facility photograph.
+  notes: Not used.
+  profile:
+    non_missing_pct: 63.7
+    n_distinct: 23068
+- name: image_date_1
+  original_name: FE_ACT_IMAGEN_1
+  dtype: string
+  role: media
+  description: Registration date of the first photograph.
+  notes: Not used. About 5 % present.
+  profile:
+    non_missing_pct: 5.1
+    n_distinct: 1029
+- name: image_url_2
+  original_name: IMAGEN_2
+  dtype: string
+  role: media
+  description: URL of the second facility photograph.
+  notes: Not used.
+  profile:
+    non_missing_pct: 51.7
+    n_distinct: 18735
+- name: image_date_2
+  original_name: FE_ACT_IMAGEN_2
+  dtype: string
+  role: media
+  description: Registration date of the second photograph.
+  notes: Not used.
+  profile:
+    non_missing_pct: 5.1
+    n_distinct: 1029
+- name: image_url_3
+  original_name: IMAGEN_3
+  dtype: string
+  role: media
+  description: URL of the third facility photograph.
+  notes: Not used.
+  profile:
+    non_missing_pct: 47.9
+    n_distinct: 17345
+- name: image_date_3
+  original_name: FE_ACT_IMAGEN_3
+  dtype: string
+  role: media
+  description: Registration date of the third photograph.
+  notes: Not used.
+  profile:
+    non_missing_pct: 5.1
+    n_distinct: 1029

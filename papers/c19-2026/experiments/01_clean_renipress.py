@@ -7,11 +7,12 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 from _common import *
+from _deps import *
 
 print("\n" + "="*80 + "\n[🧪 BLOQUE 0bis: DATA QUALITY ASSESSMENT — MISSINGNESS / DUPLICADOS / OUTLIERS / COBERTURA]\n" + "="*80)
 t0 = time.time()
 reporte_calidad = []
-for col in ['UBIGEO', 'DEPARTAMENTO', 'ESTADO', 'CATEGORIA', 'NORTE', 'ESTE']:
+for col in ['ubigeo', 'department', 'status', 'category', 'lat_raw', 'lon_raw']:
     if col in df.columns:
         faltantes = df[col].isna().mean() * 100
         reporte_calidad.append({"Variable": col, "Faltantes_%": round(faltantes, 2)})
@@ -27,13 +28,13 @@ def outliers_iqr(serie):
     return ((serie < lim_inf) | (serie > lim_sup)).mean() * 100
 
 outliers_resumen = []
-for col_num in ['NORTE', 'ESTE']:
+for col_num in ['lat_raw', 'lon_raw']:
     serie_num = pd.to_numeric(df[col_num].astype(str).str.replace(',', '.', regex=False), errors='coerce').dropna()
     pct_out = outliers_iqr(serie_num)
     print(f"  📌 Outliers IQR en {col_num}: {pct_out:.2f}%")
     outliers_resumen.append({"Variable": col_num, "Outliers_IQR_%": round(pct_out, 2)})
 
-cobertura_dptos = df['DEPARTAMENTO'].nunique() if 'DEPARTAMENTO' in df.columns else np.nan
+cobertura_dptos = df['department'].nunique() if 'department' in df.columns else np.nan
 print(f"  🗺️ Cobertura geográfica: {cobertura_dptos} departamentos representados en RENIPRESS")
 df_calidad.to_csv(os.path.join(DIR_SALIDA, "21_calidad_datos/data_quality_report.csv"), index=False)
 pd.DataFrame(outliers_resumen).to_csv(os.path.join(DIR_SALIDA, "21_calidad_datos/outliers_iqr.csv"), index=False)
@@ -48,5 +49,6 @@ try:
     save_df_activos()
 except Exception as e:
     print("persist failed:", e)
+save_run_state(cobertura_dptos=cobertura_dptos)
 
 print("Stage 01_clean_renipress done.")

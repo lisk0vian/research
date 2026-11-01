@@ -47,7 +47,7 @@ NOTEBOOK_MIME = "application/x-ipynb+json"
 # Files that go to Drive/<folder>/code/, mirrored into /content by the notebook.
 CODE_SUFFIXES = {".py", ".yaml", ".yml", ".txt", ".md", ".jsonc", ".json"}
 EXCLUDED_NAMES = {".env", ".env.example", ".sync_history.json", "AGENTS.md", "CLAUDE.md"}
-EXCLUDED_PARTS = {"__pycache__", ".ipynb_checkpoints", ".git"}
+EXCLUDED_PARTS = {"__pycache__", ".ipynb_checkpoints", ".git", "_legacy"}
 SKIP_PREFIXES = (".env", ".gitignore", "opencode.jsonc")
 
 NB_REMOTE_NAME = "experiments.ipynb"

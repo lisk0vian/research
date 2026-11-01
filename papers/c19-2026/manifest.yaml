@@ -5,7 +5,7 @@
 # data: it references authors/<id>.yaml by id only.
 
 paper: c19-2026
-title: "National Health Vulnerability Index (INVS): Identifying Medical Deserts and Prioritizing Hospital Infrastructure in Peru"
+title: "Travel time to public complex hospitals in Peru: district-level measurement, sensitivity to method, and the association with dying outside a health facility (2022–2025)"   # working title, pending the researcher's decision
 
 # --- Editorial target ---
 journal: applied-geography          # must exist under templates/journals/<journal>/
@@ -27,9 +27,54 @@ authors:
 # so paper-refs and the reviewers can audit that nothing was fabricated.
 claims:
   - id: claim-1
-    text: "EXAMPLE: The model reaches F1 = 0.469 on the 2025 test set."
-    source: "experiments/exp-01/results/metrics.json"   # where the number comes from
-    status: draft                                        # draft | verified | stale
+    text: "National population-weighted (grid-cell) mean travel time to the nearest public complex hospital (MINSA + Gobierno Regional, level II-1+) is 37.8 min; 10.9 % of the population lives over 60 min away and 4.6 % over 120 min. The district-weighted mean is 91.6 min: the headline is always the population-weighted figure. The 120-min figure is a secondary threshold reported with the G1 caveat (weak OSRM agreement, kappa 0.36); it is never an absolute-minutes statement."
+    source: "outputs/04_access_sensitivity/summary.json"
+    status: draft
+  - id: claim-2
+    text: "Against independent OSM routing on the pre-registered 200-centroid sample (199 routed: 86 outside / 113 inside the basin), the friction engine agrees overall at Spearman 0.738 and, outside the basin, at Spearman 0.850 (bootstrap 95 % CI 0.752–0.912) outside the Amazon basin and 0.653 (0.489–0.790) inside it. The 0.80 refutation rule was frozen on the departmental proxy (0.801, n=174); the basin split is the definitive version and the CI lower bound still crosses 0.80."
+    source: "outputs/02_regions/osm_stratified.csv"
+    status: draft
+  - id: claim-3
+    text: "The measurement is sensitive to method: the Ridge-calibrated friction (ML A) changes the district-level person-weighted shares from 12.5 % to 14.4 % over 60 min and from 5.5 % to 4.2 % over 120 min (same definition, district means; the grid-cell headline is the 10.9 % of claim-1, and the two definitions are stated in the Methods); centroid misplacement (M6) changes the 60-min class for 1.12 % of districts (threshold 5 %)."
+    source: "outputs/09_ml_checks/calibrated_share.json; outputs/03_access_travel_time/checks.json"
+    status: draft
+  - id: claim-4
+    text: "Among deaths due to causes amenable to hospital care (n = 70,496; 2022–2025), a +60-min increase in access time is associated with an OR of 1.005 (95 % CI 0.986–1.025, p = 0.607) for dying outside a health facility, adjusted for age, sex, cause group, district altitude and department fixed effects."
+    source: "outputs/08_validation_models/summary.json"
+    status: draft
+  - id: claim-5
+    text: "The same model over all causes (n = 590,654, exploratory) gives OR 1.037 (1.023–1.052); the cancer negative control shows the same small, non-significant gradient (1.032, 0.978–1.090), so the association is not specific to access-sensitive causes: it is driven by the 'other' cause group (1.053, 1.034–1.071)."
+    source: "outputs/08_validation_models/summary.json"
+    status: draft
+  - id: claim-6
+    text: "The known-truth simulation (district random intercept, SD 0.551) has a false-positive rate of 7.6 % (> 7 % pre-registered), bias below 1 % and coverage 90.0–93.5 %; RQ3 is therefore reported as descriptive, not confirmatory."
+    source: "outputs/08_validation_models/summary.json"
+    status: draft
+  - id: claim-7
+    text: "ML A: the regularized linear calibration of log(OSRM/friction) wins leave-one-department-out validation over the constant-ratio baseline on MAPE (0.585 vs 2.056) and in the remote tail (Spearman 0.602 vs 0.431); the kappa-60 margin (0.691 vs 0.686) is noise and is not a selling point. It is used as the calibrated_min sensitivity variant, never as the headline."
+    source: "outputs/09_ml_checks/calibration.json"
+    status: draft
+  - id: claim-8
+    text: "ML B: access time adds small, non-specific predictive value for dying outside a facility among all causes (delta-Brier 0.00313, 95 % CI 0.00173–0.00479; permutation drop 0.00395) — the same non-amenable gradient as claim-5, not evidence of access-specificity but shows no positive predictive contribution among amenable causes (delta-Brier −0.00292, 95 % CI −0.00574 to −0.00012), consistent with the null H3a."
+    source: "outputs/09_ml_checks/predictive.json"
+    status: draft
+
+  - id: claim-9
+    text: "Straight-line distance from the district centroid (or population-weighted centroid) keeps a high ranking correlation with the main travel-time measure (Spearman 0.902 and 0.923) but agrees on the deficient-access classification only at kappa 0.396 and 0.380 and on the top-100 worst-access set at Jaccard 0.429 and 0.351. The pre-registered refutation criteria for travel time (Spearman >= 0.95 and kappa >= 0.90) are not met: travel time changes the priority classification, not just the ranking."
+    source: "outputs/04_access_sensitivity/summary.json"
+    status: draft
+  - id: claim-10
+    text: "The destination-set choice does not drive the result: public+EsSalud, all hospitals and all+uncategorised variants keep Spearman 0.991-0.993, kappa 0.978-0.990 and top-100 Jaccard 0.98 against the main public-only set."
+    source: "outputs/04_access_sensitivity/summary.json"
+    status: draft
+  - id: claim-11
+    text: "2SFCA at 60 and 120 min reorders the priority list almost completely (Spearman 0.553 and 0.371, deficient-access kappa 0.0), so the priority list is method-dependent; the paper reports it as a ranking, never as an absolute count."
+    source: "outputs/04_access_sensitivity/summary.json"
+    status: draft
+  - id: claim-12
+    text: "Need x access (M5): 371 districts (739,935 people, 2.3 % of the population) fall in the high-need / poor-access quadrant; membership is stable across need weights (97.3 %) but the joint need-access ranking is caveated (Kendall 0.729, threshold 0.80). Spatial (M7): Moran's I of access is 0.662 (queen, p < 0.001) but the local cluster sets vary strongly across weight matrices (239/253/451 clusters; variation 67 % vs 25 % maximum), so clusters are reported descriptively."
+    source: "outputs/05_need_priority/summary.json; outputs/06_spatial_stats/moran.csv; outputs/06_spatial_stats/stability.json"
+    status: draft
 
 # --- Figures: registry of each figure and its origin ---
 figures:

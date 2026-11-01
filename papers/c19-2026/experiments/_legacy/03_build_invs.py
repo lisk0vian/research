@@ -7,24 +7,25 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 from _common import *
+from _deps import *
 
 print("\n" + "="*80 + "\n[📊 BLOQUE 2: OPTIMIZACIÓN Y VALIDACIÓN DEL TARGET POR CONVENIO DE EXPERTOS]\n" + "="*80)
 umbrales_t = [30, 40, 50, 60, 70]
-conteos_v = [(df_activos['dist_km_hosp_complejo'] > u).sum() for u in umbrales_t]
+conteos_v = [(df_activos['dist_km_complex_hospital'] > u).sum() for u in umbrales_t]
 kl = KneeLocator(umbrales_t, conteos_v, curve='convex', direction='decreasing')
 UMBRAL_DIST_KM = kl.knee if kl.knee else 50
 
 for pert in [-5, 0, 5]:
-    print(f"  🔬 Sensibilidad Umbral = {UMBRAL_DIST_KM + pert}km → Casos Vulnerables: {(df_activos['dist_km_hosp_complejo'] > (UMBRAL_DIST_KM + pert)).sum()}")
+    print(f"  🔬 Sensibilidad Umbral = {UMBRAL_DIST_KM + pert}km → Casos Vulnerables: {(df_activos['dist_km_complex_hospital'] > (UMBRAL_DIST_KM + pert)).sum()}")
 
-df_activos['ratio_extremo_vulnerable'] = (df_activos['poblacion_adulto_mayor'] + df_activos['poblacion_discapacidad']) / (df_activos['poblacion_total'] + 1)
-q_corte = df_activos['ratio_extremo_vulnerable'].quantile(0.75)
-print(f"  🔬 Sensibilidad del percentil de corte (ratio_extremo_vulnerable, q75={q_corte:.4f}):")
+df_activos['extreme_vulnerable_ratio'] = (df_activos['pop_60_plus'] + df_activos['pop5_with_disability']) / (df_activos['population_total'] + 1)
+q_corte = df_activos['extreme_vulnerable_ratio'].quantile(0.75)
+print(f"  🔬 Sensibilidad del percentil de corte (extreme_vulnerable_ratio, q75={q_corte:.4f}):")
 for q_test in [0.70, 0.75, 0.80, 0.85]:
-    q_val = df_activos['ratio_extremo_vulnerable'].quantile(q_test)
-    n_casos = ((df_activos['dist_km_hosp_complejo'] > UMBRAL_DIST_KM) & (df_activos['ratio_extremo_vulnerable'] > q_val)).sum()
+    q_val = df_activos['extreme_vulnerable_ratio'].quantile(q_test)
+    n_casos = ((df_activos['dist_km_complex_hospital'] > UMBRAL_DIST_KM) & (df_activos['extreme_vulnerable_ratio'] > q_val)).sum()
     print(f"      q={q_test} → corte={q_val:.4f} → casos que cumplen criterio distancia+vulnerabilidad: {n_casos}")
-df_activos['VULNERABLE'] = (((df_activos['dist_km_hosp_complejo'] > UMBRAL_DIST_KM) & (df_activos['ratio_extremo_vulnerable'] > q_corte)) | (df_activos['ANOMALIA_ESPACIAL'] == 1)).astype(int)
+df_activos['VULNERABLE'] = (((df_activos['dist_km_complex_hospital'] > UMBRAL_DIST_KM) & (df_activos['extreme_vulnerable_ratio'] > q_corte)) | (df_activos['spatial_anomaly'] == 1)).astype(int)
 print(f"🎯 Prevalencia Sanitaria del Target Validado Exteriormente: {df_activos['VULNERABLE'].mean()*100:.2f}%")
 
 # =============================================================================
@@ -32,14 +33,14 @@ print(f"🎯 Prevalencia Sanitaria del Target Validado Exteriormente: {df_activo
 # =============================================================================
 
 print("\n" + "="*80 + "\n[📊 BLOQUE 3: ENFOQUE MULTI-METODOLÓGICO DEL INVS (PCA vs FA vs EWM)]\n" + "="*80)
-df_activos['Dim1_Aislamiento'] = MinMaxScaler().fit_transform(df_activos[['dist_km_hosp_complejo']]).flatten()
-df_activos['Dim2_Resolutividad'] = MinMaxScaler().fit_transform((1 - df_activos['NIVEL']/8).values.reshape(-1,1)).flatten()
-df_activos['Dim3_Demanda'] = MinMaxScaler().fit_transform(np.log1p(df_activos['poblacion_total']).values.reshape(-1,1)).flatten()
-df_activos['Dim4_Vulnerabilidad_Etaria'] = MinMaxScaler().fit_transform((df_activos['poblacion_adulto_mayor']/(df_activos['poblacion_total']+1)).values.reshape(-1,1)).flatten()
-df_activos['Dim5_Inclusión_Discapacidad'] = MinMaxScaler().fit_transform((df_activos['poblacion_discapacidad']/(df_activos['poblacion_total']+1)).values.reshape(-1,1)).flatten()
-df_activos['Dim6_Fragilidad_Espacial'] = MinMaxScaler().fit_transform(df_activos[['ANOMALIA_ESPACIAL']].values.astype(float)).flatten()
+df_activos['dim1_isolation'] = MinMaxScaler().fit_transform(df_activos[['dist_km_complex_hospital']]).flatten()
+df_activos['dim2_resolution'] = MinMaxScaler().fit_transform((1 - df_activos['care_level']/8).values.reshape(-1,1)).flatten()
+df_activos['dim3_demand'] = MinMaxScaler().fit_transform(np.log1p(df_activos['population_total']).values.reshape(-1,1)).flatten()
+df_activos['dim4_age_vulnerability'] = MinMaxScaler().fit_transform((df_activos['pop_60_plus']/(df_activos['population_total']+1)).values.reshape(-1,1)).flatten()
+df_activos['dim5_disability'] = MinMaxScaler().fit_transform((df_activos['pop5_with_disability']/(df_activos['population_total']+1)).values.reshape(-1,1)).flatten()
+df_activos['dim6_spatial_fragility'] = MinMaxScaler().fit_transform(df_activos[['spatial_anomaly']].values.astype(float)).flatten()
 
-COLS_INVS = ['Dim1_Aislamiento', 'Dim2_Resolutividad', 'Dim3_Demanda', 'Dim4_Vulnerabilidad_Etaria', 'Dim5_Inclusión_Discapacidad', 'Dim6_Fragilidad_Espacial']
+COLS_INVS = ['dim1_isolation', 'dim2_resolution', 'dim3_demand', 'dim4_age_vulnerability', 'dim5_disability', 'dim6_spatial_fragility']
 X_invs_6d = StandardScaler().fit_transform(df_activos[COLS_INVS])
 
 invs_pca = MinMaxScaler().fit_transform(PCA(n_components=1, random_state=SEED_BASE).fit_transform(X_invs_6d)[:,0].reshape(-1,1)).flatten()
@@ -111,27 +112,27 @@ for d_dim in COLS_INVS:
 pd.DataFrame(ablation_invs_resultados).to_csv(os.path.join(DIR_SALIDA, "03_indice_invs/ablation_invs.csv"), index=False)
 REGISTRO_TABLAS.append(("Ablation Study — dimensiones del índice INVS", pd.DataFrame(ablation_invs_resultados)))
 
-df_activos['tasa_vulnerabilidad_regional'] = df_activos.groupby('REGION_NATURAL')['poblacion_total'].transform('sum') / (df_activos['poblacion_total'] + 1)
-df_activos['ratio_adulto_mayor'] = df_activos['poblacion_adulto_mayor'] / (df_activos['poblacion_total'] + 1)
+df_activos['region_pop_ratio'] = df_activos.groupby('natural_region')['population_total'].transform('sum') / (df_activos['population_total'] + 1)
+df_activos['share_60_plus'] = df_activos['pop_60_plus'] / (df_activos['population_total'] + 1)
 
-FEATURES = ['NIVEL', 'poblacion_total', 'tasa_vulnerabilidad_regional', 'ratio_adulto_mayor']
+FEATURES = ['care_level', 'population_total', 'region_pop_ratio', 'share_60_plus']
 X_ml = df_activos[FEATURES].copy()
 y_ml = df_activos['VULNERABLE'].values
-groups_ml = df_activos['DEPARTAMENTO_NORM'].values          # grupo grueso (departamento), usado en LODO
-groups_ubigeo_ml = df_activos['UBIGEO'].values               # grupo fino (distrito), usado para la partición principal
-regiones_ml = df_activos['REGION_NATURAL'].values
+groups_ml = df_activos['department_norm'].values          # grupo grueso (departamento), usado en LODO
+groups_ubigeo_ml = df_activos['ubigeo'].values               # grupo fino (distrito), usado para la partición principal
+regiones_ml = df_activos['natural_region'].values
 
 # =============================================================================
 # CORRECCIÓN METODOLÓGICA (Observación de revisión Q1 — fuga de información):
 # `train_test_split(..., groups_ml, ...)` en la versión anterior NO agrupaba
 # nada: sklearn.train_test_split no soporta partición por grupos, solo
 # barajaba `groups_ml` como un arreglo más. Como muchos establecimientos
-# (filas de RENIPRESS) comparten el mismo UBIGEO, y varias FEATURES
-# (poblacion_total, tasa_vulnerabilidad_regional, ratio_adulto_mayor) y el
+# (filas de RENIPRESS) comparten el mismo ubigeo, y varias FEATURES
+# (population_total, region_pop_ratio, share_60_plus) y el
 # propio VULNERABLE dependen de agregados a nivel distrital/departamental,
 # la partición aleatoria dejaba filas del MISMO distrito en train Y test,
 # inflando artificialmente el AUC interno. Se reemplaza por GroupShuffleSplit
-# agrupando por UBIGEO (distrito), que garantiza que ningún distrito aparezca
+# agrupando por ubigeo (distrito), que garantiza que ningún distrito aparezca
 # simultáneamente en ambos conjuntos.
 # =============================================================================
 from sklearn.model_selection import GroupShuffleSplit
@@ -141,35 +142,35 @@ idx_train, idx_test = next(gss_outer.split(X_ml, y_ml, groups=groups_ubigeo_ml))
 
 X_train_puro, X_test_puro = X_ml.iloc[idx_train], X_ml.iloc[idx_test]          # conservan el índice original de df_activos (igual que antes)
 y_train_puro, y_test_puro = y_ml[idx_train], y_ml[idx_test]
-groups_train, groups_test = groups_ml[idx_train], groups_ml[idx_test]          # se preserva DEPARTAMENTO_NORM para el CV interno (Bloque 5)
+groups_train, groups_test = groups_ml[idx_train], groups_ml[idx_test]          # se preserva department_norm para el CV interno (Bloque 5)
 
 # --- Verificación explícita de ausencia de fuga distrital -------------------
-distritos_train = set(df_activos.iloc[idx_train]['UBIGEO'])
-distritos_test = set(df_activos.iloc[idx_test]['UBIGEO'])
+distritos_train = set(df_activos.iloc[idx_train]['ubigeo'])
+distritos_test = set(df_activos.iloc[idx_test]['ubigeo'])
 interseccion_distritos = distritos_train & distritos_test
-print(f"🔎 Verificación anti-fuga (UBIGEO): {len(distritos_train)} distritos en train | "
+print(f"🔎 Verificación anti-fuga (ubigeo): {len(distritos_train)} distritos en train | "
       f"{len(distritos_test)} en test | {len(interseccion_distritos)} distritos en ambos conjuntos")
 assert len(interseccion_distritos) == 0, (
-    f"⚠️ FUGA DE INFORMACIÓN DETECTADA: {len(interseccion_distritos)} distritos (UBIGEO) "
+    f"⚠️ FUGA DE INFORMACIÓN DETECTADA: {len(interseccion_distritos)} distritos (ubigeo) "
     f"aparecen simultáneamente en train y test."
 )
 print(f"🎯 Prevalencia VULNERABLE — train: {y_train_puro.mean()*100:.2f}% | test: {y_test_puro.mean()*100:.2f}% "
-      f"(sin estratificación forzada por y, ya que la partición ahora se rige por el grupo geográfico UBIGEO)")
+      f"(sin estratificación forzada por y, ya que la partición ahora se rige por el grupo geográfico ubigeo)")
 
 # =============================================================================
 # DIAGNÓSTICO DE CIRCULARIDAD METODOLÓGICA (Observación de revisión Q1):
 # Se cuantifica la superposición entre las FEATURES del clasificador y las
 # variables usadas para construir el índice INVS (COLS_INVS) y el target
-# VULNERABLE, ya que ambos comparten insumos crudos (poblacion_total,
-# poblacion_adulto_mayor). Este reporte debe incorporarse como evidencia en
+# VULNERABLE, ya que ambos comparten insumos crudos (population_total,
+# pop_60_plus). Este reporte debe incorporarse como evidencia en
 # la sección de limitaciones / respuesta a revisores.
 # =============================================================================
 print("\n" + "="*80 + "\n[⚠️ DIAGNÓSTICO: CIRCULARIDAD ENTRE FEATURES, COLS_INVS Y EL TARGET VULNERABLE]\n" + "="*80)
 solapamiento = []
 for feat in FEATURES:
-    usado_en_invs = feat in ['poblacion_total', 'ratio_adulto_mayor']  # insumos directos de Dim3/Dim4
+    usado_en_invs = feat in ['population_total', 'share_60_plus']  # insumos directos de Dim3/Dim4
     corr_con_invs = float(pd.Series(df_activos[feat]).corr(df_activos['INVS']))
-    corr_con_ratio_extremo = float(pd.Series(df_activos[feat]).corr(df_activos['ratio_extremo_vulnerable']))
+    corr_con_ratio_extremo = float(pd.Series(df_activos[feat]).corr(df_activos['extreme_vulnerable_ratio']))
     solapamiento.append({
         "Feature_ML": feat,
         "Comparte_insumo_crudo_con_INVS": usado_en_invs,
@@ -178,10 +179,10 @@ for feat in FEATURES:
     })
 df_circularidad = pd.DataFrame(solapamiento)
 print(df_circularidad.to_string(index=False))
-print("\n  📌 'poblacion_total' es insumo directo de Dim3_Demanda (COLS_INVS) y del denominador de")
-print("     ratio_extremo_vulnerable (insumo del target VULNERABLE).")
-print("     'ratio_adulto_mayor' ES Dim4_Vulnerabilidad_Etaria (COLS_INVS) y comparte 'poblacion_adulto_mayor'")
-print("     con el numerador de ratio_extremo_vulnerable (insumo del target VULNERABLE).")
+print("\n  📌 'population_total' es insumo directo de dim3_demand (COLS_INVS) y del denominador de")
+print("     extreme_vulnerable_ratio (insumo del target VULNERABLE).")
+print("     'share_60_plus' ES dim4_age_vulnerability (COLS_INVS) y comparte 'pop_60_plus'")
+print("     con el numerador de extreme_vulnerable_ratio (insumo del target VULNERABLE).")
 print("     ⇒ El modelo no predice un resultado independiente del INVS: lo aproxima parcialmente.")
 print("     Debe declararse explícitamente como 'aproximador/emulador del INVS' en el manuscrito,")
 print("     o bien sustituirse el target por un resultado externo e independiente (p. ej. brecha real")
@@ -210,33 +211,29 @@ DIR_VARS = os.path.join(DIR_SALIDA, "30_tablas_dataset")
 # --- 1) Inventario crudo de cada dataset fuente ---------------------------
 n_vars_renipress_crudo = df.shape[1]
 n_filas_renipress_crudo_actual = df.shape[0]
-n_vars_inei_crudo = df_inei.shape[1]
-n_filas_inei_crudo = df_inei.shape[0]
-n_vars_inei_distrital = df_inei_dist.shape[1]
-n_filas_inei_distrital = df_inei_dist.shape[0]
+n_vars_inei_crudo = df_census.shape[1]
+n_filas_inei_crudo = df_census.shape[0]
+n_vars_inei_distrital = df_census.shape[1]
+n_filas_inei_distrital = df_census.shape[0]
 
 print(f"  📁 Dataset 1 — RENIPRESS (crudo, post-deduplicación):")
 print(f"      • N° de variables (columnas): {n_vars_renipress_crudo}")
 print(f"      • N° de registros (filas):    {n_filas_renipress_crudo_actual:,}")
-print(f"  📁 Dataset 2 — INEI Censo 2017 (crudo):")
+print(f"  📁 Dataset 2 — INEI Censo 2025 (tabla distrital):")
 print(f"      • N° de variables (columnas): {n_vars_inei_crudo}")
 print(f"      • N° de registros (filas):    {n_filas_inei_crudo:,}")
-print(f"      • N° de variables tras filtrar nivel DISTRITAL: {n_vars_inei_distrital}")
-print(f"      • N° de registros tras filtrar nivel DISTRITAL: {n_filas_inei_distrital:,}")
 
 df_inventario_datasets = pd.DataFrame([
     {"Dataset": "RENIPRESS (crudo, post-dedup)", "N_variables_columnas": n_vars_renipress_crudo,
      "N_registros_filas": n_filas_renipress_crudo_actual, "Rol_en_investigacion": "Fuente primaria — establecimientos de salud"},
-    {"Dataset": "INEI Censo 2017 (crudo)", "N_variables_columnas": n_vars_inei_crudo,
+    {"Dataset": "INEI Censo 2025 (tabla distrital)", "N_variables_columnas": n_vars_inei_crudo,
      "N_registros_filas": n_filas_inei_crudo, "Rol_en_investigacion": "Fuente secundaria — datos poblacionales"},
-    {"Dataset": "INEI Censo 2017 (filtrado a nivel DISTRITAL)", "N_variables_columnas": n_vars_inei_distrital,
-     "N_registros_filas": n_filas_inei_distrital, "Rol_en_investigacion": "Subconjunto efectivamente fusionado con RENIPRESS"},
 ])
 print("\n" + df_inventario_datasets.to_string(index=False))
 
 # --- 2) Listado completo de columnas de cada dataset crudo (para anexo) ---
 df_columnas_renipress = pd.DataFrame({"Columna_RENIPRESS": df.columns.tolist()})
-df_columnas_inei = pd.DataFrame({"Columna_INEI": df_inei.columns.astype(str).tolist()})
+df_columnas_inei = pd.DataFrame({"Columna_INEI": df_census.columns.astype(str).tolist()})
 
 # --- 3) Variables EFECTIVAMENTE utilizadas en la investigación ------------
 # (a) Variables predictoras finales del modelo de Machine Learning
@@ -246,13 +243,13 @@ vars_indice_invs = list(COLS_INVS)
 # (c) Variables crudas/derivadas que alimentan directa o indirectamente
 #     a las anteriores (trazabilidad completa variable final -> variable origen)
 vars_origen_utilizadas = [
-    "UBIGEO", "DEPARTAMENTO", "ESTADO", "CATEGORIA", "NORTE", "ESTE",
-    "poblacion_total", "poblacion_adulto_mayor", "poblacion_discapacidad"
+    "ubigeo", "department", "status", "category", "lat_raw", "lon_raw",
+    "population_total", "pop_60_plus", "pop5_with_disability"
 ]
 vars_derivadas_utilizadas = [
-    "LAT", "LON", "COORD_VALIDA", "NIVEL", "DEPARTAMENTO_NORM", "REGION_NATURAL",
-    "dist_km_hosp_complejo", "ANOMALIA_ESPACIAL", "ratio_extremo_vulnerable",
-    "VULNERABLE", "INVS", "tasa_vulnerabilidad_regional", "ratio_adulto_mayor"
+    "lat", "lon", "coord_valid", "care_level", "department_norm", "natural_region",
+    "dist_km_complex_hospital", "spatial_anomaly", "extreme_vulnerable_ratio",
+    "VULNERABLE", "INVS", "region_pop_ratio", "share_60_plus"
 ]
 TODAS_LAS_VARIABLES_UTILIZADAS = sorted(set(
     vars_predictoras_ml + vars_indice_invs + vars_origen_utilizadas + vars_derivadas_utilizadas + ["VULNERABLE"]
@@ -279,7 +276,7 @@ print("\n" + df_resumen_uso_variables.to_string(index=False))
 
 filas_tabla_variables_completa = []
 for v in vars_origen_utilizadas:
-    origen_ds = "RENIPRESS" if v in df.columns else ("INEI" if v in df_inei_dist.columns else "RENIPRESS/INEI")
+    origen_ds = "RENIPRESS" if v in df.columns else ("INEI" if v in df_census.columns else "RENIPRESS/INEI")
     filas_tabla_variables_completa.append({"Variable": v, "Categoria": "Cruda de origen", "Dataset_fuente": origen_ds})
 for v in vars_derivadas_utilizadas:
     filas_tabla_variables_completa.append({"Variable": v, "Categoria": "Derivada/calculada", "Dataset_fuente": "RENIPRESS+INEI (procesado)"})
@@ -295,9 +292,9 @@ for v in vars_origen_utilizadas:
         pct_na = df[v].isna().mean() * 100
         n_na = int(df[v].isna().sum())
         ds_origen = "RENIPRESS"
-    elif v in df_inei_dist.columns:
-        pct_na = df_inei_dist[v].isna().mean() * 100
-        n_na = int(df_inei_dist[v].isna().sum())
+    elif v in df_census.columns:
+        pct_na = df_census[v].isna().mean() * 100
+        n_na = int(df_census[v].isna().sum())
         ds_origen = "INEI"
     else:
         pct_na, n_na, ds_origen = np.nan, np.nan, "N/D"
@@ -317,27 +314,27 @@ print(df_missing_features.to_string(index=False))
 # --- 5) Estrategia de manejo de datos perdidos (documentación explícita) --
 print("\n  🛠️ Estrategia de manejo de datos perdidos aplicada en este pipeline:")
 estrategia_missing = [
-    {"Variable_o_grupo": "poblacion_total / poblacion_adulto_mayor / poblacion_discapacidad",
-     "Estrategia": "fillna(0) tras el merge con INEI por UBIGEO",
+    {"Variable_o_grupo": "population_total / pop_60_plus / pop5_with_disability",
+     "Estrategia": "fillna(0) tras el merge con INEI por ubigeo",
      "Justificacion": "Ausencia de match censal se interpreta como sin información poblacional registrada; "
                        "se documenta como limitación y no como imputación estadística."},
-    {"Variable_o_grupo": "dist_km_hosp_complejo",
-     "Estrategia": "fillna(mediana global de dist_km_hosp_complejo)",
+    {"Variable_o_grupo": "dist_km_complex_hospital",
+     "Estrategia": "fillna(mediana global de dist_km_complex_hospital)",
      "Justificacion": "Evita pérdida de filas sin coordenadas válidas; la mediana es robusta a la asimetría "
                        "propia de distancias geográficas."},
-    {"Variable_o_grupo": "NIVEL (CATEGORIA)",
+    {"Variable_o_grupo": "care_level (category)",
      "Estrategia": "fillna(1) vía diccionario de mapeo NIVEL_MAP",
      "Justificacion": "Categoría no reconocida/ausente se asigna al nivel de menor resolutividad (I-1) "
                        "como supuesto conservador, explicitado en el manuscrito."},
-    {"Variable_o_grupo": "ANOMALIA_ESPACIAL",
-     "Estrategia": "fillna(0) tras merge de anomalías por UBIGEO",
+    {"Variable_o_grupo": "spatial_anomaly",
+     "Estrategia": "fillna(0) tras merge de anomalías por ubigeo",
      "Justificacion": "Distritos sin cobertura de coordenadas válidas se asumen sin anomalía espacial detectada."},
-    {"Variable_o_grupo": "FEATURES (NIVEL, poblacion_total, tasa_vulnerabilidad_regional, ratio_adulto_mayor)",
+    {"Variable_o_grupo": "FEATURES (care_level, population_total, region_pop_ratio, share_60_plus)",
      "Estrategia": "SimpleImputer(strategy='median') dentro del Pipeline de scikit-learn",
      "Justificacion": "Imputación robusta ajustada SOLO en train (anti-leakage) y aplicada a train/test/"
                        "validaciones externas mediante el mismo Pipeline persistido."},
-    {"Variable_o_grupo": "NORTE / ESTE (coordenadas)",
-     "Estrategia": "No se imputan: se excluyen del análisis espacial (COORD_VALIDA=0) si están fuera de rango o son NaN",
+    {"Variable_o_grupo": "lat_raw / lon_raw (coordenadas)",
+     "Estrategia": "No se imputan: se excluyen del análisis espacial (coord_valid=0) si están fuera de rango o son NaN",
      "Justificacion": "Imputar coordenadas geográficas introduciría sesgo espacial artificial; se prefiere "
                        "exclusión explícita y cuantificada (ver Bloque 0bis / PRISMA)."},
 ]
@@ -346,18 +343,6 @@ print(df_estrategia_missing.to_string(index=False))
 
 print("\n  ✅ La verificación POST-imputación (0% de NaN esperado tras el Pipeline) se reporta en el")
 print("     Bloque 5bis (junto con la persistencia del Pipeline) y se exporta en missing_data_post_imputacion.csv")
-
-ruta_excel_vars = os.path.join(DIR_VARS, "inventario_variables_datasets.csv")
-with pd.ExcelWriter(ruta_excel_vars) as writer:
-    df_inventario_datasets.to_csv(writer, sheet_name="Resumen_Datasets", index=False)
-    df_resumen_uso_variables.to_csv(writer, sheet_name="Uso_Variables", index=False)
-    df_tabla_variables_completa.to_csv(writer, sheet_name="Variables_Utilizadas", index=False)
-    df_missing_crudo.to_csv(writer, sheet_name="Missing_Crudo_Origen", index=False)
-    df_missing_features.to_csv(writer, sheet_name="Missing_Features_PreImput", index=False)
-    df_estrategia_missing.to_csv(writer, sheet_name="Estrategia_Manejo_Missing", index=False)
-    df_columnas_renipress.to_csv(writer, sheet_name="Columnas_RENIPRESS_Crudo", index=False)
-    df_columnas_inei.to_csv(writer, sheet_name="Columnas_INEI_Crudo", index=False)
-print(f"\n  💾 Excel exportado: {ruta_excel_vars}")
 
 df_inventario_datasets.to_csv(os.path.join(DIR_VARS, "resumen_datasets.csv"), index=False)
 df_resumen_uso_variables.to_csv(os.path.join(DIR_VARS, "uso_variables.csv"), index=False)
@@ -430,5 +415,6 @@ try:
     save_df_activos()
 except Exception as e:
     print("persist failed:", e)
+save_run_state(COLS_INVS=COLS_INVS, UMBRAL_DIST_KM=UMBRAL_DIST_KM)
 
 print("Stage 03_build_invs done.")

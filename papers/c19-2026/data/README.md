@@ -2,30 +2,24 @@
 
 ## Files
 
-- `raw/renipress.csv`: RENIPRESS, corte 2026-03-31, 35,371 filas x 31 columnas.
-  Gitignored by repo policy (`*.csv`). On Colab it lives in
+- `raw/` (gitignored): the files the pipeline reads. Their names are set in
+  `experiments/config.yaml`: `renipress_2026-10-30.csv` (SUSALUD, October 2026
+  edition) and `censo-2025-distrital.csv` (INEI census 2025, built by
+  `experiments/census2025_prepare.py`). On Colab they live in
   `Drive/c19-2026/data/raw/`.
-  sha256: `5e7997680201f87737666530ebcb9215eda5a7b6157919445c9c47b201b44f5c`
-  Fuente: Plataforma Nacional de Datos Abiertos (SUSALUD),
-  https://www.datosabiertos.gob.pe/dataset/registro-nacional-de-entidades-prestadoras-de-servicios-de-salud-renipress
-- `raw/censo-2017.csv`: INEI Censo Nacional 2017, hoja `DISTRITAL`,
-  1,875 filas x 20 columnas (1,678 distritales + 196 provinciales + 1 total).
-  Convertido desde el Excel original (hoja `DISTRITAL`, cabecera en fila 5);
-  `UBIGEO` como texto de 6 digitos. Gitignored (`*.csv`).
-  Fuente: https://censos2017.inei.gob.pe/redatam/
-- `processed/`: intermediates regenerables por los scripts de `experiments/`.
+- Older files kept in `raw/` but no longer read: `renipress.csv` (the 2026-03-31
+  cut, 35,371 rows x 31 columns) and `censo-2017.csv` (INEI census 2017).
+- `SOURCES.md`: links, retrieval date and SHA-256 of every file, and how each
+  one was obtained.
+- `dictionary/`: what every column and derived variable means (YAML and CSV).
+  Generated from `experiments/_schema.py`; a test fails if they drift apart.
+- `processed/`: regenerable intermediates (the ETL cache).
 
-## Provenance
+## Verification on load (stage 00)
 
-RENIPRESS es el Registro Nacional de Instituciones Prestadoras de Servicios de
-Salud (SUSALUD). El corte del 31-03-2026 contiene 35,371 establecimientos con
-31 variables; el notebook original esperaba exactamente este hash.
-
-El INEI Censo 2017 aporta poblacion por grupo etario y discapacidad a nivel
-distrital (1,678 distritos). La integracion se hace por `UBIGEO`.
-
-## Verificacion on load (stage 00)
-
-- RENIPRESS: hash sha256, 35,371 filas, 31 columnas, 25 departamentos.
-- INEI: 1,875 filas, 20 columnas, 1,678 UBIGEO unicos con `Tipo == 'DISTRITAL'`,
-  `UBIGEO` de 6 caracteres.
+Both raw files are checked against the hash and size registered in `DATASETS`
+(`experiments/_schema.py`): RENIPRESS 36,246 rows and 27,017 active facilities;
+census 1,893 districts and a national total of 32,706,028. With any other file the
+fixed checks are skipped with a warning, so the synthetic fixture can run.
+The join is by `ubigeo`; active facilities in a district without a census row
+are excluded and listed, never given population 0.

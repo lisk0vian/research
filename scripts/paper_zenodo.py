@@ -49,6 +49,7 @@ from typing import Any
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from _repo import find_repo_root, load_yaml  # noqa: E402
+from paper_build import is_blind  # noqa: E402
 
 SCRIPT_REPO = Path(__file__).resolve().parents[1]
 
@@ -62,9 +63,13 @@ PRODUCTION_BASE = "https://zenodo.org"
 EXCLUDED_NAMES = {
     ".env", ".env.example", ".sync_history.json", ".drive_ids.json",
     "AGENTS.md", "CLAUDE.md", "zenodo.json",
+    # agent bookkeeping, not part of the reproducible pipeline
+    "CHANGELOG.md", "diagnostic_log.md", "skills-lock.json",
 }
 EXCLUDED_PREFIXES = (".env", ".gitignore", "opencode.jsonc")
-EXCLUDED_PARTS = {"__pycache__", ".ipynb_checkpoints", ".git", "outputs"}
+# local agent tooling (skills, agents, node_modules) lives in these folders
+EXCLUDED_PARTS = {"__pycache__", ".ipynb_checkpoints", ".git", "outputs",
+                  "node_modules", ".opencode", ".agents", ".claude"}
 HEAVY_EXTENSIONS = {".pkl", ".h5", ".pt", ".pth", ".onnx", ".bin", ".ckpt"}
 NOTEBOOK_NAME = "experiments.ipynb"
 
@@ -237,7 +242,8 @@ def build_metadata(
 ) -> dict:
     """Build the Zenodo deposit metadata dict."""
     creators = _load_authors(repo, manifest)
-    title = manifest.get("title", manifest.get("paper", "Research code"))
+    # zenodo_title names the software record apart from the paper it supports
+    title = manifest.get("zenodo_title") or manifest.get("title", manifest.get("paper", "Research code"))
     desc = description or _auto_description(manifest, paper_dir)
     year = datetime.now(timezone.utc).strftime("%Y")
 
@@ -354,7 +360,7 @@ def update_references_bib(
     key = _bibtex_key(manifest)
     authors_str = _resolve_author_names(repo, manifest)
     year = datetime.now(timezone.utc).strftime("%Y")
-    title = manifest.get("title", "Research code")
+    title = manifest.get("zenodo_title") or manifest.get("title", "Research code")
 
     entry = (
         f"@software{{{key},\n"
@@ -1103,6 +1109,11 @@ def _update_bib(
 ) -> None:
     """Add or refresh the Zenodo @software entry in references.bib."""
     bib_path = paper_dir / "paper" / "references.bib"
+    if is_blind(paper_dir / "paper"):
+        # The entry names the authors and ships whole in the anonymized LaTeX zip.
+        if not quiet:
+            print("  Skipping references.bib: the manuscript is anonymized. Cite the record after acceptance.")
+        return
     if bib_path.is_file() or (paper_dir / "paper").is_dir():
         if not quiet:
             print(f"  Updating {bib_path}...")

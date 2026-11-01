@@ -7,6 +7,11 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 from _common import *
+from _deps import *
+globals().update(load_run_state())
+
+FAST = os.environ.get("EXP_FAST") == "1"
+SEMILLAS = SEEDS[:2] if FAST else SEEDS
 
 _ld = load_df_activos()
 if _ld is not None:
@@ -143,7 +148,7 @@ t11b = time.time()
 matriz_importancia_shap = []
 top_k_sets = []
 K_TOP = 3
-for s in SEEDS:
+for s in SEMILLAS:
     m_s = construir_modelo(study.best_params)
     try:
         m_s.set_params(random_state=s)
@@ -172,13 +177,13 @@ for i in range(len(top_k_sets)):
         inter = len(top_k_sets[i] & top_k_sets[j])
         union = len(top_k_sets[i] | top_k_sets[j])
         jaccards.append(inter / union if union > 0 else 1.0)
-print(f"  📌 Jaccard Similarity promedio (Top-{K_TOP} features, {len(SEEDS)} semillas): {np.mean(jaccards):.4f}")
+print(f"  📌 Jaccard Similarity promedio (Top-{K_TOP} features, {len(SEMILLAS)} semillas): {np.mean(jaccards):.4f}")
 df_shap_stability.to_csv(os.path.join(DIR_SALIDA, "13_shap_estabilidad/shap_stability.csv"), index=False)
 
 print("\n  🔄 Calculando Bootstrap SHAP CI95% (B=300, remuestreo de instancias)...")
 shap_vals_base = shap_values.values
 boot_shap_importancias = []
-for b in range(300):
+for b in range(20 if FAST else 300):
     idx_b = resample(np.arange(shap_vals_base.shape[0]), replace=True, random_state=SEED_BASE + b)
     boot_shap_importancias.append(np.abs(shap_vals_base[idx_b]).mean(axis=0))
 boot_shap_importancias = np.array(boot_shap_importancias)
@@ -201,7 +206,7 @@ t11b = reportar_recursos("Bloque 11bis — Estabilidad SHAP multisemilla + Boots
 
 print("\n" + "="*80 + "\n[📈 BLOQUE 11ter: PERMUTATION IMPORTANCE CON INTERVALO DE CONFIANZA BOOTSTRAP]\n" + "="*80)
 t11c = time.time()
-perm_result = permutation_importance(model_global, X_te_sc, y_test_puro, n_repeats=50, random_state=SEED_BASE, scoring='roc_auc')
+perm_result = permutation_importance(model_global, X_te_sc, y_test_puro, n_repeats=5 if FAST else 50, random_state=SEED_BASE, scoring='roc_auc')
 df_perm = pd.DataFrame({
     "Feature": FEATURES,
     "Importancia_media": perm_result.importances_mean,
@@ -221,7 +226,7 @@ print("\n" + "="*80 + "\n[🧬 BLOQUE 11quater: ESTABILIDAD DE SELECCIÓN DE FEA
 t11d = time.time()
 K_TOP_STAB = 3
 top_sets_shap, top_sets_perm, top_sets_gain = [], [], []
-for s in SEEDS:
+for s in SEMILLAS:
     m_s = construir_modelo(study.best_params)
     try:
         m_s.set_params(random_state=s)
@@ -258,7 +263,7 @@ df_feature_stability = pd.DataFrame([
      "Jaccard_promedio_TopK": _jaccard_promedio(top_sets_gain) if top_sets_gain else np.nan,
      "N_semillas": len(SEEDS) if top_sets_gain else 0},
 ])
-print(f"  📌 Estabilidad de selección de Top-{K_TOP_STAB} features en {len(SEEDS)} semillas (Jaccard, 1.0 = máxima estabilidad):")
+print(f"  📌 Estabilidad de selección de Top-{K_TOP_STAB} features en {len(SEMILLAS)} semillas (Jaccard, 1.0 = máxima estabilidad):")
 print(df_feature_stability.round(4).to_string(index=False))
 print("  💡 Un Jaccard promedio cercano a 1.0 indica que, más allá de la semilla aleatoria, distintos métodos")
 print("     de atribución de importancia convergen en el mismo subconjunto de predictores, reforzando la")
@@ -275,3 +280,4 @@ t11d = reportar_recursos("Bloque 11quater — Estabilidad de selección de featu
 
 
 print("Stage 07_explain_shap done.")
+save_run_state(shap_values=shap_values, df_shap_stability=df_shap_stability)

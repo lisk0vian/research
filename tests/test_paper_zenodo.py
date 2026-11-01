@@ -222,3 +222,15 @@ def test_dry_run_touches_nothing_but_zenodo_json(paper):
     assert "zenodo_doi" not in manifest
     record = json.loads((paper / "experiments" / "zenodo.json").read_text(encoding="utf-8"))
     assert record["metadata"]["creators"][0]["name"] == "Ana Tester"
+
+
+def test_bib_entry_is_skipped_for_an_anonymized_manuscript(paper):
+    manifest, repo = load_yaml(paper / "manifest.yaml"), _repo_of(paper)
+    bib = paper / "paper" / "references.bib"
+    zen._update_bib(paper, manifest, "10.5281/zenodo.123", repo, quiet=True)
+    assert "Ana Tester" in bib.read_text(encoding="utf-8")        # not blind: the entry is written
+
+    bib.write_text("", encoding="utf-8")
+    (paper / "paper" / "main.qmd").write_text("---\njournal:\n  formatting: doubleblind\n---\n", encoding="utf-8")
+    zen._update_bib(paper, manifest, "10.5281/zenodo.123", repo, quiet=True)
+    assert bib.read_text(encoding="utf-8") == ""                   # blind: the authors' names stay out

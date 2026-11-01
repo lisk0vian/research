@@ -7,6 +7,8 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 from _common import *
+from _deps import *
+globals().update(load_run_state())
 
 _ld = load_df_activos()
 if _ld is not None:
@@ -30,7 +32,7 @@ guardar_figura_multi(plt, ruta_calib)
 REGISTRO_FIGURAS.append((ruta_calib + ".png", f"Curva de calibración de probabilidades (ECE = {ece:.3f})."))
 plt.show()
 
-df_fair = pd.DataFrame({'REGION': df_activos.loc[X_test_puro.index, 'REGION_NATURAL'], 'Y_TRUE': y_test_puro, 'Y_PRED': preds_test_labels})
+df_fair = pd.DataFrame({'REGION': df_activos.loc[X_test_puro.index, 'natural_region'], 'Y_TRUE': y_test_puro, 'Y_PRED': preds_test_labels})
 tprs_f = {}
 fairness_rows = []
 for name, grp in df_fair.groupby('REGION'):
@@ -77,3 +79,4 @@ REGISTRO_TABLAS.append(("Hosmer-Lemeshow Goodness-of-Fit", tabla_hl.reset_index(
 
 
 print("Stage 09_audit_equity done.")
+save_run_state(ece=ece, hl_stat=hl_stat, hl_p=hl_p)

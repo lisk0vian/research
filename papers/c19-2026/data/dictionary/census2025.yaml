@@ -1,0 +1,169 @@
+dataset: census2025
+title: 'Censos Nacionales 2025: XIII de Población, VIII de Vivienda y IV de Comunidades Indígenas, district
+  tables'
+publisher: Instituto Nacional de Estadística e Informática (INEI)
+dataset_url: https://censos2025.inei.gob.pe/resultados/descarga-de-datos/cuadros-estadisticos/cuadros-interactivos
+edition: District results, census data to 2026-07-15 under current territorial limits (RENLIM)
+retrieved: '2026-10-30'
+license: Not stated on the INEI portal; confirm the terms of reuse before redistributing
+format: CSV, comma separated, UTF-8; built by census2025_prepare.py from two INEI workbooks
+unit: One row per district (UBIGEO).
+sha256: 6b42982a0ab5301ea9687c2ae508107fb4d45ecc7e7154d4d96536037f117e01
+rows: 1893
+source_workbooks:
+  cpv2025_grandes_grupos_edad_distrital.xlsx: b303dc381b3b801fe49e1e839a2657fd2f4a110cb19401c58115f091a5a64757
+  cpv2025_discapacidad_distrital.xlsx: 7658b4bdee4aedffa8550d0b3f41d215f5a8a231a96590085b4f8b57a52fe0f5
+notes:
+- Counts are census-counted population (32,706,028), not omission-adjusted (34,157,732, omission 4.25
+  %); the adjusted figure is not published by district.
+- Disability is defined for ages 5 and over and is not comparable with the 2017 census variable.
+- 'Footnote 3/: districts flagged boundary_undefined include populated centres where limits are not officially
+  defined.'
+raw_path: data/raw/censo-2025-distrital.csv
+key: ubigeo
+join: census.ubigeo = renipress.ubigeo (six-digit text). In the October 2026 edition 1 district with active
+  facilities has no census row.
+columns:
+- name: ubigeo
+  original_name: Ubigeo
+  dtype: string
+  role: id
+  description: Six-digit INEI district code. Join key with RENIPRESS.
+  notes: Unique per row. 1,893 districts.
+  profile:
+    non_missing_pct: 100.0
+    n_distinct: 1893
+- name: department
+  original_name: Departamento
+  dtype: string
+  role: geography
+  description: Department name as published by INEI, with the footnote marker removed.
+  notes: Lima appears as 'Lima Metropolitana' and 'Región Lima' (the provinces of Barranca, Cajatambo,
+    Canta, Cañete, Huaral, Huarochirí, Huaura, Oyón and Yauyos), plus 'Prov. Const. del Callao'. Do not
+    join on this name; use ubigeo.
+  profile:
+    non_missing_pct: 100.0
+    n_distinct: 26
+- name: province
+  original_name: Provincia
+  dtype: string
+  role: geography
+  description: Province name as published by INEI.
+  notes: ''
+  profile:
+    non_missing_pct: 100.0
+    n_distinct: 196
+- name: district
+  original_name: Distrito
+  dtype: string
+  role: geography
+  description: District name as published by INEI.
+  notes: ''
+  profile:
+    non_missing_pct: 100.0
+    n_distinct: 1738
+- name: boundary_undefined
+  original_name: Distrito (nota 3/)
+  dtype: bool
+  role: attribute
+  description: 'True when INEI flags the district with footnote 3/: some populated centres lie where district
+    limits are not officially defined, so they were censused without a UBIGEO and published under the
+    current census limits.'
+  notes: Population of these districts may include or exclude such centres; treat their counts with caution.
+  profile:
+    non_missing_pct: 100.0
+    n_distinct: 2
+    n_true: 10
+- name: population_total
+  original_name: Total
+  dtype: int
+  role: measure
+  description: Census-counted resident population of the district, 2025 census.
+  notes: Counted population (national total 32,706,028), not omission-adjusted (adjusted national total
+    34,157,732, omission 4.25 %); the adjusted figure is not published by district.
+  profile:
+    non_missing_pct: 100.0
+    n_distinct: 1762
+    min: 134
+    median: 3993.0
+    max: 1124772
+    total: 32706028
+- name: pop_0_14
+  original_name: De 0 a 14 años
+  dtype: int
+  role: measure
+  description: Counted population aged 0 to 14.
+  notes: pop_0_14 + pop_15_59 + pop_60_plus = population_total in every district.
+  profile:
+    non_missing_pct: 100.0
+    n_distinct: 1446
+    min: 15
+    median: 958.0
+    max: 234879
+    total: 7429471
+- name: pop_15_59
+  original_name: De 15 a 59 años
+  dtype: int
+  role: measure
+  description: Counted population aged 15 to 59.
+  notes: ''
+  profile:
+    non_missing_pct: 100.0
+    n_distinct: 1686
+    min: 70
+    median: 2339.0
+    max: 745755
+    total: 20437419
+- name: pop_60_plus
+  original_name: De 60 años y más
+  dtype: int
+  role: measure
+  description: Counted population aged 60 and over.
+  notes: National total 4,839,138.
+  profile:
+    non_missing_pct: 100.0
+    n_distinct: 1319
+    min: 38
+    median: 698.0
+    max: 144138
+    total: 4839138
+- name: pop5_total
+  original_name: Total (5 años y más)
+  dtype: int
+  role: measure
+  description: Counted population aged 5 and over; the denominator of the disability table.
+  notes: National total 30,692,308.
+  profile:
+    non_missing_pct: 100.0
+    n_distinct: 1732
+    min: 129
+    median: 3723.0
+    max: 1067154
+    total: 30692308
+- name: pop5_with_disability
+  original_name: Sí tiene discapacidad
+  dtype: int
+  role: measure
+  description: Population aged 5 and over with at least one disability.
+  notes: 'National total 1,637,090. Defined for ages 5+, so it is not comparable with the 2017 variable.
+    The census footnote ''a/'' applies: a person can have several disabilities.'
+  profile:
+    non_missing_pct: 100.0
+    n_distinct: 918
+    min: 4
+    median: 259.0
+    max: 50939
+    total: 1637090
+- name: pop5_without_disability
+  original_name: No tiene discapacidad
+  dtype: int
+  role: measure
+  description: Population aged 5 and over without disability.
+  notes: pop5_with_disability + pop5_without_disability = pop5_total.
+  profile:
+    non_missing_pct: 100.0
+    n_distinct: 1709
+    min: 108
+    median: 3470.0
+    max: 1016215
+    total: 29055218

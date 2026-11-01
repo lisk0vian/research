@@ -7,6 +7,11 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 from _common import *
+from _deps import *
+globals().update(load_run_state())
+
+FAST = os.environ.get("EXP_FAST") == "1"
+N_BOOT = 50 if FAST else 2000
 
 _ld = load_df_activos()
 if _ld is not None:
@@ -16,7 +21,7 @@ print("\n" + "="*80 + "\n[📊 BLOQUE 7: BOOTSTRAP DE RIGOR (B=2000) PARA INTERV
 boot_auc, boot_f1, boot_brier, boot_mcc, boot_kappa, boot_bacc = [], [], [], [], [], []
 preds_test_labels = model_global.predict(X_te_sc)
 
-for b in range(2000):
+for b in range(N_BOOT):
     idx_b = resample(np.arange(len(y_test_puro)), replace=True, random_state=SEED_BASE + b)
     if len(np.unique(y_test_puro[idx_b])) < 2: continue
     boot_auc.append(roc_auc_score(y_test_puro[idx_b], probs_test[idx_b]))
@@ -217,7 +222,7 @@ print("\n" + "="*80 + "\n[📊 BLOQUE 8: INFERENCIA ESTADÍSTICA DE RENDIMIENTO 
 matriz_semillas = []
 for s in SEEDS:
     # CORRECCIÓN (observación de Edith): esta comparación multisemilla volvía a
-    # usar train_test_split aleatorio (sin agrupar por UBIGEO), reintroduciendo
+    # usar train_test_split aleatorio (sin agrupar por ubigeo), reintroduciendo
     # la misma fuga de información entre train/test que se corrigió en la
     # partición principal. Se reemplaza por GroupShuffleSplit agrupado por
     # distrito, igual que en el split principal del pipeline.
@@ -260,3 +265,8 @@ REGISTRO_TABLAS.append(("Monitoreo de Data Drift (KS test) train vs test", pd.Da
 
 
 print("Stage 06_evaluate_classifier done.")
+save_run_state(preds_test_labels=preds_test_labels,
+               bacc_global=bacc_global, avg_precision=avg_precision,
+               mcc_global=mcc_global, kappa_global=kappa_global,
+               umbral_youden=umbral_youden,
+               umbral_costo_sensible=umbral_costo_sensible)

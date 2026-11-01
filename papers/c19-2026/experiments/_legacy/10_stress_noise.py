@@ -7,6 +7,8 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 from _common import *
+from _deps import *
+globals().update(load_run_state())
 
 _ld = load_df_activos()
 if _ld is not None:
@@ -42,9 +44,9 @@ df_errores = pd.DataFrame(X_test_puro, columns=FEATURES).reset_index(drop=False)
 df_errores['Y_real'] = y_test_puro
 df_errores['Y_pred'] = preds_test_labels
 df_errores['Prob'] = probs_test
-df_errores['UBIGEO'] = df_activos.loc[X_test_puro.index, 'UBIGEO'].values
-df_errores['DEPARTAMENTO'] = df_activos.loc[X_test_puro.index, 'DEPARTAMENTO'].values
-df_errores['REGION_NATURAL'] = df_activos.loc[X_test_puro.index, 'REGION_NATURAL'].values
+df_errores['ubigeo'] = df_activos.loc[X_test_puro.index, 'ubigeo'].values
+df_errores['department'] = df_activos.loc[X_test_puro.index, 'department'].values
+df_errores['natural_region'] = df_activos.loc[X_test_puro.index, 'natural_region'].values
 
 falsos_positivos = df_errores[(df_errores['Y_real'] == 0) & (df_errores['Y_pred'] == 1)].sort_values('Prob', ascending=False)
 falsos_negativos = df_errores[(df_errores['Y_real'] == 1) & (df_errores['Y_pred'] == 0)].sort_values('Prob')
@@ -61,7 +63,7 @@ print(f"\n  🔵 Top {N_TOP_ERRORES} Falsos Negativos (mayor confianza errónea)
 print(top20_fn.to_string(index=False))
 
 print("\n  🌍 Distribución geográfica de errores por macrorregión:")
-df_errores_region = df_errores[df_errores['Y_real'] != df_errores['Y_pred']].groupby('REGION_NATURAL').size().reset_index(name='N_errores')
+df_errores_region = df_errores[df_errores['Y_real'] != df_errores['Y_pred']].groupby('natural_region').size().reset_index(name='N_errores')
 print(df_errores_region.to_string(index=False))
 
 print("\n  📸 [SHAP de errores] Generando waterfall plots para los 3 FP y 3 FN de mayor confianza errónea...")
@@ -72,22 +74,21 @@ for etiqueta_grp, df_grupo in [("FP", top20_fp.head(3)), ("FN", top20_fn.head(3)
         try:
             plt.figure(figsize=(7, 4))
             shap.plots.waterfall(shap_values[pos_shap], show=False)
-            plt.title(f"SHAP Waterfall — Error {etiqueta_grp} #{rank_i+1} (UBIGEO {fila['UBIGEO']})", fontsize=9, fontweight='bold', pad=12)
+            plt.title(f"SHAP Waterfall — Error {etiqueta_grp} #{rank_i+1} (ubigeo {fila['ubigeo']})", fontsize=9, fontweight='bold', pad=12)
             plt.tight_layout()
             ruta_err_shap = os.path.join(DIR_SALIDA, "22_error_analysis", f"shap_waterfall_{etiqueta_grp}_{rank_i+1}")
             guardar_figura_multi(plt, ruta_err_shap)
-            REGISTRO_FIGURAS.append((ruta_err_shap + ".png", f"SHAP Waterfall del {etiqueta_grp} #{rank_i+1} (mayor confianza errónea), UBIGEO {fila['UBIGEO']}."))
+            REGISTRO_FIGURAS.append((ruta_err_shap + ".png", f"SHAP Waterfall del {etiqueta_grp} #{rank_i+1} (mayor confianza errónea), ubigeo {fila['ubigeo']}."))
             plt.show()
         except Exception as e:
             print(f"    ⚠️ No se pudo generar SHAP waterfall para {etiqueta_grp} #{rank_i+1}: {e}")
 
-with pd.ExcelWriter(os.path.join(DIR_SALIDA, "22_error_analysis/error_analysis.csv")) as writer:
-    falsos_positivos.to_csv(writer, sheet_name="Falsos_Positivos_TODOS", index=False)
-    falsos_negativos.to_csv(writer, sheet_name="Falsos_Negativos_TODOS", index=False)
-    top20_fp.to_csv(writer, sheet_name=f"Top{N_TOP_ERRORES}_FP", index=False)
-    top20_fn.to_csv(writer, sheet_name=f"Top{N_TOP_ERRORES}_FN", index=False)
-    casos_limite.to_csv(writer, sheet_name="Casos_Limite", index=False)
-    df_errores_region.to_csv(writer, sheet_name="Errores_por_Region", index=False)
+falsos_positivos.to_csv(os.path.join(DIR_SALIDA, "22_error_analysis/falsos_positivos.csv"), index=False)
+falsos_negativos.to_csv(os.path.join(DIR_SALIDA, "22_error_analysis/falsos_negativos.csv"), index=False)
+top20_fp.to_csv(os.path.join(DIR_SALIDA, f"22_error_analysis/top{N_TOP_ERRORES}_fp.csv"), index=False)
+top20_fn.to_csv(os.path.join(DIR_SALIDA, f"22_error_analysis/top{N_TOP_ERRORES}_fn.csv"), index=False)
+casos_limite.to_csv(os.path.join(DIR_SALIDA, "22_error_analysis/casos_limite.csv"), index=False)
+df_errores_region.to_csv(os.path.join(DIR_SALIDA, "22_error_analysis/errores_por_region.csv"), index=False)
 
 df_error_resumen = pd.DataFrame([{
     "Falsos_Positivos": len(falsos_positivos), "Falsos_Negativos": len(falsos_negativos),

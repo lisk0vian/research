@@ -1,0 +1,174 @@
+dataset: derived_variables
+description: Variables created by the pipeline. stage 'etl' columns exist in df_activos/df_validas after
+  _etl.py; the others are added by the named stage.
+variables:
+- name: department_norm
+  stage: etl
+  dtype: string
+  description: department in uppercase without accents, used for grouping and the region lookup.
+  formula: normalizar_cadena(department)
+- name: natural_region
+  stage: etl
+  dtype: string
+  description: Costa, Sierra or Selva assigned to the whole department.
+  formula: lookup on department_norm (REGION_NATURAL_MAP); unmapped departments default to Sierra
+  notes: 'Coarse: one region per department, so Arequipa, Moquegua and Tacna are Costa and Huánuco is
+    Selva. Not valid for equity claims; a district-level region is pending (decision 0001, O5).'
+- name: lat
+  stage: etl
+  dtype: float
+  description: Validated latitude in decimal degrees.
+  formula: lat_raw if -18.35 <= lat_raw <= -0.02 and the paired longitude is in range, else missing
+- name: lon
+  stage: etl
+  dtype: float
+  description: Validated longitude in decimal degrees.
+  formula: lon_raw if -81.40 <= lon_raw <= -68.60 and the paired latitude is in range, else missing
+- name: coord_valid
+  stage: etl
+  dtype: int
+  description: 1 when the facility has a valid coordinate pair, else 0.
+  formula: lat and lon not missing
+- name: is_active
+  stage: etl
+  dtype: bool
+  description: True when status is ACTIVO.
+  formula: status == 'ACTIVO'
+- name: care_level
+  stage: etl
+  dtype: int
+  description: 'Care level 0 to 8 from category: 1-4 primary, 5-6 secondary, 7-8 tertiary, 0 = no category.'
+  formula: CARE_LEVEL_MAP[category]; category '0' -> 0
+  notes: II-E is level 5 and III-E is level 7. Before the 2026 adaptation, III-E and '0' were silently
+    level 1. An unknown category aborts the ETL instead of falling back.
+- name: care_tier
+  stage: etl
+  dtype: string
+  description: none, primary, secondary or tertiary.
+  formula: CARE_TIER_BY_LEVEL[care_level]
+- name: is_complex_hospital
+  stage: etl
+  dtype: bool
+  description: 'True for a categorised facility of level II-1 or above: the access target of the paper.'
+  formula: care_level >= 5
+- name: is_hospital_like_uncategorized
+  stage: etl
+  dtype: bool
+  description: True when the facility has no category but its classification is a hospital, clinic or
+    specialised institute. Sensitivity input only.
+  formula: category == '0' and classification starts with HOSPITALES O CLINICAS or INSTITUTOS DE SALUD
+    ESPECIALIZADOS
+- name: dist_km_nearest_complex
+  stage: etl
+  dtype: float
+  description: Facility-level straight-line distance in km from a located facility to the nearest located
+    facility with is_complex_hospital. Only in df_validas.
+  formula: haversine nearest neighbour (sklearn NearestNeighbors) over lat/lon, times 6371 km
+  notes: 0 km for the complex hospitals themselves. Used for the Moran statistics; df_activos carries
+    the district aggregates below.
+- name: dist_km_district_median
+  stage: etl
+  dtype: float
+  description: Median, over the located facilities of the district, of the straight-line distance to the
+    nearest located facility with is_complex_hospital.
+  formula: haversine nearest neighbour, then median by ubigeo
+  notes: Missing for districts with no located facility.
+- name: dist_km_complex_hospital
+  stage: etl
+  dtype: float
+  description: dist_km_district_median, filled with the global median where the district has no located
+    facility.
+  formula: fillna(global median of the facility-level distances)
+  notes: Straight-line, not travel time. It is the baseline of the sensitivity analysis, not the access
+    measure (decision 0001).
+- name: spatial_anomaly
+  stage: etl
+  dtype: int
+  description: 1 when at least two of IsolationForest, LocalOutlierFactor and DBSCAN flag the facility's
+    location as an outlier; taken as the maximum within the district.
+  formula: (IF + LOF + DBSCAN flags) >= 2 on standardised UTM 18S coordinates, contamination 0.08
+  notes: A geometric outlier, not a health outcome. It supplies most positive labels of the old target.
+- name: population_total
+  stage: etl
+  dtype: int
+  description: Census population of the facility's district (merge on ubigeo).
+  formula: census.population_total
+- name: pop_60_plus
+  stage: etl
+  dtype: int
+  description: Census population aged 60+ of the facility's district.
+  formula: census.pop_60_plus
+- name: pop5_with_disability
+  stage: etl
+  dtype: int
+  description: Census population aged 5+ with disability in the facility's district.
+  formula: census.pop5_with_disability
+- name: extreme_vulnerable_ratio
+  stage: 03_build_invs
+  dtype: float
+  description: Share of the district population aged 60+ or with disability, relative to total population.
+  formula: (pop_60_plus + pop5_with_disability) / (population_total + 1)
+  notes: The two groups overlap, so it can double count a person; the denominator mixes ages 5+ and all
+    ages.
+- name: VULNERABLE
+  stage: 03_build_invs
+  dtype: int
+  description: 'Legacy binary target: 1 when the facility''s district is far from a complex hospital and
+    has a high vulnerable share, or has a spatial anomaly.'
+  formula: (dist_km_complex_hospital > knee distance AND extreme_vulnerable_ratio > its 75th percentile)
+    OR spatial_anomaly == 1
+  notes: Circular with its predictors and dominated by spatial_anomaly. Dropped as the outcome by decision
+    0001; kept for the legacy stages.
+- name: dim1_isolation
+  stage: 03_build_invs
+  dtype: float
+  description: 'INVS dimension 1: distance to a complex hospital, min-max scaled.'
+  formula: minmax(dist_km_complex_hospital)
+- name: dim2_resolution
+  stage: 03_build_invs
+  dtype: float
+  description: 'INVS dimension 2: lack of resolving capacity of the facility, min-max scaled.'
+  formula: minmax(1 - care_level / 8)
+  notes: Uncategorised facilities (level 0) get the maximum lack of resolution.
+- name: dim3_demand
+  stage: 03_build_invs
+  dtype: float
+  description: 'INVS dimension 3: district population on a log scale, min-max scaled.'
+  formula: minmax(log1p(population_total))
+- name: dim4_age_vulnerability
+  stage: 03_build_invs
+  dtype: float
+  description: 'INVS dimension 4: share of population aged 60+, min-max scaled.'
+  formula: minmax(pop_60_plus / (population_total + 1))
+- name: dim5_disability
+  stage: 03_build_invs
+  dtype: float
+  description: 'INVS dimension 5: share with disability, min-max scaled.'
+  formula: minmax(pop5_with_disability / (population_total + 1))
+- name: dim6_spatial_fragility
+  stage: 03_build_invs
+  dtype: float
+  description: 'INVS dimension 6: spatial anomaly flag, scaled.'
+  formula: minmax(spatial_anomaly)
+- name: INVS
+  stage: 03_build_invs
+  dtype: float
+  description: 'National Health Vulnerability Index, 0 to 1: first principal component of the six standardised
+    dimensions, min-max scaled.'
+  formula: minmax(PCA(1).fit_transform(standardise(dim1..dim6)))
+  notes: PC1 explains about 45 % of the variance and loads on dimensions 3-5, not on isolation. PCA and
+    entropy weighting rank facilities differently (Spearman 0.66 in the 2017 run).
+- name: region_pop_ratio
+  stage: 03_build_invs
+  dtype: float
+  description: Total population of the facility's natural region divided by the district population plus
+    one.
+  formula: sum(population_total by natural_region) / (population_total + 1)
+  notes: 'Formerly tasa_vulnerabilidad_regional. It is not a vulnerability rate: it encodes region and
+    district size.'
+- name: share_60_plus
+  stage: 03_build_invs
+  dtype: float
+  description: Share of the district population aged 60+.
+  formula: pop_60_plus / (population_total + 1)
+  notes: Formerly ratio_adulto_mayor. Same quantity as dim4 before scaling.

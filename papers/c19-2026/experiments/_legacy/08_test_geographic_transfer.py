@@ -7,6 +7,8 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 from _common import *
+from _deps import *
+globals().update(load_run_state())
 
 _ld = load_df_activos()
 if _ld is not None:
@@ -150,3 +152,5 @@ else:
 
 
 print("Stage 08_test_geographic_transfer done.")
+save_run_state(df_lodo=df_lodo, df_logo_region=df_logo_region,
+               brecha_generalizacion=brecha_generalizacion)

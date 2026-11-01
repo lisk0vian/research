@@ -7,6 +7,8 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 from _common import *
+from _deps import *
+globals().update(load_run_state())
 
 _ld = load_df_activos()
 if _ld is not None:
@@ -16,11 +18,11 @@ print("\n" + "="*80 + "\n[🎯 BLOQUE 13quinquies: CONFORMAL PREDICTION (MAPIE) 
 t13d = time.time()
 if MAPIE_OK:
     # CORRECCIÓN (observación de Edith): aunque este split es interno a train
-    # (no toca X_test_puro), se agrupa igualmente por UBIGEO para mantener el
+    # (no toca X_test_puro), se agrupa igualmente por ubigeo para mantener el
     # mismo criterio de partición geográfica en TODOS los splits del pipeline,
     # evitando que establecimientos del mismo distrito queden repartidos entre
     # el subconjunto de ajuste y el de calibración conforme.
-    ubigeo_train_puro = df_activos.loc[X_train_puro.index, 'UBIGEO'].values
+    ubigeo_train_puro = df_activos.loc[X_train_puro.index, 'ubigeo'].values
     gss_cal = GroupShuffleSplit(n_splits=1, test_size=0.25, random_state=SEED_BASE)
     idx_train_cal, idx_calib = next(gss_cal.split(X_tr_sc, y_train_puro, groups=ubigeo_train_puro))
     X_train_cal, X_calib = X_tr_sc[idx_train_cal], X_tr_sc[idx_calib]
@@ -106,15 +108,15 @@ t13e = reportar_recursos("Bloque 13sexies — Sensibilidad Global Sobol/Morris",
 print("\n" + "="*80 + "\n[🧩 BLOQUE 13septies: DISCUSIÓN CAUSAL — DAG CUALITATIVO Y AJUSTE POR CONFUSORES]\n" + "="*80)
 t13f = time.time()
 print("  📌 DAG cualitativo propuesto (relación hipotética, no estimación causal fuerte):")
-print("     REGION_NATURAL → dist_km_hosp_complejo → VULNERABLE")
-print("     poblacion_total → tasa_vulnerabilidad_regional → VULNERABLE")
-print("     NIVEL (categoría EESS) → Dim2_Resolutividad → VULNERABLE")
+print("     natural_region → dist_km_complex_hospital → VULNERABLE")
+print("     population_total → region_pop_ratio → VULNERABLE")
+print("     care_level (categoría EESS) → dim2_resolution → VULNERABLE")
 print("  💡 El diseño es observacional y transversal: las asociaciones reportadas (SHAP, AUC, Sobol) son")
 print("     predictivas/asociativas, no causales en sentido estricto (no hay manipulación experimental")
 print("     ni identificación de instrumentos). Como aproximación de robustez, se ajusta un modelo lineal")
 print("     generalizado controlando confusores estructurales:")
 
-X_causal = sm.add_constant(df_activos[['dist_km_hosp_complejo', 'NIVEL', 'poblacion_total']].fillna(0))
+X_causal = sm.add_constant(df_activos[['dist_km_complex_hospital', 'care_level', 'population_total']].fillna(0))
 modelo_glm_causal = sm.GLM(df_activos['VULNERABLE'], X_causal, family=sm.families.Binomial()).fit()
 print(modelo_glm_causal.summary().tables[1])
 print("  💡 Línea de trabajo futuro declarada: Double Machine Learning (DoWhy/EconML) con instrumentos")

@@ -11,13 +11,15 @@ drive_folder: c19-2026            # MyDrive/<drive_folder>/{code,data,outputs}
 gpu: none
 
 # Installed once per runtime (cell 2). Never list torch: Colab ships a CUDA build.
-pip: [libpysal, esda, pyproj, optuna, kneed, shap, catboost, statsmodels, scikit-learn, xgboost, mapie, SALib, psutil, joblib, reportlab, factor_analyzer, matplotlib, seaborn, pandas, numpy]
+pip: [libpysal, esda, pyproj, optuna, kneed, shap, catboost, statsmodels, scikit-learn, xgboost, mapie, SALib, psutil, joblib, reportlab, factor_analyzer, matplotlib, seaborn, pandas, numpy, pyarrow, py7zr]
 
 # Commands run in order before the pipeline (cell 2); a non-zero exit stops the
 # notebook. setup = fetch data; probes = seconds-long checks of anything a long
 # stage depends on (network, a binary format, a model download).
-setup: []
-probes: []
+setup:
+  - [_download_inputs.py]
+probes:
+  - [_probe_ml.py]
 
 # The pipeline entry point (cell 3). It must accept --mode full|smoke, --force,
 # --only STAGE..., --from/--to, and report failures through _colab_runtime
@@ -27,26 +29,30 @@ report: []
 # figures: outputs/figures/*.png
 
 # Files hashed into every stage fingerprint (paths under data/ or outputs/).
-state_inputs: []
+state_inputs:
+  - data/raw/renipress_2026-10-30.csv
+  - data/raw/censo-2025-distrital.csv
+  - data/raw/per_admin_boundaries.shp.zip
+  - data/raw/per_pop_2025_CN_1km_R2025A_UA_v1.tif
+  - data/raw/2020_motorized_friction_surface.zip
+  - data/raw/TB_SINADEF_2026-10-30.csv
+  - data/raw/hybas_sa_lev01-12_v1c.zip
 # Code hashed into every fingerprint besides the stage file itself (globs).
 shared_modules: ["_*.py", "config.yaml"]
 # First stage whose work changes in smoke mode (EXP_FAST=1); earlier stages are
 # shared by smoke and full runs. Unset = every stage.
-smoke_from: null
+smoke_from: 02_geo_inputs
 
 # Stage -> what it writes, shown in notebooks/README.md.
 stages:
   00_verify_datasets: outputs/logs/verify.txt
-  01_clean_renipress: outputs/21_calidad_datos/data_quality.xlsx
-  02_spatial_clusters: outputs/16_espacial_lisa_getis/moran.txt
-  03_build_invs: outputs/03_indice_invs/ablation_invs.xlsx
-  04_define_target: outputs/04_modelado_ml/target_prevalence.txt
-  05_train_classifier: outputs/27_modelos_persistidos/modelo_final.joblib
-  06_evaluate_classifier: outputs/28_metricas_extendidas/metrics.xlsx
-  07_explain_shap: outputs/05_shap/shap_summary.png
-  08_test_geographic_transfer: outputs/09_validacion_externa/lodo.xlsx
-  09_audit_equity: outputs/06_equidad_calibracion/vif.xlsx
-  10_stress_noise: outputs/20_robustez_ruido/noise.xlsx
-  11_conformal_sota: outputs/10_conformal/conformal.xlsx
-  12_economic_priority: outputs/24_economico/cost_benefit.xlsx
-  13_reproducibility_package: outputs/39_doi_package/doi.zip
+  01_clean_renipress: outputs/21_calidad_datos/data_quality_report.csv
+  02_geo_inputs: outputs/02_geo_inputs/grid.npz
+  02_regions: outputs/02_regions/districts_regions.csv
+  03_access_travel_time: outputs/03_access_travel_time/district_access.csv
+  04_access_sensitivity: outputs/04_access_sensitivity/stability.csv
+  05_need_priority: outputs/05_need_priority/district_priority.csv
+  06_spatial_stats: outputs/06_spatial_stats/moran.csv
+  07_outcome_sinadef: outputs/07_outcome_sinadef/model_frame.parquet
+  08_validation_models: outputs/08_validation_models/summary.json
+  09_ml_checks: outputs/09_ml_checks/summary.json
