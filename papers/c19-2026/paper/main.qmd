@@ -33,10 +33,9 @@ abstract: |
   The share of people counted as far from hospital care is a planning input,
   yet it rests on measurement choices that national studies rarely test. We estimated travel time to public complex hospitals
   (Ministry of Health and regional governments, category II-1 or above) for
-  1,872 Peruvian districts, weighting a 30-arc-second friction-surface estimate
-  by 2025 census population, and tested how much the identification of
-  underserved districts depends on the measure and whether it tracks an external
-  outcome. The person-weighted mean travel time was 37.8 minutes;
+  1,872 Peruvian districts, weighting friction-surface estimates by 2025 census
+  population, and tested whether the identification of underserved districts
+  depends on the measure and whether the measure tracks an external outcome. The person-weighted mean travel time was 37.8 minutes;
   10.9 % of residents lived in cells more than 60 minutes away, but 12.5 % lived
   in districts whose mean exceeded 60 minutes. Agreement with OpenStreetMap
   routing reached Spearman 0.801 outside the Amazon departments and 0.653 inside
@@ -78,22 +77,15 @@ cannot reach a health facility within one hour by motorized transport, and
 43.3 % cannot on foot [@weiss2020]. National studies built on similar models
 report, for instance, that 29.0 % of people in sub-Saharan Africa live more than
 two hours from a public hospital [@ouma2018] and that access falls steeply from
-cities to villages and dispersed rural areas [@florio2023]; others combine travel
-time with the burden of surgical disease [@juran2018].
+cities to villages and dispersed rural areas [@florio2023].
 
-These figures depend on how access is measured. Access is a multidimensional
-concept [@penchansky1981], and its spatial component alone requires a chain of
-decisions: a metric (straight-line distance, network distance or travel time),
-an access model (the nearest facility or a floating catchment that weighs supply
-against demand), a set of destinations, and a population unit with its
-weighting [@guagliardo2004; @wang2012; @neutens2015]. Each link can change the
-result. Accessibility computed from areal centroids carries aggregation error
-[@hewko2002; @apparicio2008; @apparicio2017], raster and network models
-identify the same underserved areas but count different numbers of people in
-them [@delamater2012], and aggregate statistics shift with the areal units used
-[@openshaw1984; @fotheringham1991]. In rural Haiti five measures of access to
-public hospitals correlated at 0.78 to 0.99, yet straight-line distance
-overstated the population covered within a given threshold [@bhangdia2022].
+These figures depend on how access is measured. Access is multidimensional
+[@penchansky1981], and even its spatial component requires a chain of
+decisions, a metric, an access model, a set of destinations and a population
+unit with its weighting, each of which can change the result [@wang2012;
+@neutens2015; @delamater2012]. In rural Haiti, five measures of access to public
+hospitals correlated at 0.78 to 0.99, yet straight-line distance overstated the
+population covered within a given threshold [@bhangdia2022].
 
 Two gaps follow for national planning in low- and middle-income countries.
 First, measures are usually compared through correlations, whereas the planning
@@ -129,63 +121,58 @@ a reproducible district measure weighted by the 2025 census and checked against
 an alternative routing engine; second, evidence that aggregation and the access
 model, rather than the choice of destinations, change which districts are
 flagged; and third, a pre-specified negative test that shows the limits of place
-of death as a criterion for validating access measures. The analysis plan was
-version-controlled before the data were analyzed, and every deviation from it is
-reported with its timing (Appendix A).
+of death as a criterion for validating access measures. Deviations from the
+version-controlled analysis plan are reported with their timing (Appendix A).
 
 # Background {#sec-background}
 
 ## Why measures of access disagree
 
 Distance-based measures summarize the impedance between a population and its
-nearest facility; gravity and floating catchment measures add supply and
-competing demand. The two-step floating catchment area method (2SFCA) computes,
-for each facility, a supply-to-demand ratio within a travel-time catchment and
-then sums the ratios reachable from each population location [@luo2003];
-enhanced versions weight both steps by distance decay [@luo2009]. Because
-nearest-facility and catchment measures answer different questions, proximity
-versus availability, they need not agree. Reviews have repeatedly asked that
-the choice be justified rather than assumed [@wang2012; @neutens2015].
+nearest facility; floating catchment measures add supply and competing demand.
+The two-step floating catchment area method (2SFCA) computes a supply-to-demand
+ratio within each facility's travel-time catchment and sums the ratios reachable
+from each population location [@luo2003]. Proximity and availability need not
+agree, and reviews ask that the choice be justified rather than assumed
+[@wang2012; @neutens2015].
 
-The population unit adds a second layer of variation. Accessibility computed at
+The population unit adds a second source of variation. Accessibility computed at
 the centroid of an areal unit stands in for every resident of that unit. In
-Montreal, centroid-based measures were accurate for most census tracts but
-produced important errors for 5–10 % of them, mostly in the suburbs, where
-residents are spread unevenly [@apparicio2008], and a later comparison found
-errors of the same order [@apparicio2017]. Aggregation error arises whenever a
-single point stands for a population spread across an area, and finer data on
-where people live within each unit reduce it [@hewko2002]; it is the local form
-of the modifiable areal unit problem [@openshaw1984]. Peru's
-districts range from city blocks to Amazonian territories of thousands of square
-kilometers, so this problem cannot be assumed away.
+Montreal, centroid-based measures were accurate for most census tracts but erred
+importantly for 5–10 % of them, mostly suburban tracts with unevenly spread
+residents [@apparicio2008], and a later comparison found errors of the same order
+[@apparicio2017]. Aggregation error arises whenever a single point stands for a
+population spread across an area, and finer data on where people live reduce it
+[@hewko2002]; it is the local form of the modifiable areal unit problem
+[@openshaw1984]. Peru's districts range from city blocks to Amazonian
+territories of thousands of square kilometers, so the problem cannot be assumed
+away.
 
 ## Validating national travel-time maps
 
 Friction surfaces convert land cover, roads, slope and water into the time
-needed to cross each cell, and accumulate cost from the destinations
-[@weiss2018; @weiss2020]. Several studies have set their estimates against
-routing services and reported journeys. Against Google driving directions, the
-global accessibility indicators were shorter in most journeys, with a median
-difference of $-16.9$ % [@nelson2019]. Women in rural Rwanda reported journeys to
-a district hospital 1.49 times longer than modeled [@rudolfson2020], and in
-Lagos replicated drives to emergency obstetric care took a median of 50 minutes,
-against 5 minutes from a friction surface and 11 minutes from OpenStreetMap
-routing [@bankethomas2021]. Agreement in ranking does not, therefore, imply
-agreement in minutes, and the error is largest in congested cities and where
-transport is not motorized.
+needed to cross each cell and accumulate cost from the destinations
+[@weiss2020]. Against Google driving directions, global accessibility estimates
+were shorter in most journeys, with a median difference of $-16.9$ %
+[@nelson2019]. Women in rural Rwanda reported journeys to a district hospital
+1.49 times longer than modeled [@rudolfson2020], and in Lagos replicated drives
+to emergency obstetric care took a median of 50 minutes, against 5 minutes from
+a friction surface and 11 from OpenStreetMap routing [@bankethomas2021].
+Agreement in ranking does not imply agreement in minutes, and the error is
+largest in congested cities and where transport is not motorized.
 
 ## Access and where people die
 
 Most death registration systems record the place of death, and studies of
-end-of-life care use it as an indicator. Its determinants extend well beyond
+end-of-life care use it as an indicator. Its determinants reach well beyond
 distance: among people with cancer, home death is associated with low functional
-status, patient preference, home care and family support [@gomes2006], and in Latin
-America with older age, lower education and, in some countries, rural residence
-[@cordoba2026]. In Peru, 41.3 % of deaths registered between 2017 and 2024
-occurred at home, with marked differences by insurance, education, ethnicity and
-department [@mirandachavez2026]. Whether modeled travel time adds to these
-determinants has not been tested in Peru. If it does, place of death could serve
-as an external check on access measures, which is the test RQ3 sets out.
+status, patient preference, home care and family support [@gomes2006], and in
+Latin America with older age, lower education and, in some countries, rural
+residence [@cordoba2026]. In Peru, 41.3 % of deaths registered between 2017 and
+2024 occurred at home, with marked differences by insurance, education,
+ethnicity and department [@mirandachavez2026]. Whether modeled travel time adds
+to these determinants has not been tested in Peru; if it does, place of death
+could serve as an external check on access measures, the test RQ3 sets out.
 
 # Study area and data {#sec-data}
 
@@ -197,8 +184,7 @@ complex hospitals, defined as Ministry of Health and regional-government
 facilities of category II-1 or above in the national registry of health
 establishments [@renipress2026]; the registry lists their institution, category
 and coordinates. Population counts come from the census and are distributed
-within districts with the 2025 WorldPop constrained grid [@bondarenko2025;
-@tatem2017]. Travel time uses the 2020 motorized and walking-only friction
+within districts with the 2025 WorldPop constrained grid [@bondarenko2025]. Travel time uses the 2020 motorized and walking-only friction
 surfaces of the Malaria Atlas Project [@weiss2020]. District polygons come from
 the Common Operational Dataset of administrative boundaries [@ocha2025]: of the
 1,893 census districts, 21 have no polygon (294,298 residents, mostly districts
@@ -213,107 +199,97 @@ national roll-out is described by Vargas-Herrera et al. [-@vargas2018].
 
 | Data | Source, version | Unit or resolution | Use |
 |----------|------------------------------------|---------------|---------------|
-| Health facilities | National registry of health establishments (RENIPRESS), October 2026 | Facility, coordinates | Destinations (category II-1+) |
+| Health facilities | RENIPRESS registry, October 2026 | Facility, coordinates | Destinations (category II-1+) |
 | Population | Census 2025, district counts; WorldPop R2025A constrained grid | 1,893 districts; 30 arc-seconds | Population weights |
 | Friction | Malaria Atlas Project, motorized and walking-only, 2020 | $\approx$ 1 km | Travel time |
 | Boundaries | COD-AB Peru, Admin 3 | 1,873 polygons | District geometry |
 | Elevation | Copernicus DEM GLO-30 | 30 m | District mean altitude |
 | Basins | HydroBASINS level 4, v1c | Sub-basin | Amazon basin flag |
 | Routing | OSRM demo server on OpenStreetMap data | Road network | Convergent check |
-| Deaths | Death certificates (SINADEF), January 2017–November 2025 | Death | Outcome (RQ3) |
+| Deaths | SINADEF death certificates, January 2017–November 2025 | Death | Outcome (RQ3) |
 
 # Methods {#sec-methods}
 
-Fig. @fig-workflow summarizes the workflow. Every number reported below is
-produced by a version-controlled pipeline run on Colab, and every figure and
-table is generated from its outputs.
+Fig. @fig-workflow summarizes the workflow; every number, figure and table comes
+from the outputs of a version-controlled pipeline.
 
 ![Data sources, measurement, checks and the three research questions.](media/Fig1_workflow.pdf){#fig-workflow width=1}
 
 ## Destinations and population
 
-We restricted destinations to the public network of the Ministry of Health
-and regional governments, open to the general population; social-security,
-armed-forces and police hospitals serve their affiliates and private hospitals
-charge fees. Alternative destination sets enter the sensitivity analysis. Of the 182 geolocated public complex hospitals, 172 lay inside their
-own district polygon and 7 within 20 km of its boundary. Two lay more than
-200 km away, an error in their coordinates, and were excluded from the main set;
-re-placing them at their district centroid changed the 60-minute class of
-1.12 % of districts (pre-specified limit 5 %). One hospital belonged to a
-district without a polygon. <!-- claim-17, claim-3 --> The 180 hospitals in the
-main set occupy 174 grid cells. <!-- claim-17 -->
-
-We allocated census counts to the cells of a 30 arc-second grid (about 927 m)
-in proportion to the WorldPop estimates, so that each district keeps its census
-total exactly; this dasymetric step follows the logic of the WorldPop models
-themselves [@stevens2015] while anchoring the totals to the census.
+Destinations are the hospitals of the Ministry of Health and regional
+governments, the public network open to the general population; the other
+networks serve affiliates or charge fees and enter only as sensitivity
+variants. Of the 182 geolocated
+public complex hospitals, 172 lay inside their district polygon and 7 within
+20 km of its boundary; two lay more than 200 km away because of coordinate
+errors and were excluded, and re-placing them at their district centroid changed
+the 60-minute class of 1.12 % of districts (pre-specified limit 5 %). One
+belonged to a district without a polygon. <!-- claim-17, claim-3 --> The 180
+hospitals of the main set occupy 174 grid cells. <!-- claim-17 --> Census counts
+were allocated to the cells of a 30 arc-second grid (about 927 m) in proportion
+to the WorldPop estimates, so that each district keeps its census total exactly.
 
 ## Travel time and district summaries
 
 We computed travel time from every cell to the nearest hospital as a
 multi-source accumulated cost over the motorized friction surface with
-Dijkstra's algorithm [@dijkstra1959; @virtanen2020], with cell widths corrected
-for latitude and the friction resampled to the grid by nearest neighbor. For
-each district we report the person-weighted mean travel time and the share of
-residents whose cells lie beyond 60 and 120 minutes. The 60-minute threshold is
-the main one, as in global reporting [@weiss2020]; 120 minutes, the surgical
-access benchmark [@meara2015], is secondary because the convergent check showed
-weak agreement on that class (Section @sec-res-osrm). We also report the
-district-weighted mean, to show how much the headline changes when every
-district counts equally, and the share of people living in districts whose
-person-weighted mean exceeds each threshold, the unit at which planning lists
-are usually drawn. We group districts by the Amazon basin, from HydroBASINS
-level 4 [@lehner2013], and by mean altitude: below 500 m, 500–2,500 m, and the
-high (2,500–3,500 m) and very high ($\geq$ 3,500 m) altitude classes of Barry and
-Pollard [-@barry2003].
+Dijkstra's algorithm [@dijkstra1959; @virtanen2020], correcting cell widths for
+latitude and resampling the friction by nearest neighbor. For each district we
+report the person-weighted mean travel time, the share of residents in cells
+beyond 60 and 120 minutes, the district-weighted mean, and the share of people
+in districts whose person-weighted mean exceeds each threshold, the unit at
+which planning lists are drawn. Sixty minutes is the main threshold, as in
+global reporting [@weiss2020]; 120 minutes, the surgical benchmark
+[@meara2015], is secondary because the routing check agreed weakly on that
+class. Districts are grouped by the Amazon basin [HydroBASINS level 4,
+@lehner2013] and by mean altitude: below 500 m, 500–2,500 m, and the high
+(2,500–3,500 m) and very high ($\geq$ 3,500 m) classes of Barry and Pollard
+[-@barry2003].
 
 ## Convergent check against routing
 
 We routed a pre-specified sample of 200 district centroids, stratified by
 quintile of travel time, by car to their three nearest hospitals with OSRM
-[@luxen2011] and kept the shortest time; a second, enriched sample of 150
-districts with mean travel time above 45 minutes probes the remote tail. Both
-engines rest on OpenStreetMap roads, so this is a check of convergent, not
-independent, validity [@osm2026]. The pre-specified rule required a Spearman correlation
-of at least 0.80 outside the Amazon; at the time, the Amazon was proxied by five
-departments, and we report the basin split as a post hoc refinement. Six
-pairs of departmental capitals were compared in the same way.
+[@luxen2011] and kept the shortest time; an enriched sample of 150 districts
+with mean travel time above 45 minutes probes the remote tail. Both engines rest
+on OpenStreetMap roads [@osm2026], so the check is of convergent, not
+independent, validity. The pre-specified rule required a Spearman correlation of
+at least 0.80 outside the Amazon, then proxied by five departments; the basin
+split is post hoc. Six pairs of departmental capitals were compared in the same
+way.
 
 ## Sensitivity to the measure (RQ2)
 
-Against the main measure we compared ten variants. Two use straight-line
-distance, from the district centroid and population-weighted. One reads the
-travel time at the district's center cell, without population weighting, to
-isolate aggregation (the pre-specified check of whether weighting matters,
-refuted if Spearman $\geq$ 0.95). One multiplies travel time by the OSRM-to-friction
-ratio of its trip-length band. Three widen the destination set (adding
-social-security hospitals, all complex hospitals, and uncategorised
-hospital-like facilities). One uses the walking-only surface. Two compute a
-2SFCA score [@luo2003] with 60- and 120-minute catchments, with supply equal to
-the number of hospitals in each cell of a grid four times coarser than the main
-one, read as a person-weighted district mean.
-
-For each variant we report Spearman's correlation with a bootstrap 95 % CI over
-districts, Kendall's tau, the Jaccard overlap of the 100 worst-access districts,
-and Cohen's kappa [@cohen1960] for the deficient-access class at 60 and
-120 minutes. Variants in minutes use the same thresholds; variants in other
-units flag the same number of districts as the main measure, so that kappa
-compares classifications rather than units. Under the pre-specified
-criterion, Spearman $\geq$ 0.95 together with kappa $\geq$ 0.90 for straight-line distance
-would have shown that travel time adds nothing to it.
+We compared ten variants with the main measure: straight-line distance from the
+district centroid and population-weighted; travel time at the district's center
+cell, which isolates aggregation (the pre-specified test of whether population
+weighting matters, refuted if Spearman $\geq$ 0.95); travel time multiplied by
+the OSRM-to-friction ratio of its trip-length band; three wider destination sets
+(adding social-security hospitals, all complex hospitals and uncategorized
+hospital-like facilities); walking time; and a 2SFCA score [@luo2003] with 60-
+and 120-minute catchments, supply equal to the number of hospitals in each cell
+of a grid four times coarser, read as a person-weighted district mean. For each
+we report Spearman's correlation with a bootstrap 95 % CI over districts,
+Kendall's tau, the Jaccard overlap of the 100 worst-access districts, and
+Cohen's kappa [@cohen1960] for the deficient-access class at 60 and
+120 minutes. Variants in minutes use the same thresholds; the others flag the
+same number of districts as the main measure, so that kappa compares
+classifications rather than units. Under the pre-specified criterion, Spearman
+$\geq$ 0.95 together with kappa $\geq$ 0.90 for straight-line distance would
+have shown that travel time adds nothing to it.
 
 ## Need and spatial structure
 
-We summarized need as the sum of the z-scores of the census share of residents
-aged 60 or over and the share aged 5 or over with a disability, with equal
-weights. A district is high-need if the sum is positive and has deficient access
-if its person-weighted mean exceeds 60 minutes. We assessed stability across
-five weighting schemes; a composite ranking was to be reported only if Kendall's
-tau between schemes reached 0.80. Spatial clustering of person-weighted travel
-time was tested with global Moran's I and local indicators of spatial
-association [@anselin1995] under queen contiguity and four and eight nearest
-neighbors, with 9,999 permutations and false-discovery-rate control
-[@benjamini1995], using PySAL [@rey2022].
+Need is the sum of the z-scores of the census shares of residents aged 60 or
+over and aged 5 or over with a disability. A district is high-need if the sum is
+positive and has deficient access if its person-weighted mean exceeds
+60 minutes; a composite ranking was to be reported only if Kendall's tau across
+five weighting schemes reached 0.80. Clustering of travel time was tested with
+global Moran's I and local indicators of spatial association [@anselin1995]
+under queen contiguity and four and eight nearest neighbors, with 9,999
+permutations and false-discovery-rate control [@benjamini1995], in PySAL
+[@rey2022].
 
 ## External outcome test (RQ3)
 
@@ -321,39 +297,36 @@ The outcome is death outside a health facility (at home, on a public road or in
 another non-facility place) among deaths registered in 2022–2025, assigned to
 the district of residence. The main population, fixed before the death records
 were read, is deaths from causes amenable to timely hospital care, adapted from
-the concept of amenable mortality [@nolte2003]: acute conditions (myocardial
-infarction, stroke and obstetric causes) and chronic conditions (diabetes,
-hypertensive disease, chronic lower respiratory disease and chronic kidney
-disease). H3a states that longer travel time increases the odds of dying outside
-a facility; H3b, that the gradient is steeper for acute than for chronic causes.
-
-We fitted a logistic regression with department fixed effects and
-district-clustered standard errors, giving a population-averaged odds ratio per
-60 minutes, adjusted for age group, sex, cause group and district mean altitude
-[@cameron2015; @mundlak1978]. Sensitivity analyses comprise a generalized
-estimating equation with exchangeable correlation [@liang1986], the exclusion of
-districts with low registration completeness, the exclusion of the unclassified
-"other place" category, the period 2020–2021, a within-department permutation
-placebo (200 permutations), and cancer deaths as a negative control. A
-simulation with known truth, with district random intercepts and the observed
-baseline odds, estimated the false-positive rate, bias and coverage of the
-estimator, following Morris et al. [-@morris2019]; the plan required a
+the concept of amenable mortality [@nolte2003]: acute (myocardial infarction,
+stroke, obstetric causes) and chronic (diabetes, hypertensive disease, chronic
+lower respiratory disease, chronic kidney disease). H3a states that longer
+travel time raises the odds of dying outside a facility; H3b, that the gradient
+is steeper for acute causes. We fitted a logistic regression with department
+fixed effects and district-clustered standard errors, giving a
+population-averaged odds ratio per 60 minutes adjusted for age group, sex (as
+recorded on the death certificate: male, female or not recorded), cause group
+and district mean altitude [@cameron2015; @mundlak1978]. Sensitivity
+analyses comprise an exchangeable generalized estimating equation
+[@liang1986], the exclusion of low-completeness districts or of the
+unclassified "other place" category, the period 2020–2021, a within-department
+permutation placebo and cancer deaths as a negative control. A known-truth
+simulation with district random intercepts estimated the false-positive rate,
+bias and coverage of the estimator [@morris2019]; the plan required a
 false-positive rate of at most 7 % for confirmatory use.
 
 ## Analysis plan, deviations and software
 
 The plan was frozen in a version-controlled file before any access result was
-computed and amended in dated versions; it was not deposited in a public
-registry, so we describe it as pre-specified rather than pre-registered.
-Appendix A lists each deviation, when it was declared, and why. Two
-machine-learning checks were subordinate to the main analysis: a ridge
-calibration of the OSRM-to-friction ratio, used only as a sensitivity variant,
-and a gradient-boosting test of whether travel time improves the prediction of
-place of death; both were validated by leaving one department out
-[@roberts2017; @ploton2020]. Models used statsmodels [@seabold2010] and
-scikit-learn [@pedregosa2011]. Code, the cached routing responses and the
-notebook that reproduces every output are archived in a public repository
-(reference withheld for anonymized review).
+computed and amended in dated versions. It was not deposited in a public
+registry, so we call it pre-specified rather than pre-registered; Appendix A
+lists each deviation with its timing. Two machine-learning checks were
+subordinate: a ridge calibration of the OSRM-to-friction ratio, used only as a
+sensitivity variant, and a gradient-boosting test of whether travel time
+improves the prediction of place of death, both validated by leaving one
+department out [@roberts2017; @ploton2020]. Models used statsmodels
+[@seabold2010] and scikit-learn [@pedregosa2011]. Code, cached routing responses
+and the notebook that reproduces every output are archived in a public
+repository (reference withheld for anonymized review).
 
 # Results {#sec-results}
 
@@ -381,7 +354,7 @@ within 30 minutes, the lowest of any band, but 97.4 % were within two hours.
 the person-weighted mean reached 274.2 minutes (Table @tbl-equity).
 <!-- claim-23 -->
 
-![Travel time to the nearest public complex hospital. (a) Populated 30 arc-second cells by travel-time class, with the hospitals of the main set; unpopulated cells are blank. (b) Share of the population within each travel time, nationally and by district mean altitude. Map lines delineate study areas and do not necessarily depict accepted national boundaries.](media/Fig2_access.pdf){#fig-access width=1}
+![Travel time to the nearest public complex hospital. (a) Travel-time class of populated 30 arc-second cells (unpopulated cells blank) and hospitals of the main set. (b) Population within each travel time, nationally and by district mean altitude. Map lines delineate study areas and do not necessarily depict accepted national boundaries.](media/Fig2_access.pdf){#fig-access width=1}
 
 : Person-weighted travel time to the nearest public complex hospital by Amazon basin and district mean altitude. [Computed over populated grid cells; post hoc and descriptive. Altitude bands from Barry and Pollard (2003) above 2,500 m.]{.note} {#tbl-equity}
 
@@ -401,28 +374,25 @@ the person-weighted mean reached 274.2 minutes (Table @tbl-equity).
 
 ## Agreement with routing {#sec-res-osrm}
 
-Of the 200 pre-specified centroids, 199 were routed. Overall, friction and OSRM
-times correlated at Spearman 0.738. Outside the five Amazon departments, the
-stratum to which the pre-specified rule applied, the correlation was 0.801
-(95 % CI 0.733–0.854, n = 174): the point estimate met the 0.80 threshold, but
-the interval crosses it. With the HydroBASINS basin, agreement was 0.850
-outside the basin (n = 86) and 0.653 inside it (n = 113); within the basin it
-was 0.705 above 500 m (n = 96) and 0.513 in the lowland (n = 17, 95 % CI $-0.057$
-to 0.919). In the enriched remote sample it fell to 0.400 (n = 149).
-<!-- claim-2 --> OSRM times were longer than friction times in the
-pre-specified sample (median ratio 1.17) and shorter in the lowland basin
-(0.82), where the friction surface has no river transport and OSRM snaps
-centroids to the nearest road. <!-- claim-18 --> The two engines agreed weakly on
-the 120-minute class (kappa 0.342 across both samples). <!-- claim-1 --> For six
-pairs of departmental capitals the mean absolute difference between engines was
-18.0 % (Supplementary Table S1 and Fig. S1). <!-- claim-18 -->
+Of the 200 pre-specified centroids, 199 were routed, and friction and OSRM times
+correlated at Spearman 0.738. Outside the five Amazon departments, where the
+pre-specified rule applied, the correlation was 0.801 (95 % CI 0.733–0.854,
+n = 174): the point estimate met the threshold, but the interval crosses it.
+Split by the HydroBASINS basin, agreement was 0.850 outside (n = 86) and 0.653
+inside (n = 113), and it fell to 0.400 in the enriched remote sample (n = 149;
+Supplementary Table S1). <!-- claim-2 --> OSRM times exceeded friction times in
+the pre-specified sample (median ratio 1.17) but fell short of them in the
+lowland basin (0.82), where the friction surface lacks river transport and OSRM
+snaps centroids to the nearest road. <!-- claim-18 --> Agreement on the
+120-minute class was weak (kappa 0.342). <!-- claim-1 --> Between six pairs of
+departmental capitals the engines differed by 18.0 % on average
+(Supplementary Fig. S1). <!-- claim-18 -->
 
 ## Which districts each measure flags {#sec-res-rq2}
 
-The destination set barely mattered: adding social-security hospitals, all
-complex hospitals or uncategorised hospital-like facilities kept Spearman at
-0.991–0.993 and kappa at 60 minutes at 0.978–0.990 (Table @tbl-rq2).
-<!-- claim-10 --> The other choices mattered more.
+The destination set barely mattered (Spearman 0.991–0.993 and kappa at
+60 minutes 0.978–0.990; Table @tbl-rq2); the other choices mattered more.
+<!-- claim-10 -->
 
 Straight-line distance ranked districts much as travel time did (Spearman 0.902
 from the centroid and 0.923 population-weighted) but agreed less on who is
@@ -436,25 +406,22 @@ flagged only by travel time are in the Amazon basin and 52 lie at 500–2,500 m,
 whereas 57 of those flagged only by distance lie at 3,500 m or more.
 <!-- claim-19 -->
 
-Aggregation changed the count more than the ranking. Travel time read at the
-district's center cell correlated with the person-weighted measure at 0.810
-(95 % CI 0.788–0.830), below the 0.95 at which the simpler measure would have
-sufficed, and it flagged 1,010 districts instead of 746 at 60 minutes, and 537
-instead of 235 at 120 minutes. <!-- claim-13 --> Walking time ranked districts
-like motorized time (0.958) but, at the same threshold, flagged 1,686 of the
-1,872 districts. <!-- claim-14 -->
+Aggregation changed the count more than the ranking: travel time at the
+district's center cell correlated with the person-weighted measure at 0.810,
+below the 0.95 at which the simpler measure would have sufficed, yet flagged
+1,010 districts instead of 746 at 60 minutes and 537 instead of 235 at
+120 minutes. <!-- claim-13 --> Walking time ranked districts like motorized time
+(0.958) but flagged 1,686 of the 1,872 districts at the same threshold.
+<!-- claim-14 -->
 
-The catchment model departed furthest. The 2SFCA score correlated with travel
-time at 0.524 with a 60-minute catchment and 0.306 with a 120-minute catchment,
-and flagging the same number of districts gave kappa of 0.539 and 0.271. With
-the 60-minute catchment, 14.9 % of districts, holding 4.2 % of the population,
-had no hospital within reach and a score of zero; those districts agreed with
-the travel-time class at kappa 0.418. <!-- claim-11 --> Under the pre-specified
-criteria, straight-line distance did not reproduce the travel-time
-classification (Spearman below 0.95 and kappa below 0.90), and population
-weighting was not redundant.
+The catchment model departed furthest (Spearman 0.524 and 0.306 with 60- and
+120-minute catchments; kappa 0.539 and 0.271). With the 60-minute catchment,
+14.9 % of districts, holding 4.2 % of the population, had no hospital within
+reach. <!-- claim-11 --> Under the pre-specified criteria, straight-line distance
+did not reproduce the travel-time classification, and population weighting was
+not redundant.
 
-: Agreement between the main measure and each variant. [The main measure flags 746 districts at 60 min and 235 at 120 min. Kappa: variants in minutes use the same thresholds; straight-line and 2SFCA variants flag as many districts as the main measure, all tied scores at the cut included. Top-100 Jaccard is undefined (—) when tied scores straddle the 100th district. 2SFCA districts with no hospital in the catchment against the >60 min class: kappa 0.418 (60-min catchment) and 0.326 (120 min).]{.note} {#tbl-rq2}
+: Agreement between the main measure and each variant. [The main measure flags 746 districts at 60 min and 235 at 120 min. Kappa: variants in minutes use the same thresholds; straight-line and 2SFCA variants flag as many districts as the main measure, all tied scores at the cut included. —: Jaccard undefined because tied scores straddle the 100th district. 2SFCA districts with no hospital in the catchment against the >60 min class: kappa 0.418 (60-min catchment) and 0.326 (120 min).]{.note} {#tbl-rq2}
 
 | Variant | Spearman (95 % CI) | Kendall | Top-100 Jaccard | $\kappa$ 60 min | $\kappa$ 120 min | Districts flagged (60 / 120 min) |
 |----------------------------------|------------------|--------|---------|--------|--------|---------------|
@@ -469,7 +436,7 @@ weighting was not redundant.
 | 2SFCA, 60-min catchment (hospitals per 10,000) | 0.524 (0.483–0.562) | 0.361 | — | 0.539 | 0.545 | 746 / 279 |
 | 2SFCA, 120-min catchment (hospitals per 10,000) | 0.306 (0.256–0.348) | 0.215 | 0.504 | 0.271 | 0.494 | 746 / 235 |
 
-![Where straight-line distance and travel time disagree. (a) Districts flagged as deficient by travel time (>60 min), by population-weighted straight-line distance cut to flag the same number of districts (33.1 km), by both or by neither. (b) Straight-line distance against travel time by district, colored by mean altitude; dashed lines mark the two cuts. Map lines delineate study areas and do not necessarily depict accepted national boundaries.](media/Fig3_methods.pdf){#fig-methods width=1}
+![Where straight-line distance and travel time disagree. (a) Districts flagged as deficient by travel time (>60 min), by population-weighted straight-line distance (cut at 33.1 km to flag as many districts), by both or by neither. (b) Both measures by district, colored by mean altitude; lines mark the two cuts. Map lines delineate study areas and do not necessarily depict accepted national boundaries.](media/Fig3_methods.pdf){#fig-methods width=1}
 
 ## Need and spatial structure {#sec-res-need}
 
@@ -485,199 +452,182 @@ with 9,999 permutations), but the number of significant local clusters varied
 from 235 to 456 districts across neighborhood definitions, so local clusters
 are not reported as findings. <!-- claim-12 -->
 
-![Need and access by district. Need: sum of the z-scores of the shares aged 60 or over and with a disability; deficient access: person-weighted mean travel time above 60 min. The key gives the number of districts and the share of the population in each class. The blank polygon (Mazamari–Pangoa) has no census row. Map lines delineate study areas and do not necessarily depict accepted national boundaries.](media/Fig4_need_access.pdf){#fig-need width=0.46}
+![Need and access by district. Need: sum of z-scores of the shares aged 60 or over and with a disability; deficient access: mean travel time above 60 min. The key gives districts and share of the population per class; the blank polygon has no census row. Map lines delineate study areas and do not necessarily depict accepted national boundaries.](media/Fig4_need_access.pdf){#fig-need width=0.46}
 
 ## Travel time and dying outside a facility {#sec-res-rq3}
 
-Of 601,092 deaths registered in 2022–2025, 593,438 had a usable district of
-residence and place of death; 590,654 had the district resolved by name, and
-70,496 of these were due to amenable causes. <!-- claim-20 --> Among amenable
-deaths, travel time was not associated with dying outside a facility: the odds
-ratio per 60 minutes was 1.005 (95 % CI 0.986–1.025, p = 0.607), and the
-within-department placebo gave p = 0.61 (Fig. @fig-rq3). <!-- claim-4, claim-20 -->
-The estimate stayed near one when low-completeness districts or the "other
-place" category were excluded and in 2020–2021. The exchangeable GEE gave 0.992
-(0.977–1.009); its sign is opposite to the main estimate, so the pre-specified
-"same sign" criterion was not met, although neither estimator detected an
-association. <!-- claim-24 --> The acute and chronic gradients did not differ
-(odds ratios 1.000 and 1.020; interaction p = 0.251; Supplementary Table S4). <!-- claim-24 -->
+Of 601,092 deaths registered in 2022–2025, 593,438 entered the model frame and
+590,654 had the district resolved by name; 70,496 of these were due to amenable
+causes. <!-- claim-20 --> Among amenable deaths, travel time was not associated
+with dying outside a facility (odds ratio per 60 minutes 1.005, 95 % CI
+0.986–1.025, p = 0.607; placebo p = 0.61; Fig. @fig-rq3). <!-- claim-4, claim-20 -->
+The estimate stayed near one without low-completeness districts or the "other
+place" category and in 2020–2021. The exchangeable GEE gave 0.992 (0.977–1.009),
+of opposite sign, so the pre-specified "same sign" criterion was not met,
+although neither estimator detected an association. Acute and chronic gradients
+did not differ (1.000 and 1.020; interaction p = 0.251; Supplementary Table S4).
+<!-- claim-24 -->
 
-![Odds ratios of dying outside a health facility per 60 minutes of travel time, with 95 % CIs. H3a: amenable causes (pre-specified) and its sensitivity analyses; H3b: acute and chronic amenable causes; other cause groups; all causes (exploratory). The dashed line marks the odds ratio planted in the simulation.](media/Fig5_rq3.pdf){#fig-rq3 width=1}
+![Odds ratios of dying outside a health facility per 60 minutes of travel time (95 % CIs): H3a and its sensitivity analyses, H3b, other cause groups and all causes (exploratory). Dashed line: odds ratio planted in the simulation.](media/Fig5_rq3.pdf){#fig-rq3 width=1}
 
 Over all causes the odds ratio was 1.037 (1.023–1.052), but this exploratory
-gradient was not specific to access-sensitive causes: it was driven by the
-residual "other" group (1.053, 1.034–1.071), and cancer, the negative control,
-showed a similar non-significant estimate (1.032, 0.978–1.090). <!-- claim-5 -->
-Two diagnostics bound the interpretation. In the known-truth simulation the
-estimator had a false-positive rate of 7.6 % (Monte Carlo SE 1.2 %), above the
-pre-specified 7 %, and 90.0 % coverage at a planted odds ratio of 1.10, which it
-detected with power 0.99 (Supplementary Table S2); by the plan's rule the model
-is therefore used descriptively, not for confirmatory inference. <!-- claim-6, claim-24 --> Second,
-the cause was unknown more often for deaths outside facilities, most of all near
-hospitals (22.5 % against 12.9 % in facilities within 30 minutes; 11.3 % against
-9.1 % beyond 120 minutes; Supplementary Table S5). <!-- claim-15 --> If
-unknown-cause deaths are amenable in similar proportion across travel times,
-excluding them removes more outside deaths near hospitals, which would steepen
-rather than flatten the gradient. A gradient-boosting model gained no predictive
-value from travel time among amenable deaths (change in Brier score $-0.00292$,
-95 % CI $-0.00574$ to $-0.00012$; Supplementary Table S3). <!-- claim-8 -->
+gradient came from the residual "other" group (1.053, 1.034–1.071), and cancer,
+the negative control, gave a similar estimate (1.032, 0.978–1.090).
+<!-- claim-5 --> The simulation bounds the interpretation: the estimator's
+false-positive rate was 7.6 % (Monte Carlo SE 1.2 %), above the pre-specified
+7 %, and it covered a planted odds ratio of 1.10 in 90.0 % of replications,
+detecting it with power 0.99 (Supplementary Table S2); by the plan's rule the
+model is used descriptively. <!-- claim-6, claim-24 --> The cause was unknown
+more often for deaths outside facilities, most of all near hospitals (22.5 %
+against 12.9 % in facilities within 30 minutes; 11.3 % against 9.1 % beyond
+120 minutes; Supplementary Table S5). <!-- claim-15 --> If those deaths are
+amenable in similar proportion across travel times, excluding them steepens
+rather than flattens the gradient. Travel time also added no predictive value
+among amenable deaths in a gradient-boosting model (Supplementary Table S3).
+<!-- claim-8 -->
 
 # Discussion {#sec-discussion}
 
 ## Aggregation and the access model change the list of underserved districts
 
 The headline is robust to the definition of destinations and fragile to the
-choices that define the population and the access model. That ordering matches
-what Apparicio et al. [-@apparicio2008; -@apparicio2017] found for urban health
-services, where straight-line and network distances correlated above 0.90 but the
-choice of accessibility measure changed the assessment most, and what Delamater et al.
-[-@delamater2012] found in Michigan, where raster and network models placed the
-limited-access areas in the same places but counted different numbers of people
-in them. Peru magnifies the aggregation component. Centroid-based travel time
-erred for 5–10 % of census tracts in Montreal; here, reading time at the
-district center instead of weighting by where people live flagged 264 more
-districts at 60 minutes, because large Andean and Amazonian districts have their
-population concentrated in a valley or along a river while their geometric center
-lies in empty terrain. <!-- claim-13 --> Ranking correlations alone would have
-hidden this: Bhangdia et al. [-@bhangdia2022] warned that highly correlated
-measures can still disagree on coverage, and our straight-line comparison shows
-the same pattern at the threshold that planners use. The disagreement is
-geographically structured rather than random. Travel time adds districts on the
-forested Andean slopes, where distance understates the cost of crossing terrain,
-and straight-line distance adds districts on the high plateau, where roads make
-travel faster than distance suggests.
+choices that define the population and the access model. This ordering matches
+studies of urban health services, where straight-line and network distances
+correlated above 0.90 but the choice of accessibility measure changed the
+assessment most [@apparicio2008; @apparicio2017], and Delamater et al.
+[-@delamater2012], whose raster and network models located the same
+limited-access areas but counted different numbers of people in them. Peru
+magnifies the aggregation component. Centroid-based measures erred for 5–10 % of
+census tracts in Montreal; here, reading time at district centers flagged 264
+more districts at 60 minutes than weighting by where people live, because large
+Andean and Amazonian districts concentrate their population in a valley or along
+a river while their geometric center lies in empty terrain. <!-- claim-13 -->
+Correlations alone would have hidden this, as Bhangdia et al. [-@bhangdia2022]
+warned for highly correlated measures that disagree on coverage. The
+disagreement is also geographically structured: travel time adds districts on
+the forested Andean slopes, where distance understates the cost of crossing
+terrain, and straight-line distance adds districts on the high plateau, where
+roads make travel faster than distance suggests. <!-- claim-19 -->
 
 The catchment model answers a different question. 2SFCA rewards districts whose
 catchment holds several hospitals relative to its population, so a district one
 hour from a single hospital that serves a large city can score lower than a
-remote district near a small one. Florio et al. [-@florio2023] concluded for
-sub-Saharan Africa that geographic access is constrained mainly by travel
-impedance rather than by facility density. Our results suggest a corollary for
-planning: proximity and availability rank Peruvian districts differently
+remote district near a small one. Florio et al. [-@florio2023] found geographic
+access in sub-Saharan Africa constrained mainly by travel impedance rather than
+facility density; in Peru, proximity and availability rank districts differently
 (Spearman 0.306–0.524), so a priority list should state which of the two it
 targets. <!-- claim-11 -->
 
 ## What the routing check can and cannot show
 
 The friction surface ranked districts consistently with OSRM outside the Amazon,
-at the pre-specified threshold, but the agreement weakened in the remote tail
-and in the lowland basin. Two mechanisms are visible in the data. The surface
-lacks river transport, which dominates in the lowland Amazon, and OSRM snaps a
-centroid to the nearest road and ignores the leg from it, which makes remote
-districts look closer. Since both engines rely on OpenStreetMap roads, their
-agreement is convergent evidence, not an independent validation. External
-studies suggest that both kinds of model underestimate real journeys:
-self-reported times were 1.49 times the modeled ones in rural Rwanda
-[@rudolfson2020], and modeled times in Lagos fell far short of replicated
-drives [@bankethomas2021]. Our absolute minutes should therefore be read as
-optimistic for people without a vehicle and for river-dependent districts, and
-the 120-minute class, on which the engines agreed weakly, as indicative only.
-<!-- claim-1 --> The walking estimate gives the other bound: for residents who
-must walk, 46.5 % of the population lives more than an hour from a public complex
-hospital. <!-- claim-14 -->
+at the pre-specified threshold, but agreement weakened in the remote tail and the
+lowland basin, where the surface lacks river transport and OSRM ignores the leg
+from a centroid to the nearest road. Because both engines rely on OpenStreetMap,
+their agreement is convergent evidence, not independent validation, and external
+studies suggest that both underestimate real journeys: self-reported times were
+1.49 times the modeled ones in rural Rwanda [@rudolfson2020], and modeled times
+in Lagos fell far short of replicated drives [@bankethomas2021]. Our minutes
+should therefore be read as optimistic for people without a vehicle and for
+river-dependent districts, and the 120-minute class as indicative only;
+walking times give the other bound. <!-- claim-1 -->
 
 ## Why place of death did not validate access
 
-The external test did not find what a valid access measure should produce, a
-gradient specific to causes amenable to hospital care. Three explanations are
-compatible with the data, and the study cannot separate them. First, place of
-death is a poor marker of geographic access in Peru. Its national pattern is
-shaped by insurance, education, ethnicity, preference and palliative-care needs
-[@mirandachavez2026; @gomes2006], and the Latin American evidence links home
-death more consistently to age and education than to rurality [@cordoba2026].
-Second, exposure is measured at the district of residence, not on the journey of
-each patient. This ecological assignment is subject to the uncertain geographic
-context problem [@kwan2012] and dilutes any individual-level association, and
-the simulation did not model that dilution. Third, the measure itself may err
-most where an association would be strongest, in the remote tail. In contrast,
-Pérez et al. [-@perez2026] found that hospital travel time was associated with
-mortality in Spain, a high-income country with universal coverage, using
-mortality rather than the place of death of those who died. The two
-results are not contradictory, but together they suggest that place of death is
-a weak criterion for validating access measures. The null result here is
-informative within its precision. The interval excludes an odds ratio of 1.10
-per hour, an effect the simulation detected with power 0.99, but it does not
-rule out smaller associations, and the estimator's false-positive rate exceeded
-the pre-specified limit. <!-- claim-4, claim-6 -->
+The external test did not find the gradient specific to amenable causes that a
+valid access measure should produce, and three explanations fit the data. Place of death may be a poor marker of
+geographic access in Peru, shaped as it is by insurance, education, ethnicity,
+preference and palliative-care needs [@mirandachavez2026; @gomes2006]; in Latin
+America home death is linked more consistently to age and education than to
+rurality [@cordoba2026]. Exposure is measured at the district of residence rather
+than on each patient's journey, an assignment subject to the uncertain geographic
+context problem [@kwan2012] that dilutes individual associations, and the
+simulation did not model that dilution. And the measure may err most where an
+association would be strongest, in the remote tail. Pérez et al. [-@perez2026]
+found hospital travel time associated with mortality in Spain, with universal
+coverage and a mortality outcome rather than the place of death of those who
+died; together, the two results suggest that place of death is a weak criterion
+for validating access measures. The null is informative within its precision:
+the interval excludes an odds ratio of 1.10 per hour, which the simulation
+detected with power 0.99, but not smaller associations, and the estimator's
+false-positive rate exceeded the pre-specified limit. <!-- claim-4, claim-6 -->
 
 ## Implications for planning
 
-The results support three practical rules for the agencies that rank districts
-for hospital investment. Population-weighted travel time should replace both
-straight-line distance and centroid-based measures when lists are drawn, because
-those two produce different lists, not just a slightly different ranking.
-Priority lists should be presented with the access model they assume, since
-proximity and availability point to different districts. And the 371 high-need
-districts with deficient access, mostly above 2,500 m, are a defensible starting
-set because their membership was stable across need weightings; no single
-composite ranking within that set is warranted. <!-- claim-12, claim-21 -->
-These rules rest on RQ1 and RQ2 only; RQ3 provides no basis for prioritizing
-districts by place of death.
+Three rules follow for agencies that rank districts for hospital investment.
+Population-weighted travel time should replace straight-line distance and
+centroid-based measures when lists are drawn, because those produce different
+lists, not slightly different rankings. Lists should state the access model they
+assume, since proximity and availability point to different districts. And the
+371 high-need districts with deficient access, mostly above 2,500 m, are a
+defensible starting set because their membership was stable across need
+weightings, although no composite ranking within it is warranted.
+<!-- claim-12, claim-21 --> These rules rest on RQ1 and RQ2; RQ3 gives no basis
+for prioritizing districts by place of death.
 
 ## Limitations
 
 The friction surface dates from 2020, whereas hospitals are listed as of 2026
-and deaths span 2022–2025; facilities opened or closed in between are not
-represented in the exposure. Hospitals without coordinates in the registry could
-not be placed. The 21 census districts without a polygon (294,298 residents) are
-excluded; dropping the 12 provinces that contain them changed the share beyond
-60 minutes from 10.9 % to 10.6 %. <!-- claim-3, claim-16 --> The 2SFCA uses
-counts of hospitals rather than beds or specialists, which the registry does not
-record consistently, and a grid four times coarser than the main one. Category
-II-1 or above defines complexity by registry category, not by the services
-actually available. The OSRM check used a public demo server whose data date is
-not published; its responses are archived with the code. Death registration
-completeness varies across districts, although its correlation with travel time
-was weak; the outcome also depends on the recorded place of death, which is
-missing or unclassified for a minority of records. Finally, all results are
-ecological and refer to districts, not to individuals [@robinson1950].
+and deaths span 2022–2025, so openings and closures in between are not
+represented. Hospitals without coordinates in the registry could not be placed,
+and the 21 census districts without a polygon (294,298 residents) are excluded;
+dropping the 12 provinces that contain them changed the share beyond 60 minutes
+from 10.9 % to 10.6 %. <!-- claim-3, claim-16 --> The 2SFCA counts hospitals,
+not beds or specialists, on a coarser grid, and category II-1 or above reflects
+registry category rather than the services actually available. The routing check
+used a public demo server whose data date is not published, although its
+responses are archived. Registration completeness varies across districts, but
+its correlation with travel time was weak, and the place of death is missing or
+unclassified for a minority of records. All results are ecological and refer to
+districts, not to individuals.
 
 # Conclusions {#sec-conclusions}
 
 This study measured, for every Peruvian district, how long residents take to
 reach a public complex hospital, weighting a national friction surface by where
 the 2025 census places them. About one resident in ten lives more than an hour
-away, and the burden falls on the Amazon basin and on the forested slopes
-between the Andes and the lowland, where coverage within two hours is lowest.
-<!-- claim-1, claim-22 --> Methodologically, the study shows that who counts as
-far from hospital care depends less on which hospitals are counted than on how
-the population is aggregated and how access is modeled: weighting by where
-people live, rather than using district centers, changes the list of deficient
+away, and the burden falls on the Amazon basin and the forested slopes between
+the Andes and the lowland. <!-- claim-1, claim-22 --> Methodologically, who counts
+as far from hospital care depends less on which hospitals are counted than on
+how the population is aggregated and how access is modeled: weighting by where
+people live rather than by district centers changes the list of deficient
 districts by about a third, and a floating catchment measure orders districts
-in a way that travel time does not. <!-- claim-13, claim-11 --> These are not
-technical footnotes: they decide which places enter a planning list, and anyone
-who publishes such a list should state them. Substantively, travel time
-was not associated with dying outside a facility among deaths amenable to
-hospital care. With a district-level exposure, place of death proved a weak
-yardstick for access, and validating access measures in Peru will require
-outcomes closer to time-critical care, such as obstetric emergencies or trauma,
-and exposures measured on the journeys that patients actually make.
+differently. <!-- claim-13, claim-11 --> These choices decide which places enter
+a planning list and should be stated whenever one is published. Substantively,
+travel time was not associated with dying outside a facility among deaths
+amenable to hospital care; place of death proved a weak yardstick for access,
+and validating access measures in Peru will require outcomes closer to
+time-critical care, such as obstetric emergencies or trauma, and exposures
+measured on the journeys patients actually make.
 
 # Appendix A. Analysis plan and deviations {#sec-appendix .unnumbered}
 
-The analysis plan (version 1 frozen on 2026-10-30, before any access result was
-computed) was amended in dated versions. Versions 5 onwards were declared after
-the access results were seen, and versions 7 onwards after the death records
-were first read (2026-10-31, 03:31:55 UTC). Table A.1 lists the
+Version 1 of the plan was frozen on 2026-10-30, before any access result;
+versions 5 onwards followed the access results and versions 7 onwards the first
+reading of the death records (2026-10-31, 03:31:55 UTC). Table A.1 lists the
 deviations that affect the reported results.
 
 **Table A.1.** Deviations from the pre-specified analysis plan. Version: plan version that declared the change. Timing: before or after the access results (A) or the outcome data (O) were first seen.
 
 | Item | Pre-specified | Implemented | Version, timing | Reason |
 |--------------|------------------|----------------------------|--------------|--------------------------|
-| RQ3 estimator | Multilevel logistic model | Logistic GLM, department fixed effects, district-clustered SEs; never fitted as multilevel | v8, after O | District-level exposure; population-averaged estimand; the simulation must refit it 1,100 times |
-| GEE check | Same sign as the main estimate | Opposite sign (0.992 vs 1.005); reported as failed | v8, after O | Rule applied as stated |
-| Simulation | False-positive rate $\leq$ 7 % for confirmatory use (v1) | 7.6 % (MCSE 1.2 %); model used descriptively | v9, after O | Rule applied as stated |
-| H3a population | Amenable causes | Amenable causes; the first code run used all causes in error and was corrected | v2 (before A and O); fix v9 | Code aligned with the plan |
-| Thresholds | 60 and 120 min | 60 main, 120 secondary | v5, after A | Weak engine agreement on the 120-min class |
-| Amazon in the routing rule | Amazon departments (proxy) | Rule evaluated on the proxy; HydroBASINS split reported as post hoc | v5, after A | Basin layer built after the check |
-| Routing sample strata | Altitude and Amazon | Travel-time quintiles | v5, after A | Elevation model not yet built |
-| City pairs | Published journey times | OSRM routes | G1, after A | Published times were not collected |
-| RQ2 kappa | Kappa at 60 and 120 min | Corrected implementation: 60 and 120 min, quantile matching for km and 2SFCA | v14, after A and O | The first implementation compared km with minutes |
-| 2SFCA | Supply = hospital count | Corrected: count per cell, person-weighted district value | v14, after A and O | The first implementation merged hospitals sharing a cell and read the centroid cell |
-| Walking, center cell, province exclusion | Pre-specified checks | Waived in v12, restored and reported | v14, after A and O | Waivers lifted before writing |
-| Equity table | Not planned | Basin $\times$ altitude table, descriptive | v13–v14, after A and O | Requested at internal review; bands fixed before computation |
-| ML checks | Not planned | Ridge calibration (variant only) and predictive check | v6 (before O); amenable population v11 | Subordinate robustness checks |
+| RQ3 estimator | Multilevel logistic model | GLM with department fixed effects and district-clustered SEs; multilevel never fitted | v8, after O | District-level exposure; population-averaged estimand; 1,100 simulation refits |
+| GEE check | Same sign | Opposite sign (0.992 vs 1.005): failed | v8, after O | Rule applied |
+| Simulation | FP rate $\leq$ 7 % (v1) | 7.6 % (MCSE 1.2 %): descriptive use | v9, after O | Rule applied |
+| H3a population | Amenable causes | Amenable causes; a first code run used all causes and was corrected | v2; fix v9 | Code aligned with the plan |
+| Thresholds | 60 and 120 min | 60 main, 120 secondary | v5, after A | Weak agreement at 120 min |
+| Amazon in the routing rule | Departmental proxy | Rule on the proxy; basin split post hoc | v5, after A | Basin layer built later |
+| Routing strata | Altitude and Amazon | Travel-time quintiles | v5, after A | Elevation model not yet built |
+| City pairs | Published journey times | OSRM routes | v5, after A | Published times not collected |
+| RQ2 kappa | 60 and 120 min | Corrected: quantile matching for km and 2SFCA | v14, after A and O | First version compared km with minutes |
+| 2SFCA | Supply = hospital count | Corrected: count per cell, person-weighted | v14, after A and O | First version merged co-located hospitals and read the centroid |
+| Walking, center cell, provinces | Pre-specified checks | Waived in v12, restored | v14, after A and O | Waivers lifted before writing |
+| Equity table | Not planned | Basin $\times$ altitude, descriptive | v13–v14, after A and O | Internal review; bands fixed first |
+| ML checks | Not planned | Calibration (variant only) and predictive check | v6 (before O); v11 | Subordinate checks |
+
+```{=latex}
+\clearpage
+```
 
 # Declaration of generative AI and AI-assisted technologies in the manuscript preparation process {.unnumbered}
 
