@@ -5,8 +5,8 @@
 # Every number in the text is a claim in manifest.yaml pointing at outputs/;
 # the <!-- claim-N --> comments mark where (pandoc drops HTML comments).
 # Double anonymized submission (Applied Geography): no author, affiliation or
-# title-page block here; the researchers chose to submit the manuscript and the
-# cover letter only (2026-10-31).
+# title-page block here. The title page is a separate file, prepared with
+# scripts/paper_title_page.py once every author's data are confirmed.
 title: "Who is far from hospital care depends on how access is measured: travel time to public complex hospitals in Peru"
 format:
   elsevier-cas-pdf: {}
