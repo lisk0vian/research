@@ -1,4 +1,4 @@
-<!-- shared section | publisher: elsevier | hash: 171790501c8a3972cad579744d8b792ba67cb81a3623ae85482e16b235e15b6d | origins: engineering-applications-of-artificial-intelligence/guide/sections/21-delayed-publication.md information-sciences/guide/sections/20-delayed-publication.md machine-learning-with-applications/guide/sections/20-delayed-publication.md -->
+<!-- shared section | publisher: elsevier | hash: 171790501c8a3972cad579744d8b792ba67cb81a3623ae85482e16b235e15b6d | origins: engineering-applications-of-artificial-intelligence/guide/sections/21-delayed-publication.md information-sciences/guide/sections/20-delayed-publication.md machine-learning-with-applications/guide/sections/20-delayed-publication.md applied-geography/guide/sections/22-delayed-publication.md -->
 <a id="ethics-and-policies-delayed-publication"></a>
 #### Delayed publication
 

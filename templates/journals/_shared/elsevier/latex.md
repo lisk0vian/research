@@ -1,4 +1,4 @@
-<!-- shared section | publisher: elsevier | hash: e50ccd1ccc5157343f2e3994e7f0ae36ce32e9d66418113b3bbd031ec43d3181 | origins: engineering-applications-of-artificial-intelligence/guide/sections/24-latex.md information-sciences/guide/sections/23-latex.md machine-learning-with-applications/guide/sections/23-latex.md -->
+<!-- shared section | publisher: elsevier | hash: e50ccd1ccc5157343f2e3994e7f0ae36ce32e9d66418113b3bbd031ec43d3181 | origins: engineering-applications-of-artificial-intelligence/guide/sections/24-latex.md information-sciences/guide/sections/23-latex.md machine-learning-with-applications/guide/sections/23-latex.md applied-geography/guide/sections/25-latex.md -->
 <a id="writing-and-formatting-latex"></a>
 #### LaTeX
 

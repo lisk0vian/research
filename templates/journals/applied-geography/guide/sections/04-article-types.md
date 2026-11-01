@@ -1,0 +1,9 @@
+<!-- guide section | source: 2026-11-01-guide-for-authors.html | heading: Article types | lines: 143-152 -->
+<a id="about-the-journal-article-types"></a>
+#### Article types
+
+**Research and review articles:** Research and review articles should be between 4,500-8,000 words. The word count is inclusive of captions, tables and references. Exceptions to this rule can be made in consultation with the Editor-in-Chief.
+
+**Commentary Article: **The commentary article is a scholarly review and discussion of existing research literature that does not meet the criteria for a standard research article. Commentary pieces allow an author to present a controversial position, speculative hypothesis, new methodological approaches, initial findings from a research project, or respond to a new and evolving situation (e.g., a health-related pandemic, geopolitical tensions, etc.). A commentary article allows an author to be more speculative, agenda-setting, and to explore a narrower issue. Personal opinions, viewpoints, critiques, and predictions are encouraged. However, all pieces should be balanced, while stimulating discussion and debate. Commentary articles should be between 2,000 and 4,000 words in total, including ancillary materials such as abbreviations, declarations, tables and reference list.
+
+**Brief Communication:** A Brief Communication is a short piece that presents timely, relevant, and/or ground-breaking preliminary findings that are part of a larger, often multi-year, study. They can also include a presentation and discussion of cutting-edge methods or experiments, and/or the development and/or application of new technology, methodology and/or material. The structure is similar to a commentary article and should be between 2,000 and 3,000 words in total, including ancillary materials such as abbreviations, declarations, tables and reference list.

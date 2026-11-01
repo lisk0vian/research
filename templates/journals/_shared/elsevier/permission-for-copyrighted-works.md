@@ -1,4 +1,4 @@
-<!-- shared section | publisher: elsevier | hash: bacaf428e974d25f5c41e31033fcce2684c5bbbdaa224edbd26666e851f22bdd | origins: engineering-applications-of-artificial-intelligence/guide/sections/58-permission-for-copyrighted-works.md information-sciences/guide/sections/49-permission-for-copyrighted-works.md machine-learning-with-applications/guide/sections/51-permission-for-copyrighted-works.md -->
+<!-- shared section | publisher: elsevier | hash: bacaf428e974d25f5c41e31033fcce2684c5bbbdaa224edbd26666e851f22bdd | origins: engineering-applications-of-artificial-intelligence/guide/sections/58-permission-for-copyrighted-works.md information-sciences/guide/sections/49-permission-for-copyrighted-works.md machine-learning-with-applications/guide/sections/51-permission-for-copyrighted-works.md applied-geography/guide/sections/53-permission-for-copyrighted-works.md -->
 <a id="after-receiving-a-final-decision-permission-for-copyrighted-works"></a>
 #### Permission for copyrighted works
 

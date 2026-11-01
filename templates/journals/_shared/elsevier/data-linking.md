@@ -1,4 +1,4 @@
-<!-- shared section | publisher: elsevier | hash: 55a9709121daf3aaee537bce04ab530c75c77a2123760ace1402e4f6029eb0d2 | origins: engineering-applications-of-artificial-intelligence/guide/sections/43-data-linking.md information-sciences/guide/sections/39-data-linking.md machine-learning-with-applications/guide/sections/40-data-linking.md -->
+<!-- shared section | publisher: elsevier | hash: 55a9709121daf3aaee537bce04ab530c75c77a2123760ace1402e4f6029eb0d2 | origins: engineering-applications-of-artificial-intelligence/guide/sections/43-data-linking.md information-sciences/guide/sections/39-data-linking.md machine-learning-with-applications/guide/sections/40-data-linking.md applied-geography/guide/sections/43-data-linking.md -->
 <a id="writing-and-formatting-data-linking"></a>
 #### Data linking
 

@@ -1,4 +1,4 @@
-<!-- shared section | publisher: elsevier | hash: 23868066a4409e5b50d18d4dd676a0739ea39a797f408361ab398647b9a5dad9 | origins: engineering-applications-of-artificial-intelligence/guide/sections/32-math-formulae.md information-sciences/guide/sections/28-math-formulae.md machine-learning-with-applications/guide/sections/29-math-formulae.md -->
+<!-- shared section | publisher: elsevier | hash: 23868066a4409e5b50d18d4dd676a0739ea39a797f408361ab398647b9a5dad9 | origins: engineering-applications-of-artificial-intelligence/guide/sections/32-math-formulae.md information-sciences/guide/sections/28-math-formulae.md machine-learning-with-applications/guide/sections/29-math-formulae.md applied-geography/guide/sections/32-math-formulae.md -->
 <a id="writing-and-formatting-math-formulae"></a>
 #### Math formulae
 

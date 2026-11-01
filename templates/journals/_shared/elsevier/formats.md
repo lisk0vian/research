@@ -1,4 +1,4 @@
-<!-- shared section | publisher: elsevier | hash: 402c3085c329a7da6c5304d2d7fd7a443a5c51632765e9cd50c70aefdee27ae8 | origins: engineering-applications-of-artificial-intelligence/guide/sections/36-formats.md information-sciences/guide/sections/32-formats.md machine-learning-with-applications/guide/sections/33-formats.md -->
+<!-- shared section | publisher: elsevier | hash: 402c3085c329a7da6c5304d2d7fd7a443a5c51632765e9cd50c70aefdee27ae8 | origins: engineering-applications-of-artificial-intelligence/guide/sections/36-formats.md information-sciences/guide/sections/32-formats.md machine-learning-with-applications/guide/sections/33-formats.md applied-geography/guide/sections/36-formats.md -->
 #### Formats
 
 Submit your artwork in the formats listed below, following the given requirements:
