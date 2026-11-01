@@ -9,6 +9,8 @@ import numpy as np
 import pandas as pd
 import pytest
 
+pytest.importorskip("statsmodels", reason="c19-2026 tests require the paper environment")
+
 EXP = pathlib.Path(__file__).resolve().parents[1] / "experiments"
 sys.path.insert(0, str(EXP))
 
