@@ -8,9 +8,8 @@ Every stage does `from _common import *`, which gives it:
 - the analysis frames (`df`, `df_census`, `df_activos`, `df_validas`) built
   once by `_etl.py` and cached as parquet in `data/processed/`.
 
-`_common.py` itself stays free of modelling imports; a stage that trains or
-plots adds `from _deps import *`. This is what lets stage 00/01 run before any
-of the heavy packages are needed.
+`_common.py` itself stays free of modelling imports; each stage imports the
+packages it needs, so stage 00/01 run before any heavy package is loaded.
 """
 
 from __future__ import annotations
@@ -26,5 +25,5 @@ globals().update(_STATE)
 
 
 def save_df_activos(df=None):
-    """Persist the stage's enriched frame (stage 03 adds VULNERABLE/INVS to it)."""
+    """Persist the stage's enriched active-facility frame for the later stages."""
     _save_df_activos(df_activos if df is None else df)

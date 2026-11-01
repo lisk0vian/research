@@ -158,12 +158,34 @@ def _kappa(a: np.ndarray, b: np.ndarray) -> float:
     return (po - pe) / (1 - pe) if pe < 1 else 1.0
 
 
-def stability(a: np.ndarray, b: np.ndarray, k: int = 100,
-              threshold_60: float = 60.0) -> dict:
-    """Rank agreement between two access measures over the same districts.
+def _worst(x: np.ndarray, k: int) -> set | None:
+    """Indices of the k largest values, or None when ties straddle the k-th value."""
+    cut = np.sort(x)[-k]
+    if int((x >= cut).sum()) > k:
+        return None
+    return set(np.flatnonzero(x >= cut).tolist())
 
-    Lower time is better: the "worst" set is the top-k of the ranking by
-    *descending* time, which is what RQ2 compares.
+
+def _matched_flags(x: np.ndarray, n_target: int) -> np.ndarray:
+    """Flag the n_target largest values of x; ties at the cut are all flagged."""
+    if n_target <= 0:
+        return np.zeros(x.size, dtype=bool)
+    return x >= np.sort(x)[-n_target]
+
+
+def stability(a: np.ndarray, b: np.ndarray, k: int = 100,
+              thresholds: tuple[float, ...] = (60.0, 120.0),
+              b_minutes: bool = True) -> dict:
+    """Agreement between the main travel time `a` and a variant `b`.
+
+    Both must be oriented so that a higher value means worse access (negate a
+    2SFCA score before calling). The "worst" set is the top-k by descending
+    value. Deficient access is `a > thr` minutes. A variant in minutes uses
+    the same threshold; a variant in any other unit (km, negated 2SFCA) flags
+    the same number of districts as `a` does (quantile matching), because a
+    minute threshold has no meaning in km or in hospitals per 10,000 people.
+    Ties at a cut are all flagged, so the flagged counts are returned too. The
+    top-k overlap is None when ties make the worst set ambiguous.
     """
     a = np.asarray(a, dtype=float)
     b = np.asarray(b, dtype=float)
@@ -172,20 +194,36 @@ def stability(a: np.ndarray, b: np.ndarray, k: int = 100,
     if a.size < 3:
         raise ValueError("stability needs at least 3 finite districts")
     kk = min(k, a.size)
-
-    def worst(x):
-        return set(np.argsort(x, kind="stable")[-kk:])
-
-    inter = len(worst(a) & worst(b))
-    union = len(worst(a) | worst(b))
-    da, db = (a > threshold_60).astype(int), (b > threshold_60).astype(int)
-    return {
+    wa, wb = _worst(a, kk), _worst(b, kk)
+    out = {
         "spearman": float(spearmanr(a, b).statistic),
         "kendall": float(kendalltau(a, b).statistic),
-        "jaccard_top": inter / union if union else 1.0,
-        "kappa_deficient": _kappa(da, db),
+        "jaccard_top": (len(wa & wb) / len(wa | wb)) if wa is not None and wb is not None else None,
         "n": int(a.size),
     }
+    for thr in thresholds:
+        da = a > thr
+        db = b > thr if b_minutes else _matched_flags(b, int(da.sum()))
+        tag = int(thr)
+        out[f"kappa_{tag}"] = _kappa(da.astype(int), db.astype(int))
+        out[f"flagged_main_{tag}"] = int(da.sum())
+        out[f"flagged_variant_{tag}"] = int(db.sum())
+    return out
+
+
+def weighted_by_district(values: np.ndarray, population: np.ndarray,
+                         districts: np.ndarray, ids) -> np.ndarray:
+    """Person-weighted mean of a grid value per district (NaN without people)."""
+    d = np.asarray(districts).ravel().astype(np.int64)
+    w = np.asarray(population, dtype=float).ravel()
+    v = np.asarray(values, dtype=float).ravel()
+    keep = (d > 0) & np.isfinite(v) & (w > 0)
+    size = int(max(d.max(), max(ids))) + 1
+    num = np.bincount(d[keep], weights=(v * w)[keep], minlength=size)
+    den = np.bincount(d[keep], weights=w[keep], minlength=size)
+    ids = np.asarray(ids, dtype=np.int64)
+    with np.errstate(invalid="ignore", divide="ignore"):
+        return np.where(den[ids] > 0, num[ids] / den[ids], np.nan)
 
 
 def bootstrap_spearman(a: np.ndarray, b: np.ndarray, n_boot: int = 1000,

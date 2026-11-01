@@ -4,14 +4,17 @@
 #   python scripts/paper_notebook.py --slug c19-2026
 # Never edit notebooks/experiments.ipynb by hand. Rules: COLAB.md (repo root).
 
-title: "c19-2026: National Health Vulnerability Index (INVS): Identifying Medical Deserts and Prioritizing Hospital Infrastructure in Peru"
+title: "c19-2026: Travel time to public complex hospitals in Peru: measurement, method sensitivity and an external outcome test"
 drive_folder: c19-2026            # MyDrive/<drive_folder>/{code,data,outputs}
 
 # required | optional | none. "required" stops the notebook in cell 2 without a GPU.
 gpu: none
 
 # Installed once per runtime (cell 2). Never list torch: Colab ships a CUDA build.
-pip: [libpysal, esda, pyproj, optuna, kneed, shap, catboost, statsmodels, scikit-learn, xgboost, mapie, SALib, psutil, joblib, reportlab, factor_analyzer, matplotlib, seaborn, pandas, numpy, pyarrow, py7zr]
+# Packages Colab does not ship are pinned to the versions of the 2026-10-30 run;
+# the preinstalled scientific stack is left to the image (pinning numpy forces a
+# runtime restart). The versions that actually ran go to outputs/run_meta.json.
+pip: [esda==2.9.0, libpysal==4.14.1, rasterio==1.5.2, geopandas==1.2.0, py7zr, pyproj, shapely, statsmodels, scikit-learn, scipy, matplotlib, pandas, numpy, pyarrow, psutil, pyyaml]
 
 # Commands run in order before the pipeline (cell 2); a non-zero exit stops the
 # notebook. setup = fetch data; probes = seconds-long checks of anything a long
@@ -46,7 +49,7 @@ smoke_from: 02_geo_inputs
 # Stage -> what it writes, shown in notebooks/README.md.
 stages:
   00_verify_datasets: outputs/logs/verify.txt
-  01_clean_renipress: outputs/21_calidad_datos/data_quality_report.csv
+  01_clean_renipress: outputs/01_clean_renipress/data_quality_report.csv
   02_geo_inputs: outputs/02_geo_inputs/grid.npz
   02_regions: outputs/02_regions/districts_regions.csv
   03_access_travel_time: outputs/03_access_travel_time/district_access.csv
@@ -56,3 +59,4 @@ stages:
   07_outcome_sinadef: outputs/07_outcome_sinadef/model_frame.parquet
   08_validation_models: outputs/08_validation_models/summary.json
   09_ml_checks: outputs/09_ml_checks/summary.json
+  10_figures_tables: outputs/10_figures_tables/qa.md

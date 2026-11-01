@@ -33,7 +33,7 @@ from _outcome import (aggregate_cells, collinearity_note, design_matrix,  # noqa
 from _paths import OUTPUTS, RUTA_CENSO  # noqa: E402
 from _simulate import run_cell_validation  # noqa: E402
 
-RESULTS_VERSION = 8  # v8: H3b with altitude, completeness r-flag, code-only sensitivity, rule verdicts
+RESULTS_VERSION = 9  # v9: unknown-cause table by place and travel-time band; Monte Carlo SEs
 IN = OUTPUTS / "07_outcome_sinadef"
 IN3 = OUTPUTS / "03_access_travel_time"
 OUT = OUTPUTS / "08_validation_models"
@@ -68,6 +68,16 @@ def main() -> int:
     altitude_included = "mean_altitude" in frame.columns
     named = frame[frame["resolved_by_name"]].copy()
     amenable = named[named["cause_group"].isin(["amenable_acute", "amenable_chronic"])].copy()
+
+    # --- unknown cause by place of death and travel-time band (descriptive) ------
+    # If causes are recorded worse outside facilities, restricting H3a to amenable
+    # causes selects on the outcome; this table shows how large that risk is.
+    band = pd.cut(named["mean_min"], [-np.inf, 30, 60, 120, np.inf],
+                  labels=["<=30", "30-60", "60-120", ">120"]).astype(str)
+    unknown = (named.assign(band=band, unknown=named["cause_group"].eq("unknown"))
+               .groupby(["band", "outside"])["unknown"].agg(["mean", "size"]).reset_index()
+               .rename(columns={"mean": "share_unknown", "size": "deaths"}))
+    unknown.to_csv(OUT / "unknown_cause_by_place_time.csv", index=False)
 
     prog("models", 0, 6, "H3a causas amenables")
     main_model = fit_logit(amenable)
@@ -168,9 +178,11 @@ def main() -> int:
         coverage_passes[str(float(value))] = bool(0.92 <= coverage <= 0.97)
         planted_rows.append({
             "or_planted": float(value),
+            "reps": int(len(group)),
             "mean_or": float(group["or_per_60"].mean()),
             "bias": float(group["or_per_60"].mean() / value - 1.0),
             "coverage": coverage,
+            "coverage_mcse": float(np.sqrt(coverage * (1 - coverage) / len(group))),
             "power": float((group["ci_low"] > 1).mean()),
         })
     planted = pd.DataFrame(planted_rows)
@@ -192,6 +204,7 @@ def main() -> int:
         **controls,
         "placebo_p": placebo_p,
         "placebo_reps": PLACEBO_REPS,
+        "unknown_cause_by_place_time": unknown.to_dict(orient="records"),
         "simulation": {
             "design": "cells district x age x sex x cause; district random intercept",
             "district_sd": sd,
@@ -200,6 +213,8 @@ def main() -> int:
             "reps_null": SIM_REPS,
             "reps_planted": SIM_PLANTED_REPS,
             "false_positive_rate": false_positive,
+            # Monte Carlo SE of a proportion over the null replications (Morris et al. 2019)
+            "false_positive_mcse": float(np.sqrt(false_positive * (1 - false_positive) / len(null))),
             "false_positive_max": 0.07,
             "fp_gate_passes": bool(false_positive <= 0.07),
             "coverage_passes": coverage_passes,

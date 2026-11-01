@@ -7,13 +7,14 @@ import pathlib
 
 EXP = pathlib.Path(__file__).resolve().parents[1] / "experiments"
 EXPECTED = [
-    "_common.py", "_paths.py", "_deps.py", "_etl.py", "_figstyle.py",
+    "_common.py", "_paths.py", "_etl.py", "_figstyle.py",
     "_sample_data.py", "_schema.py", "_build_dictionary.py", "_download_inputs.py",
     "_probe_ml.py",
     "_access.py", "_simulate.py",
     "02_geo_inputs.py", "02_regions.py", "03_access_travel_time.py",
     "04_access_sensitivity.py", "05_need_priority.py", "06_spatial_stats.py",
     "07_outcome_sinadef.py", "08_validation_models.py", "09_ml_checks.py",
+    "10_figures_tables.py",
     "census2025_prepare.py", "config.yaml", "colab.yaml", "run_all.py",
     "analysis_plan.yaml",
     "00_verify_datasets.py", "01_clean_renipress.py",
@@ -40,7 +41,7 @@ def test_scripts_compile():
 def test_colab_yaml_has_stages():
     import yaml
     cfg = yaml.safe_load((EXP / "colab.yaml").read_text(encoding="utf-8"))
-    assert "stages" in cfg and len(cfg["stages"]) == 11
+    assert "stages" in cfg and len(cfg["stages"]) == 12
     assert cfg.get("gpu") == "none"
 
 

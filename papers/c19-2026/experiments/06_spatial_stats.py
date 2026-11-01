@@ -26,7 +26,7 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 from _paths import OUTPUTS, SEED_BASE  # noqa: E402
 
-RESULTS_VERSION = 1
+RESULTS_VERSION = 2  # v2: Moran_Local gets an explicit seed (its numba permutations ignore np.random.seed)
 IN3 = OUTPUTS / "03_access_travel_time"
 IN2 = OUTPUTS / "02_geo_inputs"
 OUT = OUTPUTS / "06_spatial_stats"
@@ -47,7 +47,7 @@ def run_one(kind: str, gdf: gpd.GeoDataFrame, y: np.ndarray):
     w = weights_for(kind, gdf)
     np.random.seed(SEED_BASE)
     global_m = Moran(y, w, permutations=PERMUTATIONS)
-    local = Moran_Local(y, w, permutations=PERMUTATIONS)
+    local = Moran_Local(y, w, permutations=PERMUTATIONS, seed=SEED_BASE)
     q = multipletests(local.p_sim, method="fdr_bh")[1]
     clusters = (np.isin(local.q, [1, 3])) & (q < Q)  # HH or LL, FDR-significant
     return {

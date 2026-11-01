@@ -6,8 +6,8 @@ Dependency-light on purpose (stdlib + pandas + numpy), so an early stage runs
 before any modelling dependency is installed and so `_sample_data.py` and the
 tests can import it without paying for the ETL.
 
-The ETL itself lives in `_etl.py`; the heavy modelling imports live in
-`_deps.py`. A stage that trains or plots does `from _deps import *`.
+The ETL itself lives in `_etl.py`; each stage imports the modelling or
+plotting packages it needs itself.
 """
 
 from __future__ import annotations
@@ -56,35 +56,11 @@ np.random.seed(SEED_BASE)
 warnings.filterwarnings("ignore")
 
 DIR_SALIDA = str(OUTPUTS)
-SUBCARPETAS = [
-    "01_prep", "02_clustering", "03_indice_invs", "04_modelado_ml", "05_shap",
-    "06_equidad_calibracion", "07_drift_robustez", "08_final",
-    "09_validacion_externa", "10_conformal", "11_sota", "12_sensibilidad_global",
-    "13_shap_estabilidad", "14_temporal", "15_causal", "16_espacial_lisa_getis",
-    "17_complejidad", "18_reproducibilidad", "19_permutation_importance",
-    "20_robustez_ruido", "21_calidad_datos", "22_error_analysis",
-    "23_decision_curve", "24_economico", "25_lodo", "26_simulacion",
-    "27_modelos_persistidos", "28_metricas_extendidas", "29_figuras_pipeline",
-    "30_tablas_dataset", "31_shap_avanzado", "32_pdp_ice", "33_metricas_clasificacion",
-    "34_calibracion_avanzada", "35_correlacion_vif", "36_logs", "37_informe_final",
-    "38_inferencia", "39_doi_package", "40_metricas_globales",
-    "41_threshold_optimization", "42_learning_curve", "43_feature_stability",
-    "44_reconciliacion_distritos", "45_sensibilidad_economica",
-    "46_auc_interno_vs_externo",
-]
-
-# Written once per outputs folder. Creating 46 directories on every stage import
-# costs seconds on a Drive mount; the marker turns that into a single stat.
-DIRS_MARKER = ".dirs_ready"
 
 
 def ensure_output_dirs() -> None:
-    if (OUTPUTS / DIRS_MARKER).exists():
-        return
-    for sc in SUBCARPETAS:
-        os.makedirs(os.path.join(DIR_SALIDA, sc), exist_ok=True)
+    """Each stage creates its own output folder; only the root is shared."""
     OUTPUTS.mkdir(parents=True, exist_ok=True)
-    (OUTPUTS / DIRS_MARKER).touch()
 
 
 REGION_NATURAL_MAP = {
@@ -96,11 +72,6 @@ REGION_NATURAL_MAP = {
     "PUNO": "Sierra", "SAN MARTIN": "Selva", "TACNA": "Costa", "TUMBES": "Costa",
     "UCAYALI": "Selva",
 }
-
-REGISTRO_FIGURAS: list = []
-REGISTRO_TABLAS: list = []
-MODELOS_PERSISTIDOS: dict = {}
-
 
 def log(msg, also_print=False):
     """The canonical log is outputs/logs/<stage>.log, written by the runner."""
@@ -180,32 +151,3 @@ def load_df_activos():
         except Exception:
             return None
     return None
-
-
-RUN_STATE = PROCESSED / "run_state.joblib"
-
-
-def save_run_state(**objects) -> None:
-    """Objects a later stage needs (model, splits, SHAP) live on disk, not in RAM.
-
-    The original notebook kept them in one namespace; once it was split into
-    stages, stages 06-13 referenced names nobody had defined. This is that
-    namespace, persisted.
-    """
-    import joblib
-
-    state = load_run_state()
-    state.update(objects)
-    _atomic_write(RUN_STATE, lambda p: joblib.dump(state, p))
-
-
-def load_run_state() -> dict:
-    p = RUN_STATE
-    if not p.exists():
-        return {}
-    try:
-        import joblib
-
-        return joblib.load(p)
-    except Exception:
-        return {}

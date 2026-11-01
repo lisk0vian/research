@@ -384,6 +384,22 @@ DATASETS = {
         "download": True,
         "notes": ["Async with RENIPRESS and the census (2020 vs 2026); the plan reports this."],
     },
+    "friction_walking": {
+        "title": "Malaria Atlas Project walking-only friction surface, 2020 (1 km)",
+        "publisher": "Malaria Atlas Project (University of Oxford)",
+        "dataset_url": "https://malariaatlas.org/project-resources/accessibility-to-healthcare/",
+        "file_url": "https://data.malariaatlas.org/geoserver/ows?service=CSW&version=2.0.1&request=DirectDownload&ResourceId=Explorer:2020_walking_only_friction_surface",
+        "edition": "2020, 1 km",
+        "retrieved": None,
+        "license": "CC BY 4.0 (data.malariaatlas.org; Earth Engine catalog terms)",
+        "local_file": "2020_walking_only_friction_surface.zip",
+        "format": "ZIP containing 2020_walking_only_friction_surface.geotiff",
+        "unit": "Travel friction at 1 km",
+        "sha256": None,
+        "download": True,
+        "notes": ["Pre-specified walking-time variant (plan M4), restored in v14. The hash "
+                  "is recorded after the first Colab download (its .sha256 sidecar)."],
+    },
     "hydrobasins": {
         "title": "HydroBASINS South America, levels 1-12 (v1c)",
         "publisher": "HydroSHEDS (Lehner & Grill 2013)",

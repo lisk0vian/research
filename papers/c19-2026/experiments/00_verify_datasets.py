@@ -1,6 +1,10 @@
 # SPDX-License-Identifier: MIT
 # Copyright (c) 2026 Jerremi Aron Chancan Labajos
 """Stage 00: verify datasets."""
+# v1 (G5, 2026-11-01): forces one full re-run of every stage (the keys chain),
+# so a single session produces all the numbers the manuscript cites.
+RESULTS_VERSION = 1
+
 import json
 import sys
 from pathlib import Path

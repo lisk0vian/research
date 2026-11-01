@@ -1,11 +1,14 @@
 # SPDX-License-Identifier: MIT
 # Copyright (c) 2026 Jerremi Aron Chancan Labajos
 #
-# Frozen analysis plan (light pre-registration) for papers/c19-2026.
-# Stage 00 records this file's sha256 and fails when it changes without a
-# version bump, so every threshold below is fixed before any real-data run.
-# Decisions and their evidence: reviews/decision-0001-contribution.md and
-# reviews/g0-feasibility-2026-10-30.md.
+# Analysis plan for papers/c19-2026, version-controlled (not deposited in a
+# public registry). Stage 00 records this file's sha256 and fails when it
+# changes without a version bump. v1-v4 were fixed before any access result
+# was seen; v5 and later were declared after the access results (G1) were
+# seen, and v7 and later after the SINADEF outcome was read. Every change is
+# listed in change_log with its timing, and the paper reports them as
+# deviations. Decisions and their evidence: reviews/decision-0001-contribution.md
+# and reviews/g0-feasibility-2026-10-30.md.
 #
 # v2 (2026-10-31) closes the Q1 review of the frozen v1 before any outcome data
 # is touched: explicit ICD-10 cause groups, TIPO LUGAR mapping, a fixed
@@ -34,10 +37,12 @@
 # Callao name crosswalk, drops excluded places, removes code-only district
 # assignments from the main model, and validates with cell-level simulation
 # (district x age x sex x cause) at full size with a district random intercept.
+# v14 (2026-11-01, G5, before the manuscript): implementation corrections found
+# at writing time, criteria unchanged. See `v14` below.
 
 paper: c19-2026
-version: 13
-frozen: "2026-10-31"
+version: 14
+frozen: "2026-11-01"
 
 change_log:
   - {version: 1, date: "2026-10-30", reason: "initial freeze", sinadef_outcome_data_accessed: false}
@@ -53,6 +58,40 @@ change_log:
   - {version: 11, date: "2026-10-31", reason: "ML B additionally evaluated on the H3a amenable population, declared after the all-causes B (reviewer request); both populations reported", sinadef_outcome_data_accessed: true}
   - {version: 13, date: "2026-10-31", reason: "G4 human review: descriptive equity table of access by altitude band and Amazon basin added post hoc (no new inference); sex is not applicable to the district-level exposure and is reported as a limitation; headline uncertainty is reported as the variant range, not a bootstrap CI; policy statements rest on RQ1/RQ2 only (RQ3 is null)", sinadef_outcome_data_accessed: true}
   - {version: 12, date: "2026-10-31", reason: "G4 panel declarations: H3b interaction gains the altitude covariate (bug); completeness-r-flag vs travel time and the code-only-assignment sensitivity are added to stage 08; stage 08 records the FP/coverage/GEE rule verdicts; stage 02 persists the OSM bootstrap CIs; stage 09 adds a three-state ML-B verdict and the calibrated person-weighted shares; walking_time variant waived (surface not downloaded) and grid_vs_centroid waived (covered by the OSM centroid pilot); M2 fidelity/Spearman thresholds, the 11-province exclusion and the min-located-public flag are waived (no departmental table reported); GEE on a 50k subsample and the 200-permutation placebo are declared", sinadef_outcome_data_accessed: true}
+  - {version: 14, date: "2026-11-01", reason: "G5 implementation corrections before the manuscript, criteria unchanged: RQ2 kappa at 60 and 120 min with quantile matching for km and 2SFCA (the code cut every variant at > 60); 2SFCA supply counts hospitals per cell and is read person-weighted; seeded local Moran; walking time, grid vs centroid (M2) and the province exclusion restored (v12 waivers lifted); unknown-cause diagnostic and Monte Carlo SEs; equity altitude bands fixed; v13 'variant range' wording replaced", sinadef_outcome_data_accessed: true, access_results_seen: true}
+
+# v14 decisions (G5). Implementation corrections, declared before the manuscript;
+# none changes a threshold or a refutation rule.
+v14:
+  rq2_kappa: >-
+    Kappa of the deficient-access class at 60 and 120 min (as the robustness rule
+    `kappa_deficient_60_120` requires). A variant in minutes uses the same
+    thresholds; a variant in another unit (straight-line km, 2SFCA) flags the
+    same number of districts as the main measure (quantile matching). Until v13
+    the code cut every variant at "> 60", which compared km with minutes and gave
+    2SFCA (negated scores, never above 60) a constant class and a kappa of 0.
+    2SFCA also reports the natural class "no hospital within the catchment"
+    (score 0). The top-100 Jaccard is undefined when ties straddle the cut.
+  two_step_fca: >-
+    Supply = number of hospitals per coarse cell (the code merged hospitals that
+    share a cell into one), and the district score is the person-weighted mean
+    of its cells (the code read the district centre cell).
+  local_moran_seed: "Moran_Local receives the seed explicitly; its permutations ignored np.random.seed."
+  restored_checks:
+    - "walking_time: MAP 2020 walking-only friction surface (direct download), same destinations."
+    - "grid_vs_centroid (M2): travel time read at the district centre cell vs the person-weighted mean; refutes population weighting if Spearman >= 0.95."
+    - "province exclusion: national summary without the provinces that hold census districts with no polygon."
+  rq3_diagnostics: >-
+    Share of unknown cause by place of death and travel-time band (descriptive),
+    and Monte Carlo standard errors of the simulation's false-positive rate and
+    coverage (Morris et al. 2019).
+  equity_altitude_bands_m: [500, 2500, 3500]   # <500, 500-2,500, 2,500-3,500, >=3,500 (post hoc, descriptive)
+  headline_uncertainty: >-
+    Replaces the v13 'variant range' sentence. The headline share is the
+    population in grid cells beyond 60 min; the district-mean share and the
+    Ridge-calibrated district share are reported next to it, each with its own
+    definition (a scale effect, not an interval). The G1 band calibration is a
+    step function that reverses order at 60 min, so it is not used for shares.
 
 access_thresholds:
   main_minutes: 60

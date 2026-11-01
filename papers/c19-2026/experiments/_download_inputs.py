@@ -94,6 +94,10 @@ def ensure(entry: dict, force: bool = False) -> None:
             side.write_text(got + "\n")
             print(f"[ok] {dest.name} (verified)")
             return
+    if dest.exists() and not want and side.exists() and not force:
+        # no registered hash yet: keep the first download, its sidecar records the hash
+        print(f"[ok] {dest.name} (unregistered hash {side.read_text().strip()[:12]})")
+        return
     if entry.get("archive_member"):
         CACHE.mkdir(parents=True, exist_ok=True)
         archive = CACHE / entry["archive_member"].replace("/", "_")
