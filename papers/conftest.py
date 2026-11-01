@@ -15,10 +15,65 @@ Register the marker in ``pytest.ini`` (``markers = slow: ...``).
 """
 
 from pathlib import Path
+from types import ModuleType
+
+import sys
 
 import pytest
 
 _PAPERS = Path(__file__).resolve().parent
+_SNAPSHOT: dict[Path, dict[str, ModuleType]] = {}
+
+
+def _paper_of(path: Path) -> Path | None:
+    """The `papers/<slug>/` folder that owns `path`, if any."""
+    try:
+        path = path.resolve()
+    except OSError:
+        return None
+    for parent in path.parents:
+        if parent.parent == _PAPERS:
+            return parent
+    return None
+
+
+def pytest_collectstart(collector):
+    """Keep each paper's suite on its own modules.
+
+    Every paper ships `experiments/_common.py`, `_figstyle.py`, `run_all.py`,
+    ... with the same names, and the test modules import them by bare name. The
+    first paper collected wins the `sys.modules` entry, so the second paper
+    tests the first paper's module. Snapshot the previous paper's modules and
+    drop them before the next paper is imported; its test file re-inserts its
+    own `experiments/` at the front of `sys.path`.
+    """
+    path = getattr(collector, "path", None)
+    if path is None:
+        return
+    current = _paper_of(path)
+    if current is None:
+        return
+    for name, module in list(sys.modules.items()):
+        origin = getattr(module, "__file__", None)
+        if not origin:
+            continue
+        owner = _paper_of(Path(origin))
+        if owner is not None and owner != current:
+            _SNAPSHOT.setdefault(owner, {})[name] = module
+            del sys.modules[name]
+
+
+@pytest.fixture(autouse=True)
+def _own_paper_modules(request):
+    """Re-install the test's paper modules for imports done inside tests.
+
+    A test that runs ``import _figstyle`` lazily after collection would find
+    whichever paper's `experiments/` sits first in `sys.path`, not its own.
+    """
+    paper = _paper_of(Path(str(request.path)))
+    if paper is not None:
+        sys.modules.update(_SNAPSHOT.get(paper, {}))
+    yield
 
 
 def pytest_collection_modifyitems(items):
