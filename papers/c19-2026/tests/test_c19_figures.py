@@ -91,6 +91,29 @@ def test_rq2_table_puts_the_reference_first_and_reports_2sfca_zeros():
     assert "| — |" in ft.to_markdown(t)                                     # the undefined Jaccard
 
 
+def test_derived_numbers_counts_classes_quadrants_and_city_pairs():
+    variants = pd.DataFrame({"ubigeo": ["a", "b", "c", "d"], "main_min": [10.0, 70.0, 80.0, 20.0],
+                             "popweighted_km": [1.0, 2.0, 90.0, 80.0]})
+    regions = pd.DataFrame({"ubigeo": ["a", "b", "c", "d"], "mean_altitude": [100.0, 1000.0, 3000.0, 4000.0],
+                            "amazon": [False, True, True, False]})
+    priority = pd.DataFrame({"ubigeo": ["a", "b", "c", "d"], "population": [10.0, 20.0, 30.0, 40.0],
+                             "quadrant": ["low_need_good_access", "high_need_poor_access",
+                                          "high_need_poor_access", "high_need_good_access"]})
+    stability = pd.DataFrame({"variant": ["centre_cell_min"], "flagged_main_60": [746],
+                              "flagged_variant_60": [1010], "flagged_main_120": [235],
+                              "flagged_variant_120": [537]})
+    geo = {"census_total": 100.0, "census_total_with_polygon": 99.0, "census_without_polygon": 2}
+    pairs = pd.DataFrame({"from": ["X"], "to": ["Y"], "friction_min": [80.0], "osm_min": [100.0]})
+    out = ft.derived_numbers(variants, regions, priority, stability, geo, pairs)
+    classes = out["discordance_popweighted_km"]["classes"]
+    assert classes["time_only"]["districts"] == 1 and classes["time_only"]["amazon_basin"] == 1
+    assert classes["distance_only"]["by_band"]["≥3,500 m"] == 1
+    assert out["need_access_quadrants"]["high_need_poor_access"]["pct_at_or_above_2500_m"] == 50.0
+    assert out["flagged_districts"]["centre_cell_min"]["extra_60"] == 264
+    assert out["population_coverage"]["without_polygon"] == 1.0
+    assert out["city_pairs"]["mape_pct"] == pytest.approx(20.0)
+
+
 def test_scale_bar_length_follows_latitude():
     import _figstyle as st
     assert st.degrees_for_km(111.32, 0.0) == pytest.approx(1.0)

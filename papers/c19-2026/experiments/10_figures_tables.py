@@ -612,7 +612,7 @@ def table3(x: dict) -> None:
 
     rows = [
         from_02("pre_registered", "all", "Pre-specified: all", pre),
-        _spearman_row("Pre-specified: outside Amazon departments (G1 proxy, pre-specified rule)",
+        _spearman_row("Pre-specified: outside the five Amazon departments (pre-specified rule)",
                       pre[~pre["dept"].isin(AMAZON_DEPTS)]),
         from_02("pre_registered", "non_amazon", "Pre-specified: outside Amazon basin (post hoc)",
                 pre[~basin]),
@@ -780,6 +780,71 @@ def tableA4(x: dict) -> None:
                      "travel time is the person-weighted mean of that district.")
 
 
+# --- derived numbers (every number the text derives from an output, written as an output) --------
+
+def derived_numbers(variants: pd.DataFrame, regions: pd.DataFrame, priority: pd.DataFrame,
+                    stability: pd.DataFrame, geo_summary: dict, city_pairs: pd.DataFrame) -> dict:
+    """Counts and shares the manuscript quotes that no single output column holds."""
+    reg = regions[["ubigeo", "mean_altitude", "amazon"]]
+    v = variants.merge(reg, on="ubigeo", how="left")
+    v = v[np.isfinite(v["main_min"]) & np.isfinite(v["popweighted_km"])]
+    cls, cut = agreement_classes(v["main_min"], v["popweighted_km"])
+    band = altitude_band(v["mean_altitude"]).astype(str).to_numpy()
+    amazon = v["amazon"].fillna(False).astype(bool).to_numpy()
+    discordance = {"km_cut": cut, "classes": {
+        c: {"districts": int((cls == c).sum()),
+            "by_band": {b: int(((cls == c) & (band == b)).sum()) for b in st.ALT_LABELS},
+            "amazon_basin": int(((cls == c) & amazon).sum())}
+        for c in st.AGREE}}
+
+    q = priority.merge(reg, on="ubigeo", how="left")
+    qband = altitude_band(q["mean_altitude"]).astype(str).to_numpy()
+    high = (q["mean_altitude"] >= 2500).to_numpy()
+    qamazon = q["amazon"].fillna(False).astype(bool).to_numpy()
+    quadrants = {}
+    for key in st.QUADRANT:
+        m = (q["quadrant"] == key).to_numpy()
+        quadrants[key] = {"districts": int(m.sum()),
+                          "population": float(q.loc[m, "population"].sum()),
+                          "by_band": {b: int((m & (qband == b)).sum()) for b in st.ALT_LABELS},
+                          "pct_at_or_above_2500_m": 100 * float((m & high).sum()) / max(int(m.sum()), 1),
+                          "amazon_basin": int((m & qamazon).sum())}
+
+    s = stability.set_index("variant")
+    flagged = {name: {"main_60": int(s.loc[name, "flagged_main_60"]),
+                      "variant_60": int(s.loc[name, "flagged_variant_60"]),
+                      "main_120": int(s.loc[name, "flagged_main_120"]),
+                      "variant_120": int(s.loc[name, "flagged_variant_120"]),
+                      "extra_60": int(s.loc[name, "flagged_variant_60"] - s.loc[name, "flagged_main_60"]),
+                      "extra_120": int(s.loc[name, "flagged_variant_120"] - s.loc[name, "flagged_main_120"])}
+               for name in s.index}
+
+    census = float(geo_summary["census_total"])
+    with_polygon = float(geo_summary["census_total_with_polygon"])
+    ape = (city_pairs["friction_min"] - city_pairs["osm_min"]).abs() / city_pairs["osm_min"]
+    return {
+        "discordance_popweighted_km": discordance,
+        "need_access_quadrants": quadrants,
+        "flagged_districts": flagged,
+        "population_coverage": {"census_total": census, "with_polygon": with_polygon,
+                                "without_polygon": census - with_polygon,
+                                "pct_covered": 100 * with_polygon / census,
+                                "census_districts_without_polygon": int(geo_summary["census_without_polygon"])},
+        "city_pairs": {"pairs": int(len(city_pairs)), "mape_pct": 100 * float(ape.mean()),
+                       "max_ape_pct": 100 * float(ape.max()),
+                       "ape_pct": {f"{a} - {b}": round(100 * float(e), 2)
+                                   for a, b, e in zip(city_pairs["from"], city_pairs["to"], ape)}},
+    }
+
+
+def write_derived(x: dict) -> None:
+    geo = read_json(IN2 / "summary.json")
+    pairs = pd.read_csv(IN3 / "city_pairs.csv")
+    out = derived_numbers(x["variants"], x["regions"], x["priority"], x["stability"], geo, pairs)
+    (OUT / "derived_numbers.json").write_text(json.dumps(out, indent=2, ensure_ascii=False),
+                                              encoding="utf-8")
+
+
 # --- main ---------------------------------------------------------------------------------------
 
 def main() -> int:
@@ -797,7 +862,8 @@ def main() -> int:
     broken: list[str] = []
     for name, build in (("table2_equity", table2), ("table3_engine", table3),
                         ("table4_rq2", table4), ("tableA2_simulation", tableA2),
-                        ("tableA3_ml", tableA3), ("tableA4_h3b", tableA4)):
+                        ("tableA3_ml", tableA3), ("tableA4_h3b", tableA4),
+                        ("derived_numbers", write_derived)):
         try:
             build(x)
             print(f"[ok] {name}")

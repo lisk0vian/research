@@ -5,7 +5,7 @@
 # data: it references authors/<id>.yaml by id only.
 
 paper: c19-2026
-title: "Travel time to public complex hospitals in Peru: district-level measurement, sensitivity to method, and the association with dying outside a health facility (2022–2025)"   # working title, pending the researcher's decision
+title: "Who is far from hospital care depends on how access is measured: travel time to public complex hospitals in Peru"   # chosen by the researchers on 2026-11-01
 
 # --- Editorial target ---
 journal: applied-geography          # must exist under templates/journals/<journal>/
@@ -88,12 +88,69 @@ claims:
     source: "outputs/08_validation_models/unknown_cause_by_place_time.csv"
     status: draft
 
+  - id: claim-16
+    text: "The 2025 census counted 32,706,028 residents in 1,893 districts. Of these, 21 districts have no polygon (294,298 residents) and one polygon (Mazamari-Pangoa, 120699) has no census row, so the analysis covers 1,872 districts and 32,411,730 people, 99.1 % of the counted population."
+    source: "outputs/02_geo_inputs/summary.json; outputs/10_figures_tables/derived_numbers.json; outputs/10_figures_tables/tables/table2_equity.csv"
+    status: draft
+  - id: claim-17
+    text: "Of the 182 geolocated public complex hospitals, 172 lie inside their own district polygon, 7 within 20 km of its boundary, 2 more than 200 km away (coordinate errors, excluded from the main set) and 1 in a district without a polygon; the 180 hospitals of the main set occupy 174 grid cells."
+    source: "outputs/03_access_travel_time/checks.json; outputs/03_access_travel_time/hospitals_audit.csv"
+    status: draft
+  - id: claim-18
+    text: "OSRM times were longer than friction times in the pre-specified sample (median OSRM/friction ratio 1.17) and shorter in the lowland Amazon basin (0.82). For six pairs of departmental capitals the mean absolute percentage difference between the engines was 18.0 % (largest 38.1 %, Huancayo-Ayacucho)."
+    source: "outputs/10_figures_tables/tables/table3_engine.csv; outputs/10_figures_tables/derived_numbers.json; outputs/03_access_travel_time/city_pairs.csv"
+    status: draft
+  - id: claim-19
+    text: "Flagging the same 746 districts at 60 min, travel time and population-weighted straight-line distance (cut at the matched 33.1 km) disagree on 100 + 100 districts; 79 of the 100 flagged only by travel time are in the Amazon basin and 52 lie at 500-2,500 m, whereas 57 of the 100 flagged only by distance lie at 3,500 m or more."
+    source: "outputs/10_figures_tables/derived_numbers.json; outputs/10_figures_tables/Fig3_methods.csv"
+    status: draft
+  - id: claim-20
+    text: "Of 601,092 deaths registered in 2022-2025, 593,438 entered the model frame, 590,654 had the district resolved by name and 70,496 of these were due to amenable causes; the within-department placebo (200 permutations) gave p = 0.61."
+    source: "outputs/07_outcome_sinadef/sinadef_accessed.json; outputs/08_validation_models/summary.json"
+    status: draft
+  - id: claim-21
+    text: "86.3 % of the 371 high-need districts with deficient access lie at a mean altitude of 2,500 m or more."
+    source: "outputs/10_figures_tables/derived_numbers.json"
+    status: draft
+  - id: claim-22
+    text: "Population within 60 min: 93.1 % below 500 m, 88.2 % at 2,500-3,500 m, 85.6 % at 3,500 m or more and 83.8 % at 500-2,500 m (91.9 % within 120 min, the lowest band); at 3,500 m or more 66.0 % live within 30 min and 97.4 % within 120 min."
+    source: "outputs/10_figures_tables/Fig2_access.csv"
+    status: draft
+  - id: claim-23
+    text: "Inside the Amazon basin 22.8 % of residents live more than 60 min from a public complex hospital, against 5.6 % outside it; in the lowland basin below 500 m the person-weighted mean is 274.2 min."
+    source: "outputs/10_figures_tables/tables/table2_equity.csv"
+    status: draft
+  - id: claim-24
+    text: "Exchangeable GEE: OR 0.992 (0.977-1.009), opposite sign to the main estimate, so the pre-specified same-sign criterion fails. H3b: acute 1.000 and chronic 1.020, interaction p = 0.251. The known-truth simulation covered the planted OR of 1.10 in 90.0 % of replications and detected it with power 0.99. Registration completeness correlates with travel time at r = -0.108 (flag |r| > 0.30)."
+    source: "outputs/08_validation_models/summary.json; outputs/08_validation_models/h3b_cause_groups.csv; outputs/08_validation_models/simulation_summary.csv"
+    status: draft
+
 # --- Figures: registry of each figure and its origin ---
 figures:
-  - id: fig-1
-    caption: "EXAMPLE: Methodological workflow diagram."
-    file: "media/image2.png"          # path relative to paper/
-    source: "migrated"                # migrated (came from Word) | experiments/exp-XX
+  - id: fig-workflow
+    caption: "Data sources, measurement, checks and the three research questions."
+    file: "media/Fig1_workflow.pdf"
+    source: "outputs/10_figures_tables/Fig1_workflow.pdf (Graphviz, stage 10)"
+  - id: fig-access
+    caption: "Travel time to the nearest public complex hospital: populated cells and population within each time by altitude."
+    file: "media/Fig2_access.pdf"
+    source: "outputs/10_figures_tables/Fig2_access.pdf; data Fig2_access.csv"
+  - id: fig-methods
+    caption: "Where straight-line distance and travel time disagree."
+    file: "media/Fig3_methods.pdf"
+    source: "outputs/10_figures_tables/Fig3_methods.pdf; data Fig3_methods.csv"
+  - id: fig-need
+    caption: "Need and access by district (bivariate classes)."
+    file: "media/Fig4_need_access.pdf"
+    source: "outputs/10_figures_tables/Fig4_need_access.pdf; data Fig4_need_access.csv"
+  - id: fig-rq3
+    caption: "Odds ratios of dying outside a health facility per 60 minutes of travel time."
+    file: "media/Fig5_rq3.pdf"
+    source: "outputs/10_figures_tables/Fig5_rq3.pdf; data Fig5_rq3.csv"
+  - id: fig-s1
+    caption: "Supplementary Fig. S1: friction-surface against OSRM travel time."
+    file: "media/FigS1_osrm.pdf"
+    source: "outputs/10_figures_tables/FigA1_osrm.pdf; data FigA1_osrm.csv"
 
 # --- Zenodo archive (populated by paper_zenodo.py) ---
 # zenodo_status: draft | published

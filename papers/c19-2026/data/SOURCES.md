@@ -149,6 +149,11 @@ was checked but not kept in Drive: the daily table supersedes it and covers 2025
   740,601,231 bytes; contains `2020_motorized_friction_surface.geotiff`.
 - **URL:** <https://data.malariaatlas.org/geoserver/ows?service=CSW&version=2.0.1&request=DirectDownload&ResourceId=Explorer:2020_motorized_friction_surface>
 - **SHA-256:** `fcde4122d7d356a731dc0aae35a7db07c74a11b3029331064e46fc55ec0f955f`
+- **Walking-only surface (same source, 2020, 1 km):** `2020_walking_only_friction_surface.zip`,
+  downloaded by the Colab setup on **2026-11-01** (plan v14, walking variant);
+  URL `...ResourceId=Explorer:2020_walking_only_friction_surface`; SHA-256
+  `2f0a8ddf4b494356cfee632b550a7c01ff10ff8a574d61b3a949475c325257a8`
+  (registry entry `friction_walking`).
 
 ## 7. Amazon basin — HydroBASINS
 
@@ -159,13 +164,19 @@ was checked but not kept in Drive: the daily table supersedes it and covers 2025
 - **URL:** <https://data.hydrosheds.org/file/hydrobasins/standard/hybas_sa_lev01-12_v1c.zip>
 - **SHA-256:** `fb012e48419bda0a7f4d0ebc56efcd906ad0e3bde324b9c70fac9693e2d21a72`
 
-## 8. OpenStreetMap extract — independent-engine check (G1)
+## 8. Routing check (G1) — OSRM demo server, not the Geofabrik extract
 
-- **Publisher:** Geofabrik, Peru extract.
-- **License:** ODbL.
-- **File:** `peru-2026-10-29.osm.pbf` — 257,126,303 bytes (downloaded 2026-10-30).
-- **URL:** <https://download.geofabrik.de/south-america/peru-latest.osm.pbf>
-- **SHA-256:** `3f29398b86f16061026014bad5497525070e55624bc4f66cd560c95b880b9d98`
+- **What the check actually used:** the public OSRM demo server
+  (<https://router.project-osrm.org>, driving profile; Luxen & Vetter 2011),
+  queried by stage 03 on 2026-10-30/31. The date of the OpenStreetMap data behind
+  that server is not published, and the live server changes, so every response
+  is cached in `outputs/03_access_travel_time/osm_cache.json` and archived with
+  the code. Data: OpenStreetMap contributors, ODbL. Registry entry: `osrm_demo`.
+- **Registered but not used:** the Geofabrik Peru extract below. It is kept so
+  the check can be rerun on a local OSRM instance with a dated extract.
+  - **File:** `peru-2026-10-29.osm.pbf` — 257,126,303 bytes (downloaded 2026-10-30), ODbL.
+  - **URL:** <https://download.geofabrik.de/south-america/peru-latest.osm.pbf>
+  - **SHA-256:** `3f29398b86f16061026014bad5497525070e55624bc4f66cd560c95b880b9d98`
 
 ## 9. District boundaries — HDX (INEI substitute)
 
@@ -191,5 +202,10 @@ SINADEF 7z is extracted to CSV and the archive deleted; no pipeline reads 7z.
 
 ## 11. Not stored
 
-- **Copernicus DEM GLO-30:** raw Peru tiles are ~5 GB. Stage 02_geo_inputs builds
-  the Peru mosaic on Colab and keeps the clipped COG in `data/raw/dem/`.
+- **Copernicus DEM GLO-30:** stage `02_regions` reads, at run time, the COG tiles
+  that intersect the district polygons from the public AWS bucket
+  (<https://copernicus-dem-30m.s3.amazonaws.com>; registry
+  <https://registry.opendata.aws/copernicus-dem/>) into a temporary folder and
+  keeps only the district mean altitude (`outputs/02_regions/districts_regions.csv`).
+  No tile is stored and the tiles carry no version stamp beyond GLO-30; the runs of
+  2026-10-31 and 2026-11-01 produced byte-identical district altitudes.

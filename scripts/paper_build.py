@@ -506,12 +506,14 @@ def export_figures(paper_dir: Path, build_dir: Path) -> str:
 
 def render_submission_docs(paper_dir: Path, render_dir: Path, build_dir: Path,
                            slug: str, wants: list[str]) -> int:
-    """Render the title page and the cover letter.
+    """Render the title page, the cover letter and the supplementary material.
 
     The title page is rendered for anonymized papers, and also for any paper
     whose main.qmd carries a `title-page:` block (a separate title page for a
     single anonymized journal, where the manuscript keeps its authors).
-    Both are plain pandoc docx/pdf, not the journal format: they are
+    `paper/supplementary.qmd`, when present, becomes <slug>-supplementary:
+    Elsevier publishes supplementary files exactly as received.
+    All are plain pandoc docx/pdf, not the journal format: they are
     separate submission files that the editor reads, never typeset.
     """
     docs: list[tuple[str, str]] = []
@@ -521,6 +523,8 @@ def render_submission_docs(paper_dir: Path, render_dir: Path, build_dir: Path,
         docs.append(("title-page", page.name))
     if (render_dir / "cover-letter.qmd").is_file():
         docs.append(("cover-letter", "cover-letter.qmd"))
+    if (render_dir / "supplementary.qmd").is_file():
+        docs.append(("supplementary", "supplementary.qmd"))
     rc_total = 0
     for name, source in docs:
         for kind in wants:

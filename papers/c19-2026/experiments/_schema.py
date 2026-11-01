@@ -428,7 +428,25 @@ DATASETS = {
         "unit": "OSM extract",
         "sha256": "3f29398b86f16061026014bad5497525070e55624bc4f66cd560c95b880b9d98",
         "download": True,
-        "notes": ["Used only for the independent-engine check (G1), not by the main access measure."],
+        "notes": ["Registered for the independent-engine check (G1) but NOT used by it: stage 03 "
+                  "routed through the public OSRM demo server (see osrm_demo). Kept so the check "
+                  "can be rerun on a local OSRM instance with a dated extract."],
+    },
+    "osrm_demo": {
+        "title": "OSRM public demo server, driving profile (OpenStreetMap data)",
+        "publisher": "Project OSRM (routing engine); OpenStreetMap contributors (data)",
+        "dataset_url": "https://router.project-osrm.org",
+        "edition": "Service as queried; the date of its OpenStreetMap data is not published",
+        "retrieved": "2026-10-31",
+        "license": "Data: ODbL 1.0 (OpenStreetMap contributors); demo-server usage policy",
+        "local_file": None,
+        "format": "HTTP route API responses (JSON)",
+        "unit": "Driving time in minutes between district centroids and hospitals",
+        "sha256": None,
+        "download": False,
+        "notes": ["Used by stage 03 for the convergent check against the friction surface; every "
+                  "response is cached in outputs/03_access_travel_time/osm_cache.json, which is "
+                  "archived with the code because the live server changes over time."],
     },
     "boundaries_hdx": {
         "title": "Peru administrative boundaries, COD-AB (Admin 0-3)",
@@ -452,9 +470,10 @@ DATASETS = {
     "dem_copernicus": {
         "title": "Copernicus DEM GLO-30",
         "publisher": "ESA / Airbus",
-        "dataset_url": "https://dataspace.copernicus.eu/",
-        "edition": "GLO-30",
-        "retrieved": None,
+        "dataset_url": "https://registry.opendata.aws/copernicus-dem/",
+        "file_url": "https://copernicus-dem-30m.s3.amazonaws.com",
+        "edition": "GLO-30 (COG tiles as served by the public AWS bucket)",
+        "retrieved": "2026-11-01",
         "license": "Copernicus DEM free licence (attribution)",
         "local_file": None,
         "format": "COG tiles, 30 m",
@@ -462,8 +481,10 @@ DATASETS = {
         "sha256": None,
         "download": False,
         "notes": [
-            "Raw Peru tiles (~5 GB) are not stored; stage 02_geo_inputs builds the Peru",
-            "mosaic on Colab and keeps the clipped COG in data/raw/dem/.",
+            "Not stored: stage 02_regions reads the tiles that intersect the district polygons from",
+            "the bucket at run time (a temporary folder) and keeps only district mean altitudes in",
+            "outputs/02_regions/districts_regions.csv. Runs on 2026-10-31 and 2026-11-01 gave",
+            "byte-identical outputs. The tiles carry no version stamp beyond GLO-30.",
         ],
     },
 }

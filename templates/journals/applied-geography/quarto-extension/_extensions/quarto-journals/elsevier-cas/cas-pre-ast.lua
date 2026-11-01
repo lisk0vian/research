@@ -91,11 +91,33 @@ end
 -- column (Elsevier's own sample fits because its cells are short). Emit
 -- `p{}` columns of an equal share of \tblwidth so long cells wrap, keeping the
 -- alignment pandoc inferred from the pipe table.
-local function column_spec(alignment, ncols)
+local function column_spec(alignment, ncols, permille)
   local decl = alignment == pandoc.AlignRight and '\\raggedleft'
     or alignment == pandoc.AlignCenter and '\\centering' or '\\raggedright'
   local share = '\\dimexpr(\\tblwidth-' .. 2 * (ncols - 1) .. '\\tabcolsep)/' .. ncols .. '\\relax'
+  if permille ~= nil then
+    -- pandoc's relative width (the dash counts of a long pipe table), as an
+    -- integer per-mille share: \\dimexpr multiplies by integers only.
+    share = '\\dimexpr(\\tblwidth-' .. 2 * (ncols - 1) .. '\\tabcolsep)*' .. permille .. '/1000\\relax'
+  end
   return '>{' .. decl .. '\\arraybackslash}p{' .. share .. '}'
+end
+
+-- Per-mille shares of the column widths when pandoc set them all (long pipe
+-- tables); nil when any column has the default width (equal shares then).
+local function column_permille(colspecs)
+  local total = 0
+  for _, colspec in ipairs(colspecs) do
+    if type(colspec[2]) ~= 'number' or colspec[2] <= 0 then
+      return nil
+    end
+    total = total + colspec[2]
+  end
+  local shares = {}
+  for i, colspec in ipairs(colspecs) do
+    shares[i] = math.floor(1000 * colspec[2] / total + 0.5)
+  end
+  return shares
 end
 
 local function to_latex_row(row)
@@ -191,15 +213,18 @@ local function table_filter(tbl)
   local caption, identifier = caption_and_label(caption_blocks(tbl.caption), attr_id)
 
   local columns = {}
-  for _, colspec in ipairs(tbl.colspecs) do
-    columns[#columns + 1] = column_spec(colspec[1], #tbl.colspecs)
+  local permille = column_permille(tbl.colspecs) or {}
+  for i, colspec in ipairs(tbl.colspecs) do
+    columns[#columns + 1] = column_spec(colspec[1], #tbl.colspecs, permille[i])
   end
   if #columns == 0 then
     return nil
   end
 
   local width = attr_or(attributes, 'width', '.9\\linewidth')
-  local pos = attr_or(attributes, 'pos', 'h')
+  -- htbp, not the sample's h: a table that does not fit here moves to the next
+  -- page top instead of the end of the document.
+  local pos = attr_or(attributes, 'pos', 'htbp')
   local label = identifier ~= '' and ('\\label{' .. identifier .. '}') or ''
 
   local out = {}
