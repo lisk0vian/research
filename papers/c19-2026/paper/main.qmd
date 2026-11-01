@@ -29,6 +29,22 @@ journal:
     - "Straight-line distance ranks districts alike but flags different ones"
     - "Floating catchment and travel time order Peruvian districts differently"
     - "Travel time was unrelated to dying outside a facility for amenable causes"
+author:
+  - name: "Moisés Evangelista Gamarra"
+    affiliation: [{ref: aff-1}]
+    email: "mevangelistag@senati.pe"
+    orcid: "0009-0002-5382-1390"
+    cas:
+      cormark: 1
+affiliations:
+  - id: aff-1
+    name: "Servicio Nacional de Adiestramiento en Trabajo Industrial (SENATI)"
+    address: "Av. Alfredo Mendiola 3520, Independencia"   # senati.edu.pe "Sede Central", checked 2026-11-01
+    city: "Lima"
+    country: "Peru"
+title-page:
+  funding: "This work was supported by SENATI, Peru (Project C19-2026)."
+  competing-interests: "The authors declare that they have no known competing financial interests or personal relationships that could have appeared to influence the work reported in this paper."
 abstract: |
   The share of people counted as far from hospital care is a planning input,
   yet it rests on measurement choices that national studies rarely test. We estimated travel time to public complex hospitals
@@ -327,6 +343,12 @@ department out [@roberts2017; @ploton2020]. Models used statsmodels
 [@seabold2010] and scikit-learn [@pedregosa2011]. Code, cached routing responses
 and the notebook that reproduces every output are archived in a public
 repository (reference withheld for anonymized review).
+
+DeepSeek (DeepSeek-AI) was consulted to debug errors and to refactor redundant
+code blocks in the pipeline; every change it suggested was reviewed, executed
+and verified by the authors against the frozen plan, the cached routing
+responses and the project test suite, and the authors take full responsibility
+for the final code and the results it produces.
 
 # Results {#sec-results}
 
@@ -636,10 +658,11 @@ destinations, the outcome and the analysis plan, took every analytical
 decision, approved each analysis gate, and checked the data, code and results
 reported here; the interpretation of the findings and the conclusions are
 entirely their own. During the preparation of this work the authors used
-generative AI tools, under their direct supervision and as technical assistants
-only, to assist with writing and debugging code in the analysis pipeline, to
-check reference details against the primary sources, and to suggest
-alternative wording for parts of the text. These tools took no part in conceiving the study, choosing the methods,
+Claude (Anthropic), under their direct supervision and as a technical assistant
+only, to improve the clarity and readability of the text and to check reference
+details against the primary sources, and DeepSeek (DeepSeek-AI), under the same
+conditions, to assist with debugging and refactoring the code of the analysis
+pipeline. These tools took no part in conceiving the study, choosing the methods,
 interpreting the results or deciding what to report; every output they produced
 was checked against the data or the cited source and edited by the authors, who
 rewrote the text as they judged necessary. After using these tools, the authors
