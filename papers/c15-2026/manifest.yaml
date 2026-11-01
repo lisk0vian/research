@@ -1,6 +1,9 @@
 # SPDX-License-Identifier: MIT
 # Copyright (c) 2026 Jerremi Aron Chancan Labajos
 paper: c15-2026
+title: "A Reproducible Methodological Framework for Prosecutorial Congestion Risk Prediction Using Explainable Machine Learning and Temporal Validation"
+# Title of the Zenodo software record (scripts/paper_zenodo.py).
+zenodo_title: "A Reproducible Methodological Framework for Prosecutorial Congestion Risk Prediction Using Explainable Machine Learning and Temporal Validation: code and Colab notebook"
 slug: prosecutorial-congestion-framework
 journal: machine-learning-with-applications
 internal_code: "C15-2026"
@@ -14,3 +17,21 @@ authors:
   - id: jeremi
     role: author
     order: 2
+# TODO after acceptance: in main.qmd's hyperparameter-search table note,
+# replace "(reference withheld for anonymized review)" with [@c15-2026-code]
+# and append the entry below to paper/references.bib. It is kept out of the .bib
+# while the manuscript is anonymized: the LaTeX zip ships the whole .bib.
+#   @software{c15-2026-code,
+#     title     = {{A Reproducible Methodological Framework for Prosecutorial Congestion Risk Prediction Using Explainable Machine Learning and Temporal Validation: code and Colab notebook}},
+#     author    = {{Evangelista Gamarra}, Mois{\'e}s and {Chancan Labajos}, Jerremi Aron},
+#     year      = {2026},
+#     publisher = {Zenodo},
+#     doi       = {10.5281/zenodo.23290588},
+#     url       = {https://doi.org/10.5281/zenodo.23290588},
+#     howpublished = {Zenodo},
+#   }
+zenodo_status: published
+zenodo_doi: 10.5281/zenodo.23290588
+zenodo_deposit_id: 23290588
+zenodo_record_url: https://zenodo.org/records/23290588
+zenodo_version: 1.0.0

@@ -39,10 +39,15 @@ author:
     affiliation: [{ref: aff-1}]
     cas:
       cormark: 1
+      # CRediT roles confirmed by the authors on 2026-10-10: lead author.
+      credit: "Conceptualization, Methodology, Supervision, Project administration, Writing - review & editing"
   - name: Jerremi Aron Chancan Labajos
     email: 1520481@senati.pe
     orcid: "0009-0005-6789-076X"
     affiliation: [{ref: aff-1}]
+    cas:
+      # CRediT roles confirmed by the authors on 2026-10-10.
+      credit: "Software, Investigation, Formal analysis, Validation, Data curation, Visualization, Writing - original draft"
 affiliations:
   - id: aff-1
     name: Servicio Nacional de Adiestramiento en Trabajo Industrial (SENATI)
@@ -54,7 +59,8 @@ affiliations:
     country: Peru
 # Title-page-only statements: Elsevier's double-anonymized guidelines take
 # them out of the manuscript and put them on the separate title page.
-# TODO: the authors confirm both statements before submission.
+# Both statements confirmed by the authors on 2026-10-10 (SENATI funds the
+# work and the publication; no competing interests).
 title-page:
   funding: "This work was supported by the Servicio Nacional de Adiestramiento en Trabajo Industrial (SENATI)."
   competing-interests: "The authors declare that they have no known competing financial interests or personal relationships that could have appeared to influence the work reported in this paper."
@@ -277,7 +283,7 @@ Externally, the 2024 period was isolated as the validation and calibration set (
 
 Nine algorithmic configurations were evaluated (Table @tbl-configs): one baseline classifier, two linear models (logistic regression and a linear support vector machine whose scores were calibrated with Platt scaling through *CalibratedClassifierCV* [@niculescu-mizil_predicting_2005]), three gradient boosting implementations---XGBoost [@chen_xgboost_2016], LightGBM [@ke_lightgbm_2017] and CatBoost [@prokhorenkova_catboost_2018]---one Bayesian-optimized LightGBM variant, and two ensemble meta-models. Gradient boosting was included because it handles mixed, nonlinear and interacting features without manual specification, which the feature space analysis suggested (Section @sec-feature-space).
 
-: Model configurations evaluated (hyperparameter search). [F1 = mean F1-score over the internal temporal folds. The complete hyperparameter search spaces will be released with the code repository upon publication.]{.note} {#tbl-configs}
+: Model configurations evaluated (hyperparameter search). [F1 = mean F1-score over the internal temporal folds. The complete hyperparameter search spaces are archived with the code on Zenodo (reference withheld for anonymized review).]{.note} {#tbl-configs}
 
 | Model | Optimizer | No. of Iterations | F1 |
 |------|-----------|------|---|

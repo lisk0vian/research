@@ -1,0 +1,61 @@
+{
+  "metadata": {
+    "title": "A Reproducible Methodological Framework for Prosecutorial Congestion Risk Prediction Using Explainable Machine Learning and Temporal Validation: code and Colab notebook",
+    "upload_type": "software",
+    "version": "1.0.0",
+    "description": "<p>Code and Colab notebook for the paper <em>A Reproducible Methodological Framework for Prosecutorial Congestion Risk Prediction Using Explainable Machine Learning and Temporal Validation</em>, submitted to <em>Machine Learning with Applications</em> (Elsevier).</p>\n<p>The pipeline reads the open administrative records of the Public Prosecutor's Office of Peru (2019&ndash;2026), builds the leakage-controlled congestion target, selects features by the consensus of six methods, and trains and evaluates nine model configurations under year-block walk-forward validation, with a hold-out test on 2025 and a prospective evaluation on 2026. Every table and figure in the paper is written by the pipeline.</p>\n<p>Run end to end with the included Colab notebook (<code>notebooks/experiments.ipynb</code>) or locally with <code>python run_all.py</code>; dependencies are listed in <code>requirements.txt</code>. Internal code: C15-2026.</p>\n",
+    "creators": [
+      {
+        "name": "Moisés Evangelista Gamarra",
+        "orcid": "0009-0002-5382-1390",
+        "affiliation": "Servicio Nacional de Adiestramiento en Trabajo Industrial, Perú"
+      },
+      {
+        "name": "Jerremi Aron Chancan Labajos",
+        "orcid": "0009-0005-6789-076X",
+        "affiliation": "Servicio Nacional de Adiestramiento en Trabajo Industrial, Perú"
+      }
+    ],
+    "license": "MIT",
+    "keywords": [
+      "reproducibility",
+      "research code",
+      "machine-learning-with-applications",
+      "C15-2026"
+    ],
+    "language": "eng",
+    "access_right": "open",
+    "publication_date": "2026-10-11"
+  },
+  "files": [
+    "colab.yaml",
+    "config.yaml",
+    "main.py",
+    "report.py",
+    "requirements.txt",
+    "run_all.py",
+    "src/__init__.py",
+    "src/paths.py",
+    "src/stages/__init__.py",
+    "src/stages/_io.py",
+    "src/stages/base.py",
+    "src/stages/consolidation.py",
+    "src/stages/feature_engineering.py",
+    "src/stages/feature_selection.py",
+    "src/stages/indexer.py",
+    "src/stages/preprocessing.py",
+    "src/stages/registry.py",
+    "src/stages/split.py",
+    "src/stages/train.py",
+    "timings.yaml",
+    "experiments.ipynb",
+    "_colab_runtime.py"
+  ],
+  "total_size_bytes": 218761,
+  "instance": "production",
+  "generated_at": "2026-10-11T02:10:19.852022+00:00",
+  "status": "published",
+  "doi": "10.5281/zenodo.23290588",
+  "deposit_id": 23290588,
+  "record_url": "https://zenodo.org/records/23290588"
+}
