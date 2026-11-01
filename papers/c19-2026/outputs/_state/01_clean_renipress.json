@@ -1,0 +1,10 @@
+{
+  "stage": "01_clean_renipress",
+  "scheme": 3,
+  "key": "dee145284fff7afabadc1de141a1cadd09f25fe548fc514f9dae4f84bdc2df84",
+  "mode": "full",
+  "results_version": 0,
+  "code_sha": "f462807a1b407219ad532c576f239aa102f74c5d4a65c9b276b592f59f6c720e",
+  "elapsed_s": 5.12,
+  "finished": "2026-11-01T04:52:50+00:00"
+}

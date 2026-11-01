@@ -1,0 +1,25 @@
+{
+  "sinadef_outcome_data_accessed": true,
+  "timestamp_utc": "2026-11-01T05:09:47.285883+00:00",
+  "file": "TB_SINADEF_2026-10-30.csv",
+  "sha256": "bb4058fa7d77049c95b2d1b1a1b53bfc64c6677a7642b75a034cc475370498a3",
+  "rows": 1439302,
+  "rows_in_period": 601092,
+  "counts": {
+    "rows": 1439302,
+    "missing_ubigeo": 7047,
+    "excluded_place": 2400,
+    "outside": 534354,
+    "unknown_cause": 184228,
+    "rows_in_period": 601092,
+    "rows_all_periods": 1092727,
+    "resolved_by_name": 1079548,
+    "unmatched_names": 13179,
+    "final_missing_ubigeo": 2691
+  },
+  "model_rows": 593438,
+  "period": [
+    2022,
+    2025
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "global_i_same_sign": true,
+  "global_i_significant_all": true,
+  "cluster_counts": {
+    "queen": 235,
+    "k4": 266,
+    "k8": 456
+  },
+  "cluster_variation": 0.6927899686520376,
+  "cluster_variation_max": 0.25,
+  "passes": false
+}

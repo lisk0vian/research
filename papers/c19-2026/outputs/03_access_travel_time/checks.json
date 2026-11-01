@@ -1,0 +1,23 @@
+{
+  "hospitals_zero_minutes": true,
+  "physical_time_ge_distance_over_speed": true,
+  "population_allocated": 32411730.00000003,
+  "population_census": 32411730.0,
+  "population_relative_error": 9.194918749383422e-16,
+  "unreachable_share": 0.0,
+  "sources": 174,
+  "hospitals_audited": 182,
+  "hospitals_inside_own": 172,
+  "hospitals_boundary": 7,
+  "hospitals_gross": 2,
+  "hospitals_no_polygon": 1,
+  "inside_own_share_raw": 0.945054945054945,
+  "inside_own_share_after_exclusion": 0.9608938547486033,
+  "sensitivity_changed_share": 0.011211959423384944,
+  "sources_snapped": 0,
+  "osm_sample": 350,
+  "osm_target": 200,
+  "osm_remote": 150,
+  "osm_pilot_seconds": 0.1,
+  "rss_gb": 0.79
+}

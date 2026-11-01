@@ -1,0 +1,35 @@
+{
+  "all_causes": {
+    "n_rows": 593438,
+    "n_departments": 26,
+    "delta_brier": 0.0031316266763805043,
+    "delta_brier_ci": [
+      0.0017265045044093468,
+      0.0047887109733576304
+    ],
+    "permutation_brier_drop": 0.003946540227127284,
+    "permutation_brier_drop_ci": [
+      0.003823007152494748,
+      0.004083266933563007
+    ],
+    "refuted": false,
+    "verdict": "not_refuted"
+  },
+  "amenable": {
+    "n_rows": 70496,
+    "n_departments": 26,
+    "delta_brier": -0.0029176412558018132,
+    "delta_brier_ci": [
+      -0.0057410057025155566,
+      -0.0001249004154437007
+    ],
+    "permutation_brier_drop": 0.00281774727397285,
+    "permutation_brier_drop_ci": [
+      0.002595387775540682,
+      0.0030459210681774928
+    ],
+    "refuted": false,
+    "verdict": "no_positive_contribution"
+  },
+  "refuted": false
+}

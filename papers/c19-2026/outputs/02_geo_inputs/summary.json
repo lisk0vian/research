@@ -1,0 +1,40 @@
+{
+  "polygons": 1873,
+  "census_districts": 1893,
+  "polygons_without_census": 1,
+  "polygons_without_pixels": 0,
+  "census_without_polygon": 21,
+  "census_without_polygon_ubigeos": [
+    "030612",
+    "050413",
+    "050512",
+    "050513",
+    "050514",
+    "050515",
+    "080915",
+    "080916",
+    "080917",
+    "080918",
+    "090724",
+    "090725",
+    "120307",
+    "120604",
+    "120606",
+    "130112",
+    "160405",
+    "180107",
+    "221006",
+    "250306",
+    "250307"
+  ],
+  "districts_seeded": [],
+  "population_total": 32411730.00000003,
+  "census_total": 32706028.0,
+  "census_total_with_polygon": 32411730.0,
+  "grid": {
+    "height": 2199,
+    "width": 1522,
+    "res": 0.008333333333333333,
+    "pixel_m": 927.0
+  }
+}

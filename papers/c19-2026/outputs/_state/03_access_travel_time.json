@@ -1,0 +1,10 @@
+{
+  "stage": "03_access_travel_time",
+  "scheme": 3,
+  "key": "3e252b8a8b299ea514aa6682381a734949f02bdc6b7d265adc3cc519ab31ddab",
+  "mode": "full",
+  "results_version": 5,
+  "code_sha": "b7c23489c151a4096135a854fc32a81f8c7c278a6ad629c317e47ebd1a43610a",
+  "elapsed_s": 65.89,
+  "finished": "2026-11-01T05:05:21+00:00"
+}

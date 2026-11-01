@@ -1,0 +1,9 @@
+Travel time,Place of death,Unknown cause (%),Deaths
+≤30 min,In a facility,12.89139908770188,245753
+≤30 min,Outside a facility,22.454171058033758,236259
+30–60 min,In a facility,10.0478208890338,18402
+30–60 min,Outside a facility,13.517241379310342,31900
+60–120 min,In a facility,10.85319949811794,14346
+60–120 min,Outside a facility,10.911918795022919,24432
+>120 min,In a facility,9.12311780336581,7903
+>120 min,Outside a facility,11.321725705463589,11659

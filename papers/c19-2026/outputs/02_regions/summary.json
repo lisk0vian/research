@@ -1,0 +1,19 @@
+{
+  "districts": 1873,
+  "with_altitude": 1873,
+  "amazon_districts": 1018,
+  "altitude_range": [
+    2.2248144149780273,
+    4821.496595408818
+  ],
+  "amazon_share_by_department": {
+    "Amazonas": 1.0,
+    "Apur\u00edmac": 1.0,
+    "Jun\u00edn": 1.0,
+    "Hu\u00e1nuco": 1.0,
+    "Madre de Dios": 1.0,
+    "Ucayali": 1.0,
+    "San Mart\u00edn": 1.0,
+    "Pasco": 1.0
+  }
+}

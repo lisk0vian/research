@@ -1,0 +1,19 @@
+{
+  "districts": 1872,
+  "excluded_without_census": 1,
+  "priority_main": 371,
+  "priority_population": 739935.0,
+  "priority_population_share": 0.022829234971413127,
+  "membership_stability": 0.9730458221024259,
+  "threshold": 0.8,
+  "passes": true,
+  "kendall_min": 0.7285850882019976,
+  "kendall_threshold": 0.8,
+  "kendall_passes": false,
+  "quadrants": {
+    "low_need_good_access": 701,
+    "high_need_good_access": 425,
+    "low_need_poor_access": 375,
+    "high_need_poor_access": 371
+  }
+}

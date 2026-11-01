@@ -1,0 +1,54 @@
+{
+  "figures": {
+    "Fig1_workflow": [
+      "Fig1_workflow.png",
+      "Fig1_workflow.pdf",
+      "Fig1_workflow.csv"
+    ],
+    "Fig2_access": [
+      "Fig2_access.png",
+      "Fig2_access.pdf",
+      "Fig2_access.csv"
+    ],
+    "Fig3_methods": [
+      "Fig3_methods.png",
+      "Fig3_methods.pdf",
+      "Fig3_methods.csv"
+    ],
+    "Fig4_need_access": [
+      "Fig4_need_access.png",
+      "Fig4_need_access.pdf",
+      "Fig4_need_access.csv"
+    ],
+    "Fig5_rq3": [
+      "Fig5_rq3.png",
+      "Fig5_rq3.pdf",
+      "Fig5_rq3.csv"
+    ],
+    "FigA1_osrm": [
+      "FigA1_osrm.png",
+      "FigA1_osrm.pdf",
+      "FigA1_osrm.csv"
+    ]
+  },
+  "tables": [
+    "table2_equity.csv",
+    "table2_equity.md",
+    "table3_engine.csv",
+    "table3_engine.md",
+    "table4_rq2.csv",
+    "table4_rq2.md",
+    "tableA2_simulation.csv",
+    "tableA2_simulation.md",
+    "tableA3_ml_calibration.csv",
+    "tableA3_ml_calibration.md",
+    "tableA3_ml_predictive.csv",
+    "tableA3_ml_predictive.md",
+    "tableA4_h3b.csv",
+    "tableA4_h3b.md",
+    "tableA4b_unknown_cause.csv",
+    "tableA4b_unknown_cause.md"
+  ],
+  "qa_findings": [],
+  "broken": []
+}

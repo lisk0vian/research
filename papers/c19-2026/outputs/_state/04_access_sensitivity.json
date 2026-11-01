@@ -1,0 +1,10 @@
+{
+  "stage": "04_access_sensitivity",
+  "scheme": 3,
+  "key": "51ccf9abd4cc1acf6e55ef9e4b7e9197521449f4574645989331933db935bdf4",
+  "mode": "full",
+  "results_version": 3,
+  "code_sha": "8ca0722129f24bda2bcdf32b7a901820b3629c9ff0010e39292d1af0772031a4",
+  "elapsed_s": 126.36,
+  "finished": "2026-11-01T05:07:28+00:00"
+}

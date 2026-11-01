@@ -1,0 +1,10 @@
+{
+  "stage": "06_spatial_stats",
+  "scheme": 3,
+  "key": "81c407155ea455e7d2d32bdfdda03d9fba15c263ef2cdd677b9b6ab9d823e5e0",
+  "mode": "full",
+  "results_version": 2,
+  "code_sha": "fb81c27a94240db555eb3f8430f4e379118ef479fef4a0daa8f7aa5c2c268374",
+  "elapsed_s": 48.03,
+  "finished": "2026-11-01T05:08:21+00:00"
+}

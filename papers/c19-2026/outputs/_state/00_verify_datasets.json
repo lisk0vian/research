@@ -1,0 +1,10 @@
+{
+  "stage": "00_verify_datasets",
+  "scheme": 3,
+  "key": "b9fd8ef149bd271db09c8281db74be75c7f5f0cac43b3ec7de082ea7b6ebb1e4",
+  "mode": "full",
+  "results_version": 1,
+  "code_sha": "5c7cd403938a232664eabb17f2ef99d8d426e2682e55e6d7459f3e27f55cea3d",
+  "elapsed_s": 11.09,
+  "finished": "2026-11-01T04:52:44+00:00"
+}

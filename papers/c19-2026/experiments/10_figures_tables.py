@@ -41,7 +41,7 @@ import _figstyle as st  # noqa: E402
 from _access import _kappa, _matched_flags, bootstrap_spearman  # noqa: E402
 from _paths import OUTPUTS, SEED_BASE, normalizar_cadena  # noqa: E402
 
-RESULTS_VERSION = 2  # v2: map labels/scale bar, bivariate Fig 4 key, simplified geometry, table labels
+RESULTS_VERSION = 3  # v3: Fig 1 need node inside RQ1 (v2: map labels/scale bar, bivariate key, tables)
 
 IN2 = OUTPUTS / "02_geo_inputs"
 REG = OUTPUTS / "02_regions"
@@ -225,14 +225,15 @@ digraph G {
     grid [label="30-arcsec grid:\ncensus-scaled population"];
     dij  [label="Multi-source Dijkstra:\nminutes per cell"];
     dis  [label="Person-weighted\ndistrict travel time", fillcolor="#FCE3D2"];
-    need [label="Need × access\nquadrants"]; }
+    need [label="Need × access quadrants\n(census 60+, disability)"];
+    {rank=same; dis; need;} }
   subgraph cluster_checks { label="Checks and sensitivity (RQ2)"; fontsize=8; color="#BBBBBB"; style=rounded;
     osrm [label="OSRM routing\n(convergent check)"];
     var  [label="Straight line, centre cell,\n2SFCA, destinations, walking"]; }
   subgraph cluster_out { label="External test (RQ3)"; fontsize=8; color="#BBBBBB"; style=rounded;
     glm [label="Logistic GLM, department FE,\ndistrict-cluster SEs"];
     sim [label="Placebo, GEE,\nknown-truth simulation"]; }
-  pop -> grid; fri -> dij; ren -> dij; grid -> dij; dij -> dis; dis -> need; pop -> need;
+  pop -> grid; fri -> dij; ren -> dij; grid -> dij; dij -> dis; dis -> need;
   dis -> osrm; dis -> var; dis -> glm; sin -> glm; glm -> sim;
 }
 """

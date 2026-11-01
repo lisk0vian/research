@@ -1,0 +1,26 @@
+
+digraph G {
+  graph [rankdir=LR, fontname="Helvetica", fontsize=9, nodesep=0.18, ranksep=0.3,
+         size="6.4,2.1!", ratio=compress, margin=0, pad=0.02, dpi=300];
+  node  [shape=box, style="rounded,filled", fillcolor="#F2F2F2", color="#888888",
+         fontname="Helvetica", fontsize=8, margin="0.06,0.03", height=0.3];
+  edge  [color="#666666", arrowsize=0.5, penwidth=0.7];
+  subgraph cluster_data { label="Data"; fontsize=8; color="#BBBBBB"; style=rounded;
+    ren [label="RENIPRESS 2026\npublic complex hospitals"];
+    pop [label="Census 2025 +\nWorldPop 2025"];
+    fri [label="MAP friction 2020\n(motorized, walking)"];
+    sin [label="SINADEF deaths\n2022–2025"]; }
+  subgraph cluster_measure { label="Measurement (RQ1)"; fontsize=8; color="#BBBBBB"; style=rounded;
+    grid [label="30-arcsec grid:\ncensus-scaled population"];
+    dij  [label="Multi-source Dijkstra:\nminutes per cell"];
+    dis  [label="Person-weighted\ndistrict travel time", fillcolor="#FCE3D2"];
+    need [label="Need × access\nquadrants"]; }
+  subgraph cluster_checks { label="Checks and sensitivity (RQ2)"; fontsize=8; color="#BBBBBB"; style=rounded;
+    osrm [label="OSRM routing\n(convergent check)"];
+    var  [label="Straight line, centre cell,\n2SFCA, destinations, walking"]; }
+  subgraph cluster_out { label="External test (RQ3)"; fontsize=8; color="#BBBBBB"; style=rounded;
+    glm [label="Logistic GLM, department FE,\ndistrict-cluster SEs"];
+    sim [label="Placebo, GEE,\nknown-truth simulation"]; }
+  pop -> grid; fri -> dij; ren -> dij; grid -> dij; dij -> dis; dis -> need; pop -> need;
+  dis -> osrm; dis -> var; dis -> glm; sin -> glm; glm -> sim;
+}

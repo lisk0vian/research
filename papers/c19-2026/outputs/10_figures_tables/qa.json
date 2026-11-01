@@ -1,0 +1,69 @@
+{
+  "figures": {
+    "Fig1_workflow": {
+      "problems": [],
+      "files": [
+        "Fig1_workflow.png",
+        "Fig1_workflow.pdf",
+        "Fig1_workflow.csv"
+      ],
+      "notes": []
+    },
+    "Fig2_access": {
+      "problems": [],
+      "files": [
+        "Fig2_access.png",
+        "Fig2_access.pdf",
+        "Fig2_access.csv"
+      ],
+      "notes": [
+        "Map lines delineate study areas and do not necessarily depict accepted national boundaries."
+      ]
+    },
+    "Fig3_methods": {
+      "problems": [],
+      "files": [
+        "Fig3_methods.png",
+        "Fig3_methods.pdf",
+        "Fig3_methods.csv"
+      ],
+      "notes": [
+        "Map lines delineate study areas and do not necessarily depict accepted national boundaries.",
+        "matched straight-line cut: 33.1 km"
+      ]
+    },
+    "Fig4_need_access": {
+      "problems": [],
+      "files": [
+        "Fig4_need_access.png",
+        "Fig4_need_access.pdf",
+        "Fig4_need_access.csv"
+      ],
+      "notes": [
+        "Map lines delineate study areas and do not necessarily depict accepted national boundaries.",
+        "key cells: districts and % of people"
+      ]
+    },
+    "Fig5_rq3": {
+      "problems": [],
+      "files": [
+        "Fig5_rq3.png",
+        "Fig5_rq3.pdf",
+        "Fig5_rq3.csv"
+      ],
+      "notes": []
+    },
+    "FigA1_osrm": {
+      "problems": [],
+      "files": [
+        "FigA1_osrm.png",
+        "FigA1_osrm.pdf",
+        "FigA1_osrm.csv"
+      ],
+      "notes": [
+        "2 centroid(s) with a zero time are not drawn"
+      ]
+    }
+  },
+  "failed": []
+}

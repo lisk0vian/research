@@ -1,0 +1,44 @@
+{
+  "verdict": "used",
+  "winner": "ridge_regularized_linear",
+  "baseline_constant_ratio": 1.0730472889890394,
+  "band_ratios": {
+    "<30": 1.539223263015003,
+    "30-60": 1.1981706476305827,
+    ">60": 0.9461566188269765
+  },
+  "baseline_metrics": {
+    "mape": 2.0560882997837013,
+    "remote_spearman": 0.4312275286543383,
+    "kappa_60": 0.6863513460558799,
+    "kappa_120": 0.3712518675515098
+  },
+  "band_metrics": {
+    "mape": 1.820952346914214,
+    "remote_spearman": 0.42489406330903456,
+    "kappa_60": 0.5960453108113518,
+    "kappa_120": 0.3564223268325489
+  },
+  "candidates": {
+    "ridge_regularized_linear": {
+      "mape": 0.5854990708217611,
+      "remote_spearman": 0.6020721345014581,
+      "kappa_60": 0.6912156166814551,
+      "kappa_120": 0.49015471167369895
+    },
+    "isotonic_on_friction": {
+      "mape": 1.7625380480730362,
+      "remote_spearman": 0.4236962392912249,
+      "kappa_60": 0.5701986995531985,
+      "kappa_120": 0.29262709188506464
+    },
+    "gradient_boosting_monotone": {
+      "mape": 1.2638119236312277,
+      "remote_spearman": 0.45887814181042785,
+      "kappa_60": 0.556319290465632,
+      "kappa_120": 0.42509523439322094
+    }
+  },
+  "remote_rows": 249,
+  "n_routes": 348
+}

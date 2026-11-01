@@ -1,0 +1,7 @@
+{
+  "definition": "district-level person-weighted share (population column; district mean vs Ridge-calibrated district mean)",
+  "main_over_60": 0.12464197375456355,
+  "calibrated_over_60": 0.14401030120885247,
+  "main_over_120": 0.054683690133170926,
+  "calibrated_over_120": 0.04200695242123762
+}
