@@ -21,6 +21,12 @@ authors:
   - id: moises
     role: corresponding
     order: 1
+  - id: jeremi
+    role: author
+    order: 2
+  - id: edith
+    role: author
+    order: 3
 
 # --- Claims: verifiable statements made by the paper ---
 # Each claim anchors a number/result in the text to its origin in the pipeline,
